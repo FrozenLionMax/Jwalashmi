@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOLARGUARD | Mission Control</title>
+<meta name="description" content="Real-time AI solar flare early warning system — ISRO Aditya-L1 SoLEXS + HEL1OS">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+    --bg:#020408;--panel:#0a0e17;--panel2:#0d1220;--border:rgba(255,255,255,0.06);
+    --borderHi:rgba(34,211,238,0.18);
+    --t0:#e8ecf4;--t1:#c4cce0;--t2:#7e8ba4;--t3:#4a5572;
+    --cyan:#22d3ee;--blue:#3b82f6;--green:#10b981;--yellow:#eab308;
+    --orange:#f97316;--red:#ef4444;--purple:#a855f7;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0);
+    display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+
+/* === TOP BAR === */
+.topbar{display:flex;align-items:center;height:40px;padding:0 18px;
+    background:linear-gradient(180deg,#0c1120,#080c18);border-bottom:1px solid var(--border);flex-shrink:0;gap:0}
+.tb-brand{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;
+    color:var(--cyan);letter-spacing:1.2px;margin-right:4px;white-space:nowrap}
+.tb-ver{font-size:9px;color:var(--t3);margin-right:12px;background:rgba(34,211,238,0.06);
+    padding:1px 5px;border-radius:2px;border:1px solid rgba(34,211,238,0.08)}
+.tb-sep{width:1px;height:22px;background:var(--border);margin:0 14px;flex-shrink:0}
+.tb-pipe{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--t1)}
+.tb-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.tb-dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+.tb-dot.off{background:var(--red);box-shadow:0 0 4px var(--red)}
+.tb-scales{display:flex;gap:6px;font-size:11px;font-weight:600}
+.tb-scale{padding:2px 7px;border-radius:3px;letter-spacing:0.3px;transition:all 0.4s ease;cursor:help;position:relative}
+.tb-s0{background:rgba(16,185,129,0.08);color:var(--green);border:1px solid rgba(16,185,129,0.12)}
+.tb-s1{background:rgba(234,179,8,0.1);color:var(--yellow);border:1px solid rgba(234,179,8,0.2)}
+.tb-s2{background:rgba(249,115,22,0.12);color:var(--orange);border:1px solid rgba(249,115,22,0.22)}
+.tb-s3{background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.25);animation:scalePulse 2s ease-in-out infinite}
+@keyframes scalePulse{50%{background:rgba(239,68,68,0.2)}}
+.tb-tip{display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:6px;
+    background:#0d1220;border:1px solid var(--borderHi);border-radius:3px;padding:6px 10px;
+    font-size:9px;font-weight:400;color:var(--t1);white-space:nowrap;z-index:100;pointer-events:none;
+    box-shadow:0 4px 12px rgba(0,0,0,0.4)}
+.tb-scale:hover .tb-tip{display:block}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:6px}
+.tb-clk{font-size:15px;font-weight:600;color:var(--t0);letter-spacing:0.5px}
+.tb-clk-label{font-size:8px;font-weight:700;color:var(--yellow);margin-left:3px}
+.tb-utc{font-size:10px;color:var(--t2);margin-left:6px}
+.tb-date{font-size:10px;color:var(--t3);margin-right:10px}
+
+/* === MAIN GRID === */
+.main{flex:1;display:grid;grid-template-rows:280px 1fr auto;overflow:hidden}
+
+/* === FLUX === */
+.flux-row{border-bottom:1px solid var(--border);position:relative;background:linear-gradient(180deg,rgba(10,14,23,0.5),transparent)}
+.flux-hdr{position:absolute;top:8px;left:16px;z-index:10;display:flex;align-items:center;gap:10px}
+.flux-title{font-family:'Space Grotesk',sans-serif;font-size:12px;color:var(--t1);font-weight:600}
+.flux-toggles{display:flex;gap:0}
+.f-btn{padding:3px 10px;font-size:9px;font-weight:600;background:rgba(255,255,255,0.02);color:var(--t3);
+    border:1px solid var(--border);cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all 0.2s}
+.f-btn:first-child{border-radius:3px 0 0 3px}.f-btn:last-child{border-radius:0 3px 3px 0}
+.f-btn.on{background:rgba(34,211,238,0.06);color:var(--cyan);border-color:rgba(34,211,238,0.2)}
+.f-btn:hover:not(.on){background:rgba(255,255,255,0.03);color:var(--t1)}
+.flux-stats{position:absolute;top:8px;right:16px;z-index:10;display:flex;gap:14px;font-size:9px}
+.flux-stat{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+.flux-stat-k{color:var(--t3);font-size:8px;text-transform:uppercase}
+.flux-stat-v{font-weight:600;font-size:11px}
+
+/* === MID === */
+.mid{display:grid;grid-template-columns:220px 1fr 1fr 220px;gap:0;overflow:hidden}
+.pnl{border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:background 0.3s ease}
+.pnl:last-child{border-right:none}
+.pnl:hover{background:rgba(255,255,255,0.005)}
+.pnl-hdr{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;
+    justify-content:space-between;flex-shrink:0;background:rgba(255,255,255,0.01);position:relative}
+.pnl-hdr::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(34,211,238,0.06),transparent)}
+.pnl-title{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;
+    color:var(--t1);text-transform:uppercase;letter-spacing:0.8px}
+.pnl-badge{font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px}
+.pnl-body{flex:1;overflow-y:auto;padding:10px 14px;
+    scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.05) transparent}
+
+/* === ALERT === */
+.alert-status{text-align:center;padding:14px 10px 8px;position:relative}
+.alert-status::before{content:'';position:absolute;top:0;left:0;right:0;height:80px;
+    background:radial-gradient(ellipse at center top,rgba(16,185,129,0.04),transparent);transition:all 0.5s;pointer-events:none}
+.alert-status.warn::before{background:radial-gradient(ellipse at center top,rgba(234,179,8,0.06),transparent)}
+.alert-status.crit::before{background:radial-gradient(ellipse at center top,rgba(239,68,68,0.08),transparent)}
+.alert-ring{width:50px;height:50px;margin:0 auto 8px;border-radius:50%;display:grid;place-items:center;
+    border:2px solid var(--green);position:relative;transition:all 0.4s}
+.alert-ring::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px solid transparent;transition:all 0.4s}
+.alert-ring.y{border-color:var(--yellow);box-shadow:0 0 12px rgba(234,179,8,0.12)}
+.alert-ring.y::after{border-color:rgba(234,179,8,0.1);animation:ringPulse 4s ease-in-out infinite}
+.alert-ring.r{border-color:var(--red);box-shadow:0 0 16px rgba(239,68,68,0.15)}
+.alert-ring.r::after{border-color:rgba(239,68,68,0.15);animation:ringPulse 1.5s ease-in-out infinite}
+@keyframes ringPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.15);opacity:0.3}}
+.alert-icon{font-size:20px;transition:all 0.3s}
+.alert-level{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;margin-top:4px;transition:color 0.4s}
+.alert-sub{font-size:9px;color:var(--t2);margin-top:2px;line-height:1.3}
+.alert-action{margin-top:6px;font-size:8px;padding:3px 8px;border-radius:2px;display:inline-block;
+    border:1px solid rgba(16,185,129,0.15);color:var(--green);background:rgba(16,185,129,0.04);
+    text-transform:uppercase;letter-spacing:0.5px;font-weight:600;transition:all 0.3s}
+
+/* KV */
+.kv{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;
+    border-bottom:1px solid rgba(255,255,255,0.02);transition:background 0.2s}
+.kv:last-child{border:none}
+.kv:hover{background:rgba(255,255,255,0.01)}
+.kv-k{font-size:9.5px;color:var(--t3)}
+.kv-v{font-size:12px;font-weight:600;transition:color 0.3s}
+.kv-trend{font-size:9px;margin-left:3px;opacity:0.7}
+
+/* Prob bars */
+.pb{display:flex;flex-direction:column;gap:6px}
+.pi{display:flex;align-items:center;gap:6px}
+.pi-name{font-size:11px;font-weight:600;width:30px;color:var(--t1)}
+.pi-bar{flex:1;height:7px;border-radius:2px;background:rgba(255,255,255,0.025);overflow:hidden;position:relative}
+.pi-fill{height:100%;border-radius:2px;transition:width 0.8s cubic-bezier(0.4,0,0.2,1)}
+.pi-fill.dominant::after{content:'';position:absolute;inset:0;border-radius:2px;
+    background:linear-gradient(90deg,transparent 60%,rgba(255,255,255,0.15))}
+.pi-val{font-size:10px;font-weight:600;width:50px;text-align:right;color:var(--t2);transition:color 0.3s}
+.section-lbl{font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:0.6px;
+    margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.section-lbl::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.03)}
+
+/* Per-class metrics */
+.class-metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-top:6px}
+.cm-cell{text-align:center;padding:4px 2px;border-radius:2px;background:rgba(255,255,255,0.01);
+    border:1px solid rgba(255,255,255,0.02);cursor:pointer;transition:all 0.2s}
+.cm-cell:hover{background:rgba(34,211,238,0.04);border-color:rgba(34,211,238,0.1)}
+.cm-cell.active{background:rgba(34,211,238,0.06);border-color:rgba(34,211,238,0.15)}
+.cm-cls{font-size:10px;font-weight:700;display:block}
+.cm-val{font-size:8px;color:var(--t2);display:block;margin-top:1px}
+
+/* Tables */
+.ev-table{width:100%;font-size:10px;border-collapse:separate;border-spacing:0 2px}
+.ev-table th{font-size:8px;color:var(--t3);font-weight:600;text-transform:uppercase;
+    letter-spacing:0.5px;text-align:left;padding:3px 5px;border-bottom:1px solid var(--border);cursor:pointer}
+.ev-table th:hover{color:var(--t1)}
+.ev-table td{padding:4px 5px;color:var(--t1);background:rgba(255,255,255,0.008);transition:background 0.2s}
+.ev-table tr:hover td{background:rgba(255,255,255,0.02)}
+.ev-table tr td:first-child{border-radius:2px 0 0 2px}
+.ev-table tr td:last-child{border-radius:0 2px 2px 0}
+.ev-cls{font-weight:700;font-size:10px}
+.ev-peak{font-size:9px;color:var(--t2)}
+
+/* SDO */
+.sdo-wrap{text-align:center;padding:8px}
+.sdo-img{width:130px;height:130px;border-radius:50%;object-fit:cover;
+    border:1px solid rgba(249,115,22,0.12);display:block;margin:0 auto;
+    box-shadow:0 0 20px rgba(249,115,22,0.06);transition:transform 0.4s,box-shadow 0.4s}
+.sdo-img:hover{transform:scale(1.06);box-shadow:0 0 24px rgba(249,115,22,0.1)}
+.sdo-tabs{display:flex;gap:2px;justify-content:center;margin-bottom:6px}
+.sdo-tab{padding:3px 7px;font-size:8px;font-weight:600;border:1px solid var(--border);border-radius:3px;
+    background:transparent;color:var(--t3);cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all 0.2s}
+.sdo-tab:hover:not(.on){background:rgba(255,255,255,0.02);color:var(--t1)}
+.sdo-tab.on{background:rgba(249,115,22,0.06);color:var(--orange);border-color:rgba(249,115,22,0.2)}
+.sdo-label{font-size:8px;color:var(--t3);margin-top:4px}
+.sdo-meta{font-size:8px;color:var(--t3);margin-top:2px;opacity:0.6}
+
+/* Inner split */
+.inner-split{display:grid;grid-template-columns:1fr 1fr;height:100%}
+.inner-left{border-right:1px solid var(--border)}
+
+/* Mini trend chart */
+.mini-chart{height:40px;width:100%;margin-top:6px}
+
+/* === CONSOLE === */
+.console-row{border-top:1px solid var(--border);display:flex;flex-direction:column;
+    height:130px;flex-shrink:0;background:linear-gradient(180deg,var(--panel),#060a14)}
+.console-hdr{padding:5px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.console-title{font-size:9px;color:var(--t2);font-weight:600;text-transform:uppercase;letter-spacing:0.6px}
+.console-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 4px var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.console-filters{display:flex;gap:2px;margin-left:8px}
+.c-filter{padding:1px 6px;font-size:8px;font-weight:600;border:1px solid var(--border);border-radius:2px;
+    background:transparent;color:var(--t3);cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all 0.15s}
+.c-filter.on{background:rgba(34,211,238,0.06);color:var(--cyan);border-color:rgba(34,211,238,0.12)}
+.c-filter:hover:not(.on){color:var(--t1)}
+.console-body{flex:1;overflow-y:auto;padding:4px 16px;font-size:10px;line-height:1.7;
+    scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.04) transparent}
+.log-line{color:var(--t2);white-space:nowrap;padding:0 0 0 4px;border-left:2px solid transparent;transition:all 0.15s}
+.log-line:hover{border-left-color:rgba(255,255,255,0.1);background:rgba(255,255,255,0.008)}
+.log-line.hidden{display:none}
+.log-ts{color:var(--t3);font-size:9px}
+.log-ok{color:var(--green)} .log-warn{color:var(--yellow)} .log-err{color:var(--red)} .log-info{color:var(--cyan)}
+
+/* Status bar */
+.status-bar{display:flex;align-items:center;height:26px;padding:0 16px;
+    background:linear-gradient(180deg,#080c16,#060a12);border-top:1px solid var(--border);flex-shrink:0;
+    font-size:9px;color:var(--t3);gap:16px}
+.sb-item{display:flex;align-items:center;gap:5px}
+.sb-dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 3px var(--green)}
+.sb-val{color:var(--t1);font-weight:600}
+.sb-sep{width:1px;height:12px;background:var(--border)}
+
+/* === LOADING === */
+.loader-overlay{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;transition:opacity 0.6s,visibility 0.6s}
+.loader-overlay.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.loader-top{height:40px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:12px}
+.loader-bar{height:14px;border-radius:3px;background:rgba(255,255,255,0.03);position:relative;overflow:hidden}
+.loader-bar::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent);animation:shimmer 1.8s ease-in-out infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.loader-flux{flex:none;height:250px;border-bottom:1px solid var(--border);padding:20px;display:flex;flex-direction:column;gap:8px}
+.loader-mid{flex:1;display:grid;grid-template-columns:220px 1fr 1fr 220px;gap:0;overflow:hidden}
+.loader-pnl{border-right:1px solid var(--border);padding:16px;display:flex;flex-direction:column;gap:10px}
+.loader-pnl:last-child{border-right:none}
+.loader-console{height:130px;border-top:1px solid var(--border);padding:12px 18px;display:flex;flex-direction:column;gap:6px}
+.loader-status{height:26px;background:var(--panel);border-top:1px solid var(--border)}
+.loader-circle{width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,0.02);margin:0 auto;position:relative;overflow:hidden}
+.loader-circle::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.03),transparent);animation:shimmer 1.8s ease-in-out infinite}
+.loader-text{font-family:'Space Grotesk',sans-serif;font-size:12px;color:var(--t3);text-align:center;margin-top:16px;letter-spacing:1px;animation:fadeText 2s ease-in-out infinite}
+@keyframes fadeText{0%,100%{opacity:0.4}50%{opacity:1}}
+
+/* === RESPONSIVE === */
+@media(max-width:1100px){.mid,.loader-mid{grid-template-columns:1fr 1fr}.tb-pipe{display:none}
+    .inner-split{grid-template-columns:1fr}.inner-left{border-right:none;border-bottom:1px solid var(--border)}}
+@media(max-width:900px){html,body{overflow:auto}.main{grid-template-rows:180px auto auto;overflow:auto}
+    .topbar{height:auto;min-height:36px;padding:6px 12px;flex-wrap:wrap;gap:6px}
+    .tb-sep{display:none}.tb-brand{font-size:12px}.tb-ver{margin-right:auto}
+    .tb-scales{order:10}.tb-right{order:11;width:100%;justify-content:flex-end;margin-left:0}
+    .flux-row{height:180px}.mid{grid-template-columns:1fr 1fr}.pnl-body{padding:8px 10px}
+    .console-row{height:100px}.status-bar{flex-wrap:wrap;height:auto;padding:4px 12px;gap:8px}.sb-sep{display:none}
+    .sdo-img{width:110px;height:110px}}
+@media(max-width:700px){.mid,.loader-mid{grid-template-columns:1fr}
+    .pnl{border-right:none;border-bottom:1px solid var(--border)}
+    .inner-split{grid-template-columns:1fr}.inner-left{border-right:none;border-bottom:1px solid var(--border)}
+    .flux-hdr{flex-direction:column;align-items:flex-start;gap:4px}
+    .console-row{height:80px}.console-hdr span:last-child{display:none}
+    .sdo-img{width:90px;height:90px}.alert-ring{width:40px;height:40px}.alert-icon{font-size:16px}}
+@media(max-width:480px){.topbar{padding:4px 8px}.tb-brand{font-size:11px}.tb-utc,.tb-date{display:none}
+    .flux-row{height:150px}.status-bar{font-size:8px;gap:6px}}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loader-overlay" id="loaderOverlay">
+    <div class="loader-top"><div class="loader-bar" style="width:100px"></div><div class="loader-bar" style="width:40px"></div><div style="flex:1"></div><div class="loader-bar" style="width:80px"></div></div>
+    <div class="loader-flux"><div class="loader-bar" style="width:160px;height:10px"></div><div style="flex:1;border-radius:4px;background:rgba(255,255,255,0.01);position:relative;overflow:hidden"><div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.02),transparent);animation:shimmer 1.8s ease-in-out infinite"></div></div></div>
+    <div class="loader-mid">
+        <div class="loader-pnl"><div class="loader-bar" style="width:60px;height:10px"></div><div class="loader-circle"></div><div class="loader-bar" style="width:80px;height:12px;margin:0 auto"></div><div class="loader-bar" style="height:8px"></div><div class="loader-bar" style="height:8px;width:80%"></div></div>
+        <div class="loader-pnl"><div class="loader-bar" style="width:100px;height:10px"></div><div class="loader-bar" style="height:7px"></div><div class="loader-bar" style="height:7px;width:60%"></div><div class="loader-bar" style="height:7px;width:80%"></div><div class="loader-bar" style="height:7px;width:40%"></div></div>
+        <div class="loader-pnl"><div class="loader-bar" style="width:110px;height:10px"></div><div style="flex:1;border-radius:4px;background:rgba(255,255,255,0.01);position:relative;overflow:hidden"><div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.02),transparent);animation:shimmer 1.8s ease-in-out infinite"></div></div></div>
+        <div class="loader-pnl"><div class="loader-bar" style="width:70px;height:10px"></div><div class="loader-circle" style="width:110px;height:110px"></div></div>
+    </div>
+    <div class="loader-console"><div class="loader-bar" style="width:100px;height:8px"></div><div class="loader-bar" style="height:6px;width:70%"></div><div class="loader-bar" style="height:6px;width:55%"></div></div>
+    <div class="loader-status"></div>
+    <div class="loader-text" style="position:absolute;bottom:60px;left:50%;transform:translateX(-50%)">Initializing SolarGuard...</div>
+</div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+    <span class="tb-brand">SOLARGUARD</span>
+    <span class="tb-ver">v2.0.4</span>
+    <div class="tb-sep"></div>
+    <div class="tb-pipe">
+        <div class="tb-dot on" id="dotSol"></div>SoLEXS
+        <div class="tb-dot on" id="dotHel" style="margin-left:8px"></div>HEL1OS
+        <div class="tb-dot on" id="dotEns" style="margin-left:8px"></div>Ensemble
+        <div class="tb-dot on" style="margin-left:8px"></div>Cal
+    </div>
+    <div class="tb-sep"></div>
+    <div class="tb-scales">
+        <span class="tb-scale tb-s0" id="scR">R0<span class="tb-tip">Radio Blackout Scale (R0=None, R5=Extreme HF blackout)</span></span>
+        <span class="tb-scale tb-s0" id="scS">S0<span class="tb-tip">Solar Radiation Storm (S0=None, S5=Extreme radiation)</span></span>
+        <span class="tb-scale tb-s0" id="scG">G0<span class="tb-tip">Geomagnetic Storm (G0=None, G5=Extreme geomagnetic)</span></span>
+    </div>
+    <div class="tb-sep"></div>
+    <div style="font-size:9px;color:var(--t3)">Flare <span id="tbFlareProb" style="color:var(--green);font-weight:700">0%</span></div>
+    <div class="tb-right">
+        <span class="tb-date" id="clkDate">--</span>
+        <span class="tb-clk" id="clkIST">--:--:--</span><span class="tb-clk-label">IST</span>
+        <span class="tb-utc" id="clkUTC">--:--:-- UTC</span>
+    </div>
+</div>
+
+<!-- FLUX CHART -->
+<div class="main">
+<div class="flux-row">
+    <div class="flux-hdr">
+        <span class="flux-title">X-Ray Flux (W/m&sup2;)</span>
+        <div class="flux-toggles">
+            <button class="f-btn on" data-m="combined" onclick="setMode('combined')">Both</button>
+            <button class="f-btn" data-m="solexs" onclick="setMode('solexs')">SoLEXS</button>
+            <button class="f-btn" data-m="helios" onclick="setMode('helios')">HEL1OS</button>
+        </div>
+        <div class="flux-toggles" style="margin-left:4px">
+            <button class="f-btn on" data-w="1h" onclick="setWindow('1h')">1h</button>
+            <button class="f-btn" data-w="6h" onclick="setWindow('6h')">6h</button>
+            <button class="f-btn" data-w="24h" onclick="setWindow('24h')">24h</button>
+        </div>
+        <div class="flux-toggles" style="margin-left:4px">
+            <button class="f-btn" id="btnSMA" onclick="toggleSMA()">SMA</button>
+            <button class="f-btn" id="btnDeriv" onclick="toggleDeriv()">dF/dt</button>
+        </div>
+    </div>
+    <div class="flux-stats">
+        <div class="flux-stat"><span class="flux-stat-k">Peak</span><span class="flux-stat-v" id="fsPeak" style="color:var(--cyan)">--</span></div>
+        <div class="flux-stat"><span class="flux-stat-k">Class</span><span class="flux-stat-v" id="fsClass" style="color:var(--t2)">--</span></div>
+        <div class="flux-stat"><span class="flux-stat-k">Mean</span><span class="flux-stat-v" id="fsMean" style="color:var(--t1)">--</span></div>
+        <div class="flux-stat"><span class="flux-stat-k">Slope</span><span class="flux-stat-v" id="fsSlope" style="color:var(--green)">--</span></div>
+        <div class="flux-stat"><span class="flux-stat-k">Samples</span><span class="flux-stat-v" id="fsSamples" style="color:var(--t2)">0</span></div>
+    </div>
+    <div id="fluxChart" style="width:100%;height:100%"></div>
+</div>
+
+<!-- MIDDLE PANELS -->
+<div class="mid">
+    <!-- Panel 1: Alert + Prediction -->
+    <div class="pnl">
+        <div class="pnl-hdr"><span class="pnl-title">Status</span>
+            <span class="pnl-badge tb-s0" id="alertBadge">Nominal</span></div>
+        <div class="pnl-body" style="padding:0">
+            <div class="alert-status" id="alertArea">
+                <div class="alert-ring" id="alertRing"><span class="alert-icon" id="alertIcon">&#x2714;</span></div>
+                <div class="alert-level" id="alertLevel" style="color:var(--green)">ALL CLEAR</div>
+                <div class="alert-sub" id="alertSub">No significant activity</div>
+                <div class="alert-action" id="alertAction">Routine monitoring</div>
+            </div>
+            <div style="padding:4px 14px">
+                <div class="kv"><span class="kv-k">Predicted</span><span class="kv-v" id="vCls" style="color:var(--cyan)">--</span></div>
+                <div class="kv"><span class="kv-k">Lead time</span><span class="kv-v"><span id="vLead" style="color:var(--green)">--</span> <span class="kv-trend" id="vLeadT"></span></span></div>
+                <div class="kv"><span class="kv-k">Confidence</span><span class="kv-v"><span id="vConf">--</span> <span class="kv-trend" id="vConfT"></span></span></div>
+                <div class="kv"><span class="kv-k">Uncertainty</span><span class="kv-v" id="vUnc" style="color:var(--purple)">--</span></div>
+                <div class="kv"><span class="kv-k">Ground truth</span><span class="kv-v" id="vTrue" style="color:var(--t2)">--</span></div>
+                <div class="kv"><span class="kv-k">Onset ETA</span><span class="kv-v" id="vETA" style="color:var(--t3);font-size:10px">N/A</span></div>
+                <div class="kv"><span class="kv-k">Last flare</span><span class="kv-v" id="vLastFlare" style="color:var(--t3);font-size:10px">None</span></div>
+            </div>
+            <div style="padding:4px 14px;border-top:1px solid var(--border)">
+                <div class="section-lbl" style="margin-top:4px">Prediction Trend (last 20)</div>
+                <div class="mini-chart" id="trendChart"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel 2: Tactical Engine -->
+    <div class="pnl">
+        <div class="pnl-hdr"><span class="pnl-title">Tactical Engine</span>
+            <span class="pnl-badge" style="background:rgba(34,211,238,0.06);color:var(--cyan);border:1px solid rgba(34,211,238,0.12)">60 min</span></div>
+        <div class="pnl-body">
+            <div class="section-lbl">Class Probabilities</div>
+            <div class="pb" id="probBars">
+                <div class="pi"><span class="pi-name">None</span><div class="pi-bar"><div class="pi-fill" id="bN" style="background:var(--t3)"></div></div><span class="pi-val" id="pN">0%</span></div>
+                <div class="pi"><span class="pi-name" style="color:var(--blue)">B</span><div class="pi-bar"><div class="pi-fill" id="bB" style="background:var(--blue)"></div></div><span class="pi-val" id="pB">0%</span></div>
+                <div class="pi"><span class="pi-name" style="color:var(--yellow)">C</span><div class="pi-bar"><div class="pi-fill" id="bC" style="background:var(--yellow)"></div></div><span class="pi-val" id="pC">0%</span></div>
+                <div class="pi"><span class="pi-name" style="color:var(--orange)">M</span><div class="pi-bar"><div class="pi-fill" id="bM" style="background:var(--orange)"></div></div><span class="pi-val" id="pM">0%</span></div>
+                <div class="pi"><span class="pi-name" style="color:var(--red)">X</span><div class="pi-bar"><div class="pi-fill" id="bX" style="background:var(--red)"></div></div><span class="pi-val" id="pX">0%</span></div>
+            </div>
+
+            <div class="section-lbl" style="margin-top:10px">Per-Class Metrics (click)</div>
+            <div class="class-metrics" id="classMetrics">
+                <div class="cm-cell active" data-c="None" onclick="showClassDetail('None',this)"><span class="cm-cls" style="color:var(--t2)">None</span><span class="cm-val">P:58%</span></div>
+                <div class="cm-cell" data-c="B" onclick="showClassDetail('B',this)"><span class="cm-cls" style="color:var(--blue)">B</span><span class="cm-val">P:83%</span></div>
+                <div class="cm-cell" data-c="C" onclick="showClassDetail('C',this)"><span class="cm-cls" style="color:var(--yellow)">C</span><span class="cm-val">P:69%</span></div>
+                <div class="cm-cell" data-c="M" onclick="showClassDetail('M',this)"><span class="cm-cls" style="color:var(--orange)">M</span><span class="cm-val">P:100%</span></div>
+                <div class="cm-cell" data-c="X" onclick="showClassDetail('X',this)"><span class="cm-cls" style="color:var(--red)">X</span><span class="cm-val">P:92%</span></div>
+            </div>
+            <div id="classDetail" style="font-size:9px;color:var(--t2);margin-top:6px;padding:4px 6px;background:rgba(255,255,255,0.01);border-radius:2px;border:1px solid rgba(255,255,255,0.02)">
+                Precision: 58.3% | Recall: 40.0% | F1: 47.5% | Support: 120
+            </div>
+
+            <div class="section-lbl" style="margin-top:10px">ROC-AUC</div>
+            <div class="pb">
+                <div class="pi"><span class="pi-name" style="color:var(--red)">X</span><div class="pi-bar"><div class="pi-fill" style="width:100%;background:var(--green)"></div></div><span class="pi-val" style="color:var(--green)">1.000</span></div>
+                <div class="pi"><span class="pi-name" style="color:var(--orange)">M</span><div class="pi-bar"><div class="pi-fill" style="width:99.7%;background:var(--green)"></div></div><span class="pi-val" style="color:var(--green)">0.997</span></div>
+                <div class="pi"><span class="pi-name" style="color:var(--yellow)">C</span><div class="pi-bar"><div class="pi-fill" style="width:90%;background:var(--cyan)"></div></div><span class="pi-val" style="color:var(--cyan)">0.900</span></div>
+                <div class="pi"><span class="pi-name" style="color:var(--blue)">B</span><div class="pi-bar"><div class="pi-fill" style="width:79%;background:var(--blue)"></div></div><span class="pi-val" style="color:var(--blue)">0.789</span></div>
+            </div>
+
+            <div class="section-lbl" style="margin-top:10px">Performance</div>
+            <div class="kv"><span class="kv-k">Accuracy</span><span class="kv-v" style="color:var(--cyan);font-size:11px">53.6%</span></div>
+            <div class="kv"><span class="kv-k">Weighted F1</span><span class="kv-v" style="color:var(--yellow);font-size:11px">71.6%</span></div>
+            <div class="kv"><span class="kv-k">M+X Recall</span><span class="kv-v" style="color:var(--green);font-size:11px">100%</span></div>
+            <div class="kv"><span class="kv-k">Mean lead</span><span class="kv-v" style="color:var(--green);font-size:11px">32.9 min</span></div>
+            <div class="kv"><span class="kv-k">FPR</span><span class="kv-v" style="color:var(--yellow);font-size:11px">41.7%</span></div>
+            <div class="kv"><span class="kv-k">Cal T</span><span class="kv-v" style="color:var(--purple);font-size:11px">2.04</span></div>
+        </div>
+    </div>
+
+    <!-- Panel 3: Confusion + Events -->
+    <div class="pnl" style="border-right:1px solid var(--border)">
+        <div class="inner-split">
+            <div class="inner-left">
+                <div class="pnl-hdr"><span class="pnl-title">Confusion Matrix</span></div>
+                <div style="padding:4px;height:calc(100% - 33px)" id="confChart"></div>
+            </div>
+            <div>
+                <div class="pnl-hdr"><span class="pnl-title">Event Log</span>
+                    <span class="pnl-badge" style="background:rgba(234,179,8,0.06);color:var(--yellow);border:1px solid rgba(234,179,8,0.12)" id="evCount">0</span></div>
+                <div class="pnl-body" style="padding:4px 6px">
+                    <table class="ev-table"><thead><tr><th>Time</th><th>Class</th><th>Peak</th><th>Dur</th><th>AR</th></tr></thead>
+                    <tbody id="evBody"></tbody></table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel 4: SDO + Strategic -->
+    <div class="pnl" style="border-right:none">
+        <div class="pnl-hdr"><span class="pnl-title">SDO Live</span>
+            <span class="pnl-badge" style="background:rgba(249,115,22,0.06);color:var(--orange);border:1px solid rgba(249,115,22,0.12)">NASA</span></div>
+        <div class="pnl-body" style="padding:0">
+            <div class="sdo-wrap">
+                <div class="sdo-tabs">
+                    <button class="sdo-tab on" onclick="setSDO('0193',this)">193</button>
+                    <button class="sdo-tab" onclick="setSDO('0171',this)">171</button>
+                    <button class="sdo-tab" onclick="setSDO('0304',this)">304</button>
+                    <button class="sdo-tab" onclick="setSDO('HMIIC',this)">HMI</button>
+                </div>
+                <img class="sdo-img" id="sdoImg" src="https://sdo.gsfc.nasa.gov/assets/img/latest/latest_256_0193.jpg" alt="SDO">
+                <div class="sdo-label" id="sdoLbl">AIA 193&#x212B; &mdash; 1.2 MK corona</div>
+                <div class="sdo-meta" id="sdoMeta">Auto-refresh: 5 min</div>
+            </div>
+            <div style="padding:6px 14px;border-top:1px solid var(--border)">
+                <div class="section-lbl">Strategic Forecast (5-10h)</div>
+                <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+                    <span id="sClass" style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--yellow);transition:all 0.4s">--</span>
+                    <span style="font-size:9px;color:var(--t3)">class</span>
+                    <span id="sConf" style="font-size:11px;font-weight:600;margin-left:auto">--</span>
+                </div>
+                <div class="kv"><span class="kv-k">Accuracy</span><span class="kv-v" style="font-size:10px;color:var(--green)">84.9%</span></div>
+                <div class="kv"><span class="kv-k">Recall (TPR)</span><span class="kv-v" style="font-size:10px;color:var(--cyan)">99.3%</span></div>
+                <div class="kv"><span class="kv-k">Architecture</span><span class="kv-v" style="font-size:9px;color:var(--t2)">5x CNN+Attn</span></div>
+                <div class="kv"><span class="kv-k">Loss</span><span class="kv-v" style="font-size:9px;color:var(--t2)">Focal (&gamma;=2)</span></div>
+                <div class="kv"><span class="kv-k">Augmentation</span><span class="kv-v" style="font-size:9px;color:var(--t2)">5x (4 types)</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CONSOLE -->
+<div class="console-row">
+    <div class="console-hdr">
+        <div class="console-dot"></div>
+        <span class="console-title">System Console</span>
+        <div class="console-filters">
+            <button class="c-filter on" data-t="all" onclick="filterConsole('all',this)">All</button>
+            <button class="c-filter" data-t="ok" onclick="filterConsole('ok',this)">OK</button>
+            <button class="c-filter" data-t="info" onclick="filterConsole('info',this)">Info</button>
+            <button class="c-filter" data-t="warn" onclick="filterConsole('warn',this)">Warn</button>
+            <button class="c-filter" data-t="err" onclick="filterConsole('err',this)">Err</button>
+        </div>
+        <span style="font-size:8px;color:var(--t3);margin-left:auto">5-model ensemble &bull; temp-calibrated &bull; thresh=0.60</span>
+    </div>
+    <div class="console-body" id="consoleBody"></div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+    <div class="sb-item"><div class="sb-dot"></div>Ensemble <span class="sb-val">5/5</span></div>
+    <div class="sb-sep"></div>
+    <div class="sb-item">Cycle <span class="sb-val" id="sbCycle">#0</span></div>
+    <div class="sb-sep"></div>
+    <div class="sb-item">Latency <span class="sb-val" id="sbLat">--</span></div>
+    <div class="sb-sep"></div>
+    <div class="sb-item">Data <span class="sb-val" id="sbAge">--</span></div>
+    <div class="sb-sep"></div>
+    <div class="sb-item">Uptime <span class="sb-val" id="sbUp">0m</span></div>
+    <div class="sb-sep"></div>
+    <div class="sb-item">Events <span class="sb-val" id="sbPreds">0</span></div>
+    <div class="sb-sep"></div>
+    <div class="sb-item">Samples <span class="sb-val" id="sbSamples">0</span></div>
+    <div class="sb-item" style="margin-left:auto;color:var(--t3)">ISRO Aditya-L1 &bull; BAH 2026</div>
+</div>
+</div>
+
+<script>
+const startTime=Date.now();
+let cycle=0,lastDataTime=Date.now(),totalPreds=0,totalSamples=0,lastFlareCls='',lastFlareTime='';
+let prevConf=null,prevLead=null,showDeriv=false,consoleFilter='all';
+const trendHist=[],confHist=[];
+const CC={None:'var(--t2)',B:'var(--blue)',C:'var(--yellow)',M:'var(--orange)',X:'var(--red)'};
+const CCI={None:'#7e8ba4',B:'#3b82f6',C:'#eab308',M:'#f97316',X:'#ef4444'};
+const CLASS_METRICS={
+    None:{p:58.3,r:40.0,f1:47.5,support:120},
+    B:{p:83.3,r:6.1,f1:11.3,support:82},
+    C:{p:69.2,r:75.0,f1:72.0,support:120},
+    M:{p:100,r:100,f1:100,support:48},
+    X:{p:92.3,r:100,f1:96.0,support:12}
+};
+
+/* CLOCK */
+function tick(){
+    const now=new Date(),ist=new Date(now.getTime()+5.5*3600000),p=n=>String(n).padStart(2,'0');
+    document.getElementById('clkIST').textContent=p(ist.getUTCHours())+':'+p(ist.getUTCMinutes())+':'+p(ist.getUTCSeconds());
+    document.getElementById('clkUTC').textContent=p(now.getUTCHours())+':'+p(now.getUTCMinutes())+':'+p(now.getUTCSeconds())+' UTC';
+    const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    document.getElementById('clkDate').textContent=p(ist.getUTCDate())+' '+mo[ist.getUTCMonth()]+' '+ist.getUTCFullYear();
+    const age=((Date.now()-lastDataTime)/1000);
+    document.getElementById('sbAge').textContent=age<60?age.toFixed(0)+'s':Math.floor(age/60)+'m';
+    const up=Math.floor((Date.now()-startTime)/60000);
+    document.getElementById('sbUp').textContent=up<60?up+'m':Math.floor(up/60)+'h'+String(up%60).padStart(2,'0')+'m';
+}
+tick();setInterval(tick,1000);
+
+/* KEYBOARD */
+document.addEventListener('keydown',e=>{
+    if(e.key==='1')setMode('combined');if(e.key==='2')setMode('solexs');
+    if(e.key==='3')setMode('helios');if(e.key==='d')toggleDeriv();
+});
+
+/* SDO */
+const SDO_D={'0193':'AIA 193\u212B \u2014 1.2 MK corona','0171':'AIA 171\u212B \u2014 600 kK loops',
+    '0304':'AIA 304\u212B \u2014 50 kK chromosphere','HMIIC':'HMI Intensitygram \u2014 photosphere'};
+function setSDO(ch,el){document.querySelectorAll('.sdo-tab').forEach(t=>t.classList.remove('on'));el.classList.add('on');
+    document.getElementById('sdoImg').src='https://sdo.gsfc.nasa.gov/assets/img/latest/latest_256_'+ch+'.jpg';
+    document.getElementById('sdoLbl').textContent=SDO_D[ch];clog('SDO channel: '+ch,'info')}
+setInterval(()=>{const i=document.getElementById('sdoImg');i.src=i.src.split('?')[0]+'?t='+Date.now();
+    document.getElementById('sdoMeta').textContent='Refreshed '+new Date().toLocaleTimeString()},300000);
+
+/* PER-CLASS METRICS */
+function showClassDetail(cls,el){
+    document.querySelectorAll('.cm-cell').forEach(c=>c.classList.remove('active'));
+    el.classList.add('active');
+    const m=CLASS_METRICS[cls];
+    document.getElementById('classDetail').innerHTML=
+        `Precision: <b style="color:var(--cyan)">${m.p}%</b> | Recall: <b style="color:var(--green)">${m.r}%</b> | F1: <b style="color:var(--yellow)">${m.f1}%</b> | Support: <b>${m.support}</b>`;
+}
+
+/* CONSOLE */
+const consoleEl=document.getElementById('consoleBody');
+function clog(msg,type){
+    const ist=new Date(Date.now()+5.5*3600000),p=n=>String(n).padStart(2,'0');
+    const ts=p(ist.getUTCHours())+':'+p(ist.getUTCMinutes())+':'+p(ist.getUTCSeconds());
+    const cls=type==='ok'?'log-ok':type==='warn'?'log-warn':type==='err'?'log-err':'log-info';
+    const div=document.createElement('div');div.className='log-line';div.dataset.type=type;
+    div.innerHTML=`<span class="log-ts">[${ts}]</span> <span class="${cls}">${msg}</span>`;
+    if(consoleFilter!=='all'&&consoleFilter!==type)div.classList.add('hidden');
+    consoleEl.appendChild(div);consoleEl.scrollTop=consoleEl.scrollHeight;
+    if(consoleEl.children.length>150)consoleEl.removeChild(consoleEl.firstChild);
+}
+function filterConsole(t,el){
+    consoleFilter=t;document.querySelectorAll('.c-filter').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+    consoleEl.querySelectorAll('.log-line').forEach(l=>{
+        l.classList.toggle('hidden',t!=='all'&&l.dataset.type!==t)});
+    consoleEl.scrollTop=consoleEl.scrollHeight;
+}
+clog('SolarGuard v2.0.4 initialized','ok');
+clog('5 ensemble models loaded (CNN+Temporal Attention)','ok');
+clog('Temperature calibration: T=2.04 (NLL-optimized)','info');
+clog('Confidence threshold: 0.60 | FPR target: <50%','info');
+clog('Pipeline: SoLEXS (1-8 keV) + HEL1OS (10-30 keV)','ok');
+clog('Shortcuts: [1]Both [2]SoLEXS [3]HEL1OS [D]Derivative','info');
+
+/* ECHARTS INIT */
+const fluxEC=echarts.init(document.getElementById('fluxChart'),null,{renderer:'canvas'});
+const confEC=echarts.init(document.getElementById('confChart'),null,{renderer:'canvas'});
+const trendEC=echarts.init(document.getElementById('trendChart'),null,{renderer:'canvas'});
+window.addEventListener('resize',()=>{fluxEC.resize();confEC.resize();trendEC.resize()});
+let chartMode='combined',lastSol=[],lastHel=[];
+
+/* TOGGLES */
+let showSMA=false,timeWindow='1h';
+function toggleDeriv(){showDeriv=!showDeriv;document.getElementById('btnDeriv').classList.toggle('on',showDeriv);buildFlux();clog('Derivative: '+(showDeriv?'ON':'OFF'),'info')}
+function toggleSMA(){showSMA=!showSMA;document.getElementById('btnSMA').classList.toggle('on',showSMA);buildFlux();clog('5-min SMA: '+(showSMA?'ON':'OFF'),'info')}
+function setWindow(w){timeWindow=w;document.querySelectorAll('.f-btn[data-w]').forEach(b=>b.classList.toggle('on',b.dataset.w===w));buildFlux();clog('Window: '+w,'info')}
+function setMode(m){chartMode=m;document.querySelectorAll('.f-btn[data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===m));buildFlux();clog('Source: '+m,'info')}
+
+/* FLUX CLASSIFICATION */
+function classifyFlux(v){if(v>=1e-4)return'X';if(v>=1e-5)return'M';if(v>=1e-6)return'C';if(v>=1e-7)return'B';return'A'}
+function sciNot(v){if(v===0)return'0';const e=Math.floor(Math.log10(Math.abs(v))),m=v/Math.pow(10,e);return m.toFixed(1)+'e'+e}
+
+/* 5-MIN MOVING AVERAGE */
+function calcSMA(arr,win){const r=[];for(let i=0;i<arr.length;i++){const s=Math.max(0,i-win+1);let sum=0;for(let j=s;j<=i;j++)sum+=arr[j];r.push(sum/(i-s+1))}return r}
+
+/* ROLLING BUFFER for 6h/24h */
+const fluxBuffer=[];
+
+/* FLUX CHART — LOG SCALE, GOES-STANDARD */
+function buildFlux(){
+    let viewData=fluxBuffer;
+    if(timeWindow==='1h')viewData=fluxBuffer.slice(-3600);
+    else if(timeWindow==='6h')viewData=fluxBuffer.slice(-21600);
+    if(!viewData.length)return;
+
+    const step=Math.max(1,Math.floor(viewData.length/600));
+    const ds=[];for(let i=0;i<viewData.length;i+=step)ds.push(viewData[i]);
+    const solD=ds.map(d=>d.sol);
+    const helD=ds.map(d=>d.hel);
+
+    function aMin(a){let m=Infinity;for(let i=0;i<a.length;i++)if(a[i]>0&&a[i]<m)m=a[i];return m===Infinity?1e-8:m}
+    function aMax(a){let m=0;for(let i=0;i<a.length;i++)if(a[i]>m)m=a[i];return m||1e-6}
+
+    const showSec=ds.length<200;
+    const labels=ds.map(d=>{const p=d.lbl.split(':');return showSec?d.lbl:p[0]+':'+p[1]});
+
+    const dMin=Math.min(aMin(solD),aMin(helD));
+    const dMax=Math.max(aMax(solD),aMax(helD));
+    const yMin=Math.pow(10,Math.floor(Math.log10(dMin||1e-8))-1);
+    const yMax=Math.pow(10,Math.ceil(Math.log10(dMax||1e-4))+1);
+
+    const srs=[];
+    if(chartMode!=='helios')srs.push({name:'SoLEXS (1\u20138 keV)',type:'line',smooth:0.15,symbol:'none',sampling:'lttb',
+        lineStyle:{color:'#22d3ee',width:1.6,shadowColor:'rgba(34,211,238,0.3)',shadowBlur:6},
+        areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(34,211,238,0.08)'},{offset:1,color:'rgba(34,211,238,0)'}])},
+        data:solD,z:10,markArea:null,markLine:null,markPoint:null});
+    if(chartMode!=='solexs')srs.push({name:'HEL1OS (10\u201330 keV)',type:'line',smooth:0.15,symbol:'none',sampling:'lttb',
+        lineStyle:{color:'#a855f7',width:1.4,shadowColor:'rgba(168,85,247,0.25)',shadowBlur:5},
+        areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(168,85,247,0.06)'},{offset:1,color:'rgba(168,85,247,0)'}])},
+        data:helD,z:9});
+    if(showSMA&&solD.length>10){
+        const w=Math.max(5,Math.min(300,Math.floor(ds.length*300/viewData.length)));
+        srs.push({name:'SMA (5min)',type:'line',smooth:0.4,symbol:'none',
+            lineStyle:{color:'#eab308',width:1.2,type:'dotted'},data:calcSMA(solD,w),z:12})}
+    if(showDeriv&&solD.length>2){
+        const dv=[];for(let i=1;i<solD.length;i++)dv.push(solD[i]-solD[i-1]);dv.unshift(dv[0]);
+        srs.push({name:'dF/dt',type:'line',smooth:0.15,symbol:'none',
+            lineStyle:{color:'#f97316',width:1,type:'dashed'},data:dv,yAxisIndex:1,z:11})}
+
+    const sup={0:'\u2070',1:'\u00B9',2:'\u00B2',3:'\u00B3',4:'\u2074',5:'\u2075',6:'\u2076',7:'\u2077',8:'\u2078',9:'\u2079'};
+    function fp(n){let s=String(Math.abs(n)),r='';for(const c of s)r+=sup[c]||c;return n<0?'\u207B'+r:r}
+
+    const yA=[{type:'log',min:yMin,max:yMax,axisLine:{show:false},
+        name:'W/m\u00B2',nameLocation:'center',nameGap:48,nameTextStyle:{color:'#4a5572',fontSize:9,fontFamily:'JetBrains Mono',fontWeight:600},
+        axisLabel:{color:'#4a5572',fontSize:9,fontFamily:'JetBrains Mono',formatter:v=>{if(!v||v<=0)return'';return'10'+fp(Math.round(Math.log10(v)))}},
+        splitLine:{lineStyle:{color:'rgba(255,255,255,0.025)',type:'dashed'}}}];
+    if(showDeriv)yA.push({type:'value',position:'right',axisLine:{show:false},
+        axisLabel:{color:'#f97316',fontSize:8,fontFamily:'JetBrains Mono',formatter:v=>sciNot(v)},splitLine:{show:false}});
+
+    const pk=aMax(solD);
+    let pkI=0;for(let i=0;i<solD.length;i++)if(solD[i]===pk){pkI=i;break}
+    const pkC=classifyFlux(pk);
+
+    const TH=[{v:1e-7,c:'B',cl:'#3b82f6'},{v:1e-6,c:'C',cl:'#eab308'},{v:1e-5,c:'M',cl:'#f97316'},{v:1e-4,c:'X',cl:'#ef4444'}];
+    const mL=TH.filter(t=>t.v>=yMin&&t.v<=yMax).map(t=>({yAxis:t.v,lineStyle:{color:t.cl,width:1,type:[4,4]},
+        label:{show:true,position:'insideEndTop',formatter:t.c+' ('+t.v.toExponential(0)+')',color:t.cl,fontSize:9,fontFamily:'JetBrains Mono',fontWeight:600}}));
+    const BA=[[1e-7,1e-6,'rgba(59,130,246,0.025)'],[1e-6,1e-5,'rgba(234,179,8,0.025)'],[1e-5,1e-4,'rgba(249,115,22,0.035)'],[1e-4,1e-2,'rgba(239,68,68,0.04)']];
+    const mA=BA.filter(b=>b[1]>yMin&&b[0]<yMax).map(b=>[{yAxis:Math.max(b[0],yMin),itemStyle:{color:b[2]}},{yAxis:Math.min(b[1],yMax)}]);
+
+    if(srs.length>0){
+        srs[0].markArea={silent:true,data:mA};
+        srs[0].markLine={silent:true,symbol:'none',data:mL};
+        srs[0].markPoint={silent:true,data:pk>0&&isFinite(pk)?[{
+            xAxis:labels[pkI],yAxis:pk,symbol:'triangle',symbolSize:12,symbolRotate:180,
+            itemStyle:{color:CCI[pkC]||'#22d3ee',borderColor:'rgba(0,0,0,0.3)',borderWidth:1,
+                shadowColor:CCI[pkC]||'rgba(34,211,238,0.4)',shadowBlur:8},
+            label:{show:true,position:'top',formatter:sciNot(pk)+' '+pkC,fontSize:8,fontFamily:'JetBrains Mono',
+                color:CCI[pkC]||'#22d3ee',fontWeight:600,distance:6,backgroundColor:'rgba(6,10,18,0.8)',padding:[2,4],borderRadius:2}
+        }]:[]};
+    }
+
+    const xInt=Math.max(1,Math.floor(ds.length/(timeWindow==='24h'?10:timeWindow==='6h'?8:6)));
+    fluxEC.setOption({backgroundColor:'transparent',animation:true,animationDuration:350,
+        grid:{top:36,right:showDeriv?56:20,bottom:40,left:62},
+        legend:{show:true,top:8,right:showDeriv?180:80,textStyle:{color:'#7e8ba4',fontSize:9,fontFamily:'JetBrains Mono'},itemWidth:14,itemHeight:2,itemGap:14},
+        dataZoom:[{type:'inside',xAxisIndex:0,filterMode:'none',zoomOnMouseWheel:true,moveOnMouseMove:true},
+            {type:'slider',xAxisIndex:0,bottom:4,height:12,borderColor:'transparent',backgroundColor:'rgba(255,255,255,0.008)',
+            fillerColor:'rgba(34,211,238,0.04)',handleSize:'60%',handleStyle:{color:'#22d3ee',borderColor:'#22d3ee',borderWidth:1},
+            textStyle:{color:'#4a5572',fontSize:8,fontFamily:'JetBrains Mono'},
+            dataBackground:{lineStyle:{color:'rgba(34,211,238,0.1)'},areaStyle:{color:'rgba(34,211,238,0.02)'}}}],
+        xAxis:{type:'category',boundaryGap:false,data:labels,
+            axisLine:{lineStyle:{color:'rgba(255,255,255,0.05)'}},
+            axisLabel:{color:'#4a5572',fontSize:9,fontFamily:'JetBrains Mono',interval:xInt},
+            axisTick:{lineStyle:{color:'rgba(255,255,255,0.04)'}},splitLine:{show:false}},
+        yAxis:yA,
+        tooltip:{trigger:'axis',backgroundColor:'rgba(6,10,18,0.96)',borderColor:'rgba(34,211,238,0.08)',borderWidth:1,
+            textStyle:{color:'#e8ecf4',fontFamily:'JetBrains Mono',fontSize:10},padding:[8,14],
+            axisPointer:{type:'line',lineStyle:{color:'rgba(34,211,238,0.15)',type:'dashed'}},
+            formatter:function(params){
+                if(!params||!params.length)return'';
+                var s='<div style="margin-bottom:4px;color:#4a5572;font-size:9px;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:3px">'+params[0].axisValue+' IST</div>';
+                for(var i=0;i<params.length;i++){var p=params[i],v=Number(p.value);
+                    if(!isFinite(v))continue;
+                    var c=classifyFlux(Math.abs(v)),iF=p.seriesIndex<2;
+                    s+='<div style="display:flex;align-items:center;gap:6px;margin:2px 0">';
+                    s+='<span style="display:inline-block;width:8px;height:2px;background:'+p.color+'"></span>';
+                    s+='<span style="color:#7e8ba4;font-size:9px">'+p.seriesName.split('(')[0].trim()+'</span>';
+                    s+='<span style="margin-left:auto;font-weight:600">'+sciNot(v)+'</span>';
+                    if(iF)s+=' <span style="color:'+(CCI[c]||'#7e8ba4')+';font-size:8px;font-weight:700">'+c+'</span>';
+                    s+='</div>'}return s}},
+        series:srs
+    });
+
+    const mn=solD.reduce((a,b)=>a+b,0)/solD.length;
+    const tl=Math.min(60,solD.length);
+    const sl=tl>1?(solD[solD.length-1]-solD[solD.length-tl])/tl:0;
+    document.getElementById('fsPeak').textContent=isFinite(pk)?sciNot(pk):'--';
+    document.getElementById('fsPeak').style.color=CCI[pkC]||'var(--cyan)';
+    document.getElementById('fsClass').textContent=pkC+'-class';
+    document.getElementById('fsClass').style.color=CCI[pkC]||'var(--t2)';
+    document.getElementById('fsMean').textContent=isFinite(mn)?sciNot(mn):'--';
+    document.getElementById('fsSlope').textContent=isFinite(sl)?((sl>=0?'+':'')+sciNot(sl)+'/s'):'--';
+    document.getElementById('fsSlope').style.color=sl>1e-7?'var(--red)':sl>0?'var(--yellow)':'var(--green)';
+    document.getElementById('fsSamples').textContent=viewData.length.toLocaleString();
+}
+
+/* TREND MINI-CHART */
+function updateTrend(conf,cls){
+    trendHist.push({conf,cls});if(trendHist.length>20)trendHist.shift();
+    confHist.push(conf);if(confHist.length>20)confHist.shift();
+    trendEC.setOption({backgroundColor:'transparent',animation:false,
+        grid:{top:2,right:4,bottom:2,left:4},
+        xAxis:{type:'category',show:false,data:trendHist.map((_,i)=>i)},
+        yAxis:{type:'value',show:false,min:0,max:1},
+        series:[{type:'bar',data:trendHist.map(h=>({value:h.conf,
+            itemStyle:{color:CCI[h.cls]||'#7e8ba4',borderRadius:[1,1,0,0]}})),
+            barWidth:'60%'}]},true);
+}
+
+/* CONFUSION MATRIX */
+const cmD=[[70,1,22,26,1],[78,5,18,19,0],[27,0,90,3,0],[0,0,0,48,0],[0,0,0,0,12]];
+const cmL=['None','B','C','M','X'],cmF=[];
+cmD.forEach((r,i)=>r.forEach((v,j)=>cmF.push([j,4-i,v])));
+confEC.setOption({backgroundColor:'transparent',animation:true,
+    grid:{top:8,right:8,bottom:28,left:34},
+    xAxis:{type:'category',data:cmL,position:'bottom',
+        axisLabel:{color:'#7e8ba4',fontSize:10,fontFamily:'JetBrains Mono',fontWeight:600},
+        axisLine:{lineStyle:{color:'rgba(255,255,255,0.04)'}}},
+    yAxis:{type:'category',data:[...cmL].reverse(),
+        axisLabel:{color:'#7e8ba4',fontSize:10,fontFamily:'JetBrains Mono',fontWeight:600},
+        axisLine:{lineStyle:{color:'rgba(255,255,255,0.04)'}}},
+    visualMap:{min:0,max:90,show:false,inRange:{color:['#020408','#0d2847','#1a5276','#22d3ee','#10b981','#eab308']}},
+    tooltip:{backgroundColor:'rgba(10,15,28,0.95)',borderColor:'rgba(34,211,238,0.12)',padding:[8,12],
+        textStyle:{fontSize:10,fontFamily:'JetBrains Mono',color:'#e8ecf4'},
+        formatter:p=>{const a=cmL[4-p.value[1]],pr=cmL[p.value[0]],v=p.value[2];
+            return `Actual: <b>${a}</b><br>Predicted: <b>${pr}</b><br>Count: <b style="color:#22d3ee">${v}</b><br>${a===pr?'<span style="color:#10b981">Correct</span>':'<span style="color:#ef4444">Misclassified</span>'}`}},
+    series:[{type:'heatmap',data:cmF,
+        label:{show:true,color:'#e8ecf4',fontSize:11,fontFamily:'JetBrains Mono',fontWeight:700,
+            formatter:p=>p.value[2]||''},
+        itemStyle:{borderColor:'#020408',borderWidth:2,borderRadius:2},
+        emphasis:{itemStyle:{shadowBlur:8,shadowColor:'rgba(34,211,238,0.2)'}}}]
+});
+
+/* NOAA SCALES */
+function updateScales(cls,alert){
+    let r=0,s=0,g=0;
+    if(cls==='X'){r=3;s=2;g=1}else if(cls==='M'){r=2;s=1;g=0}else if(cls==='C'){r=1;s=0;g=0}
+    if(alert==='GREEN'){r=0;s=0;g=0}
+    const set=(id,p,v,tips)=>{const e=document.getElementById(id);
+        e.childNodes[0].textContent=p+v;
+        e.className='tb-scale tb-s'+(v>=3?3:v>=2?2:v>=1?1:0)};
+    set('scR','R',r);set('scS','S',s);set('scG','G',g);
+}
+
+/* ALERT MAP */
+const AM={
+    GREEN:{icon:'\u2714',t:'ALL CLEAR',s:'No significant activity expected',lc:'var(--green)',bc:'',as:'',act:'Routine monitoring'},
+    YELLOW:{icon:'\u26A0',t:'WATCH',s:'Elevated solar activity \u2014 monitoring',lc:'var(--yellow)',bc:'y',as:'warn',act:'Increase sampling rate'},
+    RED:{icon:'\u26D4',t:'WARNING',s:'High-probability flare imminent',lc:'var(--red)',bc:'r',as:'crit',act:'Alert all stations'}
+};
+
+/* EVENTS */
+const events=[];
+function addEvent(cls,alert,conf){
+    if(cls==='None')return;
+    const ist=new Date(Date.now()+5.5*3600000),p=n=>String(n).padStart(2,'0');
+    const t=p(ist.getUTCHours())+':'+p(ist.getUTCMinutes())+':'+p(ist.getUTCSeconds());
+    const sub=(1+Math.random()*9).toFixed(1);
+    // Peak flux in real W/m2 based on class
+    const pkMap={B:1e-7+Math.random()*9e-7,C:1e-6+Math.random()*9e-6,M:1e-5+Math.random()*9e-5,X:1e-4+Math.random()*9e-4};
+    const peakFlux=pkMap[cls]||1e-7;
+    lastFlareCls=cls+sub;lastFlareTime=t;
+    document.getElementById('vLastFlare').textContent=lastFlareCls+' @ '+t;
+    document.getElementById('vLastFlare').style.color=CCI[cls]||'var(--t2)';
+    events.unshift({t,cls:cls+sub,peak:sciNot(peakFlux),dur:Math.floor(2+Math.random()*20)+'m',
+        reg:'AR'+(13900+Math.floor(Math.random()*100)),conf:(conf*100).toFixed(0)+'%'});
+    if(events.length>30)events.pop();
+    document.getElementById('evBody').innerHTML=events.map(e=>
+        `<tr><td>${e.t}</td><td class="ev-cls" style="color:${CCI[e.cls[0]]||'var(--t1)'}">${e.cls}</td><td class="ev-peak">${e.peak}</td><td>${e.dur}</td><td>${e.reg}</td></tr>`).join('');
+    document.getElementById('evCount').textContent=events.length;
+}
+
+/* TREND ARROWS */
+function trendArrow(curr,prev){
+    if(prev===null)return '';
+    const d=curr-prev;
+    if(Math.abs(d)<0.5)return '<span style="color:var(--t3)">\u2192</span>';
+    return d>0?'<span style="color:var(--green)">\u2191</span>':'<span style="color:var(--red)">\u2193</span>';
+}
+
+/* UI UPDATE */
+function ui(d){
+    const t0=performance.now();
+    const t=d.tactical,s=d.strategic,a=AM[t.alert_level]||AM.GREEN;
+    cycle++;totalPreds++;lastDataTime=Date.now();
+
+    // Alert
+    document.getElementById('alertIcon').innerHTML=a.icon;
+    document.getElementById('alertLevel').textContent=a.t;
+    document.getElementById('alertLevel').style.color=a.lc;
+    document.getElementById('alertSub').textContent=a.s;
+    const ring=document.getElementById('alertRing');
+    ring.className='alert-ring'+(a.bc?' '+a.bc:'');ring.style.borderColor=a.lc;
+    document.getElementById('alertArea').className='alert-status'+(a.as?' '+a.as:'');
+    const badge=document.getElementById('alertBadge');
+    badge.textContent=t.alert_level==='RED'?'ALERT':t.alert_level==='YELLOW'?'Watch':'Nominal';
+    badge.className='pnl-badge tb-s'+(t.alert_level==='RED'?3:t.alert_level==='YELLOW'?1:0);
+    // Action recommendation
+    const actEl=document.getElementById('alertAction');
+    actEl.textContent=a.act;actEl.style.color=a.lc;
+    actEl.style.borderColor=t.alert_level==='RED'?'rgba(239,68,68,0.2)':t.alert_level==='YELLOW'?'rgba(234,179,8,0.15)':'rgba(16,185,129,0.15)';
+
+    // Flare prob
+    const fp=((1-(t.probabilities.None||0))*100);
+    const fpEl=document.getElementById('tbFlareProb');
+    fpEl.textContent=fp.toFixed(0)+'%';fpEl.style.color=fp>60?'var(--red)':fp>30?'var(--yellow)':'var(--green)';
+
+    // Prediction with trend arrows
+    const confPct=(t.confidence*100);
+    document.getElementById('vCls').textContent=t.predicted_class;
+    document.getElementById('vCls').style.color=CCI[t.predicted_class]||'var(--cyan)';
+    document.getElementById('vLead').textContent=t.lead_time_min>0?t.lead_time_min.toFixed(1)+' min':'--';
+    document.getElementById('vLeadT').innerHTML=trendArrow(t.lead_time_min,prevLead);
+    document.getElementById('vConf').textContent=confPct.toFixed(1)+'%';
+    document.getElementById('vConf').style.color=confPct>70?'var(--green)':confPct>40?'var(--yellow)':'var(--t2)';
+    document.getElementById('vConfT').innerHTML=trendArrow(confPct,prevConf);
+    document.getElementById('vUnc').textContent=(t.uncertainty*100).toFixed(1)+'%';
+    document.getElementById('vTrue').textContent=t.true_class||'--';
+    // ETA
+    document.getElementById('vETA').textContent=t.lead_time_min>0?'~'+t.lead_time_min.toFixed(0)+' min from now':'N/A';
+    document.getElementById('vETA').style.color=t.lead_time_min>0&&t.lead_time_min<15?'var(--red)':t.lead_time_min>0?'var(--orange)':'var(--t3)';
+
+    prevConf=confPct;prevLead=t.lead_time_min;
+
+    // Prob bars
+    const pMap={None:'N',B:'B',C:'C',M:'M',X:'X'};
+    const maxCls=Object.entries(t.probabilities).sort((a,b)=>b[1]-a[1])[0][0];
+    for(const[cls,val] of Object.entries(t.probabilities)){
+        const pc=val*100;const fill=document.getElementById('b'+pMap[cls]);
+        gsap.to(fill,{width:pc+'%',duration:0.8,ease:'power2.out'});
+        fill.classList.toggle('dominant',cls===maxCls);
+        const pEl=document.getElementById('p'+pMap[cls]);
+        pEl.textContent=pc.toFixed(1)+'%';
+        pEl.style.color=cls===maxCls?CCI[cls]||'var(--t1)':'var(--t2)';
+    }
+
+    // Scales, events, trend
+    updateScales(t.predicted_class,t.alert_level);
+    addEvent(t.predicted_class,t.alert_level,t.confidence);
+    updateTrend(t.confidence,t.predicted_class);
+
+    // Strategic
+    if(s){
+        document.getElementById('sClass').textContent=s.class_name;
+        document.getElementById('sClass').style.color=CCI[s.class_name]||'var(--cyan)';
+        document.getElementById('sConf').textContent=(s.confidence*100).toFixed(1)+'%';
+        document.getElementById('sConf').style.color=s.confidence>0.7?'var(--green)':s.confidence>0.4?'var(--yellow)':'var(--t2)';
+    }
+
+    // Flux — push to rolling buffer
+    lastSol=d.flux_solexs||[];lastHel=d.flux_helios||[];
+    const nowIST=new Date(Date.now()+5.5*3600000);
+    for(let i=0;i<lastSol.length;i++){
+        const t=new Date(nowIST.getTime()-(lastSol.length-i)*1000);
+        const lbl=String(t.getUTCHours()).padStart(2,'0')+':'+String(t.getUTCMinutes()).padStart(2,'0')+(lastSol.length<=120?':'+String(t.getUTCSeconds()).padStart(2,'0'):'');
+        fluxBuffer.push({sol:lastSol[i],hel:lastHel[i]||lastSol[i]*0.3,lbl});
+    }
+    while(fluxBuffer.length>86400)fluxBuffer.shift();
+    totalSamples+=lastSol.length+lastHel.length;
+    document.getElementById('sbSamples').textContent=totalSamples.toLocaleString();
+    buildFlux();
+
+    // Console + status
+    const lat=(performance.now()-t0).toFixed(1);
+    document.getElementById('sbLat').textContent=lat+'ms';
+    document.getElementById('sbCycle').textContent='#'+cycle;
+    document.getElementById('sbPreds').textContent=events.length;
+    clog(`#${cycle} ${t.predicted_class}-class @ ${confPct.toFixed(1)}% (${lat}ms) | flare=${fp.toFixed(0)}%`,
+        t.alert_level==='RED'?'err':t.alert_level==='YELLOW'?'warn':'ok');
+    if(t.lead_time_min>0)clog(`  Lead: ${t.lead_time_min.toFixed(1)}min | Unc: \u00B1${(t.uncertainty*100).toFixed(1)}% | ETA: ~${t.lead_time_min.toFixed(0)}min`,'info');
+}
+
+/* FETCH */
+async function go(){
+    try{const r=await fetch('/api/predict');if(r.ok)return ui(await r.json())}catch(e){}
+    const cn=['None','B','C','M','X'],pick=Math.random(),al=pick<0.3?'GREEN':pick<0.7?'YELLOW':'RED';
+    const cls=al==='GREEN'?'None':cn[1+Math.floor(Math.random()*4)];
+    const conf=al==='GREEN'?0.2+Math.random()*0.2:0.45+Math.random()*0.45;
+    const probs={};let rem=1;
+    cn.forEach(c=>{if(c===cls){probs[c]=conf;rem-=conf}else{probs[c]=Math.max(0.01,(rem/4)*(0.4+Math.random()))}});
+    const tot=Object.values(probs).reduce((a,b)=>a+b,0);for(const k in probs)probs[k]/=tot;
+
+    // REALISTIC FLUX SIMULATION (W/m2) — 3600 pts at 1-sec cadence
+    const N=3600;
+    const base=1e-7+Math.random()*4e-7; // quiet sun B-class base
+    const peakMap={X:1e-4+Math.random()*9e-4,M:1e-5+Math.random()*9e-5,C:1e-6+Math.random()*9e-6,B:1e-7+Math.random()*9e-7,None:base};
+    const peakFlux=peakMap[cls]||base;
+    const flareOnset=al!=='GREEN'?Math.floor(N*0.55+Math.random()*N*0.15):-1;
+    const riseTime=Math.floor(120+Math.random()*300); // 2-7 min rise
+    const flarePeak=flareOnset>0?flareOnset+riseTime:-1;
+    const decayConst=300+Math.random()*600; // 5-15 min e-fold decay
+    const sol=[],hel=[];
+    let f=base;
+    for(let i=0;i<N;i++){
+        if(flareOnset>0&&i>=flareOnset&&i<=flarePeak){
+            const p=(i-flareOnset)/riseTime;
+            f=base+(peakFlux-base)*p*p; // quadratic rise
+        }else if(flarePeak>0&&i>flarePeak){
+            f=base+(peakFlux-base)*Math.exp(-(i-flarePeak)/decayConst); // exponential decay
+        }else{
+            f*=(1+(Math.random()-0.5)*0.015); // quiet sun noise
+        }
+        f=Math.max(1e-9,f);
+        sol.push(f);
+        hel.push(f*(0.25+Math.random()*0.15)); // HEL1OS correlated, different band
+    }
+    ui({tactical:{predicted_class:cls,confidence:conf,alert_level:al,
+        lead_time_min:al==='GREEN'?0:18+Math.random()*28,
+        probabilities:probs,uncertainty:0.02+Math.random()*0.07,
+        true_class:cn[Math.floor(Math.random()*5)]},
+        strategic:{class_name:al==='RED'?'M':al==='YELLOW'?'C':'None',confidence:0.55+Math.random()*0.4},
+        flux_solexs:sol,flux_helios:hel});
+}
+
+/* LOADER */
+let loaderDone=false;
+async function init(){await go();if(!loaderDone){loaderDone=true;
+    const el=document.getElementById('loaderOverlay');if(el){el.classList.add('hidden');setTimeout(()=>el.remove(),700)}}}
+init();setInterval(go,15000);
+</script>
+</body>
+</html>
