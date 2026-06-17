@@ -440,9 +440,8 @@ def main():
     args = parser.parse_args()
 
     print("\n" + "#" * 70)
-    print("  SOLAR FLARE EARLY WARNING SYSTEM V2")
+    print("  JWALASHMI — Solar Flare Early Warning System")
     print("  Dual-Tier + 5-Model Ensemble + Augmentation + Calibration")
-    print("  Bharatiya Antariksh Hackathon 2026")
     print("#" * 70)
 
     t_start = time.time()

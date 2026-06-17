@@ -76,7 +76,7 @@ STRIDE = 300              # 5-min stride for sliding windows
 FORECAST_HORIZON = 3600   # predict 60 min ahead (doubled from 30)
 N_CLASSES = 5             # [none, B, C, M, X]
 CLASS_NAMES = ["None", "B", "C", "M", "X"]
-CLASS_WEIGHTS = [1.0, 2.0, 5.0, 30.0, 80.0]  # boosted M/X weights
+CLASS_WEIGHTS = [1.0, 2.0, 8.0, 50.0, 120.0]  # heavily boosted M/X for extreme imbalance
 
 # ── Tier 1: Strategic Forecasting (5-10 hours) ───────────────
 STRATEGIC_HORIZON = 36000   # look 10 hours ahead
@@ -97,12 +97,12 @@ STRATEGIC_CNN_KERNELS = [7, 5]
 STRATEGIC_HIDDEN_DIM = 32
 
 # Training
-LEARNING_RATE_PRETRAIN = 1e-3
+LEARNING_RATE_PRETRAIN = 5e-4   # lowered for small dataset stability
 LEARNING_RATE_FINETUNE = 1e-4
-BATCH_SIZE = 32
-EPOCHS_PRETRAIN = 50      # increased from 20
+BATCH_SIZE = 16                 # smaller batch = better gradient estimates
+EPOCHS_PRETRAIN = 60            # more epochs for small data
 EPOCHS_FINETUNE = 50
-PATIENCE = 15             # increased from 7
+PATIENCE = 20                   # more patience for small noisy datasets
 
 # ── Ensure directories exist ──────────────────────────────────
 for d in [PROCESSED, MODEL_DIR, PLOTS_DIR, GOES_DATA]:

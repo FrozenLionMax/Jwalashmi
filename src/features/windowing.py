@@ -254,7 +254,11 @@ def normalize_features(X: np.ndarray,
                        mean: Optional[np.ndarray] = None,
                        std: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Z-score normalize features across the dataset.
+    Log-transform + Z-score normalize features across the dataset.
+
+    Wide-range features (energy_integral, rolling_max_ratio, norm_flux, long_ratio)
+    are log1p-transformed first to compress their dynamic range before
+    standard z-score normalization.
     
     Args:
         X: (N, window_size, n_features)
@@ -263,6 +267,16 @@ def normalize_features(X: np.ndarray,
     Returns:
         X_normalized, mean, std
     """
+    X = X.copy()
+
+    # Log-transform features with extreme ranges (indices based on feature order)
+    # feat order: derivative, rolling_max_ratio, bg_slope, energy_integral,
+    #             qpp_power, norm_flux, long_slope, acceleration, long_ratio
+    log_features = [1, 3, 5, 8]  # rolling_max_ratio, energy_integral, norm_flux, long_ratio
+    for idx in log_features:
+        if idx < X.shape[2]:
+            X[:, :, idx] = np.log1p(np.abs(X[:, :, idx])) * np.sign(X[:, :, idx])
+
     # Compute stats over (N, window_size) for each feature
     if mean is None:
         mean = X.mean(axis=(0, 1))
@@ -271,6 +285,10 @@ def normalize_features(X: np.ndarray,
         std = np.maximum(std, 1e-8)  # prevent division by zero
 
     X_norm = (X - mean) / std
+
+    # Clip extreme outliers (beyond 5 sigma)
+    X_norm = np.clip(X_norm, -5.0, 5.0)
+
     return X_norm, mean, std
 
 

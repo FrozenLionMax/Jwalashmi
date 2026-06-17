@@ -264,7 +264,7 @@ class FlareForecasterLoss(nn.Module):
                  beta: float = 0.1,
                  gamma: float = 0.15):
         super().__init__()
-        self.focal_loss = FocalLoss(class_weights, gamma=2.0)
+        self.focal_loss = FocalLoss(class_weights, gamma=3.0)  # increased for rare class focus
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
