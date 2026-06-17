@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SOLARGUARD | Mission Control</title>
-<meta name="description" content="Real-time AI solar flare early warning system — ISRO Aditya-L1 SoLEXS + HEL1OS">
+<title>JWALASHMI | Mission Control</title>
+<meta name="description" content="JWALASHMI — AI-Powered Solar Flare Early Warning System using ISRO Aditya-L1 SoLEXS + HEL1OS">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
@@ -250,13 +250,13 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     </div>
     <div class="loader-console"><div class="loader-bar" style="width:100px;height:8px"></div><div class="loader-bar" style="height:6px;width:70%"></div><div class="loader-bar" style="height:6px;width:55%"></div></div>
     <div class="loader-status"></div>
-    <div class="loader-text" style="position:absolute;bottom:60px;left:50%;transform:translateX(-50%)">Initializing SolarGuard...</div>
+    <div class="loader-text" style="position:absolute;bottom:60px;left:50%;transform:translateX(-50%)">Initializing JWALASHMI...</div>
 </div>
 
 <!-- TOP BAR -->
 <div class="topbar">
-    <span class="tb-brand">SOLARGUARD</span>
-    <span class="tb-ver">v2.0.4</span>
+    <span class="tb-brand">JWALASHMI</span>
+    <span class="tb-ver">v2.1.0</span>
     <div class="tb-sep"></div>
     <div class="tb-pipe">
         <div class="tb-dot on" id="dotSol"></div>SoLEXS
@@ -465,7 +465,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     <div class="sb-item">Events <span class="sb-val" id="sbPreds">0</span></div>
     <div class="sb-sep"></div>
     <div class="sb-item">Samples <span class="sb-val" id="sbSamples">0</span></div>
-    <div class="sb-item" style="margin-left:auto;color:var(--t3)">ISRO Aditya-L1 &bull; BAH 2026</div>
+    <div class="sb-item" style="margin-left:auto;color:var(--t3)">ISRO Aditya-L1 &bull; SoLEXS + HEL1OS</div>
 </div>
 </div>
 
@@ -510,8 +510,17 @@ const SDO_D={'0193':'AIA 193\u212B \u2014 1.2 MK corona','0171':'AIA 171\u212B \
 function setSDO(ch,el){document.querySelectorAll('.sdo-tab').forEach(t=>t.classList.remove('on'));el.classList.add('on');
     document.getElementById('sdoImg').src='https://sdo.gsfc.nasa.gov/assets/img/latest/latest_256_'+ch+'.jpg';
     document.getElementById('sdoLbl').textContent=SDO_D[ch];clog('SDO channel: '+ch,'info')}
-setInterval(()=>{const i=document.getElementById('sdoImg');i.src=i.src.split('?')[0]+'?t='+Date.now();
-    document.getElementById('sdoMeta').textContent='Refreshed '+new Date().toLocaleTimeString()},300000);
+// SDO auto-cycle through wavelengths + refresh
+const SDO_CHANNELS=['0193','0171','0304','HMIIC'];
+let sdoCycleIdx=0;
+setInterval(()=>{
+    sdoCycleIdx=(sdoCycleIdx+1)%SDO_CHANNELS.length;
+    const ch=SDO_CHANNELS[sdoCycleIdx];
+    document.getElementById('sdoImg').src='https://sdo.gsfc.nasa.gov/assets/img/latest/latest_256_'+ch+'.jpg?t='+Date.now();
+    document.getElementById('sdoLbl').textContent=SDO_D[ch];
+    document.querySelectorAll('.sdo-tab').forEach((t,i)=>t.classList.toggle('on',i===sdoCycleIdx));
+    document.getElementById('sdoMeta').textContent='Live • '+new Date().toLocaleTimeString();
+},30000);
 
 /* PER-CLASS METRICS */
 function showClassDetail(cls,el){

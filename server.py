@@ -101,8 +101,8 @@ def get_latest_prediction():
     # Extract both SoLEXS and HEL1OS flux from the 9-feature window
     # Features: [flux_solexs, flux_helios, derivative, temp, em, qpp, norm, slope, accel]
     win = window[0]  # (3600, 9)
-    solexs_flux = win[::60, 0].tolist()   # sample every 60s -> 60 points
-    helios_flux = win[::60, 1].tolist()
+    solexs_flux = win[:, 0].tolist()   # full 3600 points at 1s cadence
+    helios_flux = win[:, 1].tolist()
 
     return {
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -173,8 +173,8 @@ def metrics():
 
 if __name__ == "__main__":
     print("\n" + "=" * 60)
-    print("  SOLAR FLARE EARLY WARNING SYSTEM")
-    print("  Mission Control Dashboard")
+    print("  JWALASHMI \u2014 Solar Flare Early Warning System")
+    print("  AI-Powered Mission Control Dashboard")
     print("=" * 60)
     print("\nLoading models...")
     load_models()
