@@ -209,15 +209,19 @@ def step_pretrain_goes():
         model.train()
         perm = torch.randperm(n_train)
         total_loss = 0
+        n_batches = 0
         for i in range(0, n_train, batch_size):
             idx = perm[i:i+batch_size]
+            if len(idx) < 2:
+                continue
             optimizer.zero_grad()
             logits, lead_pred, _ = model(X_t[idx])
-            losses = criterion(logits, y_t[idx], lead_pred, lt_t[idx])
+            losses = criterion(logits, lead_pred, y_t[idx], lt_t[idx])
             losses["total"].backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
             total_loss += losses["total"].item() * len(idx)
+            n_batches += len(idx)
 
         model.eval()
         with torch.no_grad():
@@ -225,7 +229,8 @@ def step_pretrain_goes():
             v_acc = (v_logits.argmax(1) == y_v).float().mean().item()
 
         if epoch % 5 == 0 or epoch == 1:
-            print(f"    Epoch {epoch:2d}: loss={total_loss/n_train:.3f} val_acc={v_acc:.3f}")
+            avg_loss = total_loss / max(n_batches, 1)
+            print(f"    Epoch {epoch:2d}: loss={avg_loss:.3f} val_acc={v_acc:.3f}")
 
     # Save pre-trained weights
     pretrain_path = str(cfg.MODEL_DIR / "goes_pretrained.pt")
@@ -295,7 +300,7 @@ def step_cross_validate(X, y, lead_times, pretrained_weights=None):
                 idx = perm[i:i+batch_size]
                 optimizer.zero_grad()
                 logits, lead_pred, _ = model(X_t[idx])
-                losses = criterion(logits, y_t[idx], lead_pred, lt_t[idx])
+                losses = criterion(logits, lead_pred, y_t[idx], lt_t[idx])
                 losses["total"].backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                 optimizer.step()
