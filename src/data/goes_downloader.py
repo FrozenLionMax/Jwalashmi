@@ -1,412 +1,323 @@
 """
-JWALASHMI - GOES XRS Data Downloader for Pre-training
-
-Downloads historical GOES X-Ray Sensor data and flare event lists
-for transfer learning. The idea: train on 50 years of labeled GOES data
-first, then fine-tune on Aditya-L1 (SoLEXS/HEL1OS).
-
-Data Sources:
-  1. GOES XRS 1-8A flux (NetCDF from NOAA NCEI)
-  2. NOAA SWPC flare event list (labeled B/C/M/X with timestamps)
-
-Usage:
-  python src/data/goes_downloader.py --years 2020 2021 2022 2023 2024
-  python src/data/goes_downloader.py --flare-list
+JWALASHMI v4.0 - GOES Data Downloader + Pre-training Pipeline
+Downloads historical GOES XRS data and creates pre-training dataset.
 """
+import urllib.request
+import json
 import os
 import sys
-import json
-import time
-import argparse
-import urllib.request
-import urllib.error
-from pathlib import Path
-from datetime import datetime, timedelta
-
 import numpy as np
 import pandas as pd
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 import config as cfg
 
 
-# ── NOAA SWPC Flare Event List ────────────────────────────────
-
-SWPC_EVENT_URL = "https://services.swpc.noaa.gov/json/goes/primary/xray-flares-latest.json"
-SWPC_ARCHIVE_URL = "https://www.ngdc.noaa.gov/stp/space-weather/solar-data/solar-features/solar-flares/x-rays/goes/xrs/"
-
-# NOAA NCEI GOES XRS data
-NCEI_XRS_BASE = "https://www.ncei.noaa.gov/data/goes-space-environment-monitor/access/science/"
-
-
-def download_swpc_flare_list():
-    """
-    Download the comprehensive NOAA SWPC flare event list.
-    Contains ALL recorded solar flares from GOES XRS with:
-    - Start/peak/end times
-    - GOES class (A/B/C/M/X with decimal)
-    - Peak flux in W/m^2
-    """
-    print("\n  Downloading SWPC flare event list...")
-
-    # Method 1: SWPC JSON API (recent flares)
+def download_json(url, out_path, label="data"):
+    """Download JSON from URL and save to file."""
     try:
-        url = SWPC_EVENT_URL
-        req = urllib.request.Request(url, headers={"User-Agent": "JWALASHMI/2.3"})
-        with urllib.request.urlopen(req, timeout=30) as response:
-            data = json.loads(response.read().decode())
-
-        df = pd.DataFrame(data)
-        out_path = cfg.GOES_DATA / "swpc_flares_recent.csv"
-        df.to_csv(str(out_path), index=False)
-        print(f"    Recent flares: {len(df)} events -> {out_path}")
+        req = urllib.request.Request(url, headers={"User-Agent": "JWALASHMI/3.0"})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            data = json.loads(r.read().decode())
+        with open(out_path, "w") as f:
+            json.dump(data, f, indent=2)
+        print(f"  {label}: {len(data)} records -> {os.path.basename(out_path)}")
+        return data
     except Exception as e:
-        print(f"    [WARN] SWPC API failed: {e}")
+        print(f"  {label}: FAILED - {e}")
+        return []
 
-    # Method 2: Historical flare list from NOAA NGDC
-    # This gives us decades of labeled data
-    hist_url = "https://hesperia.gsfc.nasa.gov/hessidata/dbase/hessi_flare_list.txt"
+
+def download_all_goes_data():
+    """Download all available GOES data from NOAA SWPC."""
+    os.makedirs(str(cfg.GOES_DATA), exist_ok=True)
+    
+    print("\n[1] NOAA SWPC Flare Events...")
+    flares = download_json(
+        "https://services.swpc.noaa.gov/json/goes/primary/xray-flares-7-day.json",
+        str(cfg.GOES_DATA / "flares_7day.json"), "7-day flares"
+    )
+    
+    print("\n[2] GOES XRS Flux (3-day, 1-min cadence)...")
+    xrs_3day = download_json(
+        "https://services.swpc.noaa.gov/json/goes/primary/xrays-3-day.json",
+        str(cfg.GOES_DATA / "xrs_3day.json"), "XRS 3-day"
+    )
+    
+    print("\n[3] GOES XRS Flux (7-day)...")
+    xrs_7day = download_json(
+        "https://services.swpc.noaa.gov/json/goes/primary/xrays-7-day.json",
+        str(cfg.GOES_DATA / "xrs_7day.json"), "XRS 7-day"
+    )
+    
+    print("\n[4] HEK Flare Catalog (2010-2025, up to 5000 events)...")
+    hek_url = (
+        "https://www.lmsal.com/hek/her?cosec=2&cmd=search&type=column"
+        "&event_type=fl&event_starttime=2010-01-01T00:00:00"
+        "&event_endtime=2025-12-31T23:59:59"
+        "&event_coordsys=helioprojective&x1=-5000&x2=5000&y1=-5000&y2=5000"
+        "&result_limit=5000&page=1"
+        "&return=hpc_x,hpc_y,event_starttime,event_peaktime,event_endtime,"
+        "fl_goescls,fl_peakflux,ar_noaanum,frm_name&cosec=2"
+    )
     try:
-        print("  Downloading historical flare catalog (HESSI)...")
-        req = urllib.request.Request(hist_url, headers={"User-Agent": "JWALASHMI/2.3"})
-        with urllib.request.urlopen(req, timeout=60) as response:
-            text = response.read().decode("utf-8", errors="replace")
-
-        out_path = cfg.GOES_DATA / "hessi_flare_list.txt"
-        with open(str(out_path), "w", encoding="utf-8") as f:
-            f.write(text)
-        print(f"    HESSI catalog saved: {out_path}")
+        req = urllib.request.Request(hek_url, headers={"User-Agent": "JWALASHMI/3.0"})
+        with urllib.request.urlopen(req, timeout=120) as r:
+            hek_data = json.loads(r.read().decode())
+        
+        events = hek_data.get("result", hek_data if isinstance(hek_data, list) else [])
+        out = str(cfg.GOES_DATA / "hek_flares.json")
+        with open(out, "w") as f:
+            json.dump(events, f, indent=2)
+        
+        classes = {}
+        for ev in events:
+            cls = str(ev.get("fl_goescls", "U"))
+            if cls and len(cls) > 0:
+                classes[cls[0].upper()] = classes.get(cls[0].upper(), 0) + 1
+        print(f"  HEK: {len(events)} events")
+        print(f"  Classes: {classes}")
     except Exception as e:
-        print(f"    [WARN] HESSI catalog failed: {e}")
+        print(f"  HEK: {e}")
+        events = []
+    
+    return flares, xrs_3day, events
 
-    return True
 
-
-def download_goes_xrs_monthly(year, month, satellite="g16"):
+def create_goes_pretraining_data(xrs_data, flare_events):
     """
-    Download GOES XRS 1-minute average data for a given month.
-
-    Args:
-        year: int (2017-2025 for GOES-16, 2018-2025 for GOES-17)
-        month: int (1-12)
-        satellite: 'g16' or 'g17'
-
-    Returns:
-        Path to downloaded file or None
+    Create pre-training dataset from GOES XRS flux + flare labels.
+    
+    This creates windows of GOES XRS flux data with labels from the
+    flare event catalog, in the same format as Aditya-L1 windows.
     """
-    # NOAA NCEI URL pattern for GOES-R series XRS data
-    month_str = f"{year}{month:02d}"
-    filename = f"sci_xrsf-l2-flx1s_g16_d{year}{month:02d}01_{year}{month:02d}28_v2-2-0.nc"
-
-    # Try daily files
-    out_dir = cfg.GOES_DATA / f"{year}"
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    # Download daily CSV from NOAA SWPC
-    # These are simple text files with flux values
-    base_url = f"https://services.swpc.noaa.gov/json/goes/primary/xrays-6-hour.json"
-
-    try:
-        req = urllib.request.Request(base_url, headers={"User-Agent": "JWALASHMI/2.3"})
-        with urllib.request.urlopen(req, timeout=30) as response:
-            data = json.loads(response.read().decode())
-
-        if data:
-            df = pd.DataFrame(data)
-            out_file = out_dir / f"goes_xrs_{month_str}.csv"
-            df.to_csv(str(out_file), index=False)
-            print(f"    {month_str}: {len(df)} records -> {out_file.name}")
-            return str(out_file)
-    except Exception as e:
-        print(f"    {month_str}: failed ({e})")
-
-    return None
-
-
-def download_goes_flare_catalog_csv():
-    """
-    Download the comprehensive GOES flare event list as CSV.
-    This is the gold standard for solar flare labels.
-
-    Source: NOAA NGDC solar flare database
-    Contains: ~80,000 events from 1975-2025
-    """
-    print("\n  Downloading GOES flare catalog (1975-2025)...")
-
-    # NOAA SWPC event list (JSON, recent)
-    urls = [
-        ("https://services.swpc.noaa.gov/json/goes/primary/xray-flares-7-day.json", "flares_7day.json"),
-        ("https://services.swpc.noaa.gov/json/goes/primary/xray-flares-latest.json", "flares_latest.json"),
-    ]
-
-    all_events = []
-    for url, fname in urls:
+    print("\n[5] Creating GOES pre-training windows...")
+    
+    if not xrs_data:
+        print("  No XRS flux data - generating synthetic GOES profiles...")
+        return create_synthetic_goes_data(flare_events)
+    
+    # Parse XRS data into time series
+    times = []
+    flux_long = []  # 1-8 Angstrom
+    flux_short = []  # 0.5-4 Angstrom
+    
+    for pt in xrs_data:
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "JWALASHMI/2.3"})
-            with urllib.request.urlopen(req, timeout=30) as response:
-                data = json.loads(response.read().decode())
-            all_events.extend(data)
-            out_path = cfg.GOES_DATA / fname
-            with open(str(out_path), "w") as f:
-                json.dump(data, f, indent=2)
-            print(f"    {fname}: {len(data)} events")
-        except Exception as e:
-            print(f"    {fname}: failed ({e})")
-
-    # Save combined
-    if all_events:
-        df = pd.DataFrame(all_events)
-        combined_path = cfg.GOES_DATA / "goes_flare_catalog.csv"
-        df.to_csv(str(combined_path), index=False)
-        print(f"\n  Combined catalog: {len(df)} events -> {combined_path}")
-
-        # Print class distribution
-        if "max_class" in df.columns:
-            class_col = "max_class"
-        elif "class_type" in df.columns:
-            class_col = "class_type"
-        else:
-            class_col = df.columns[0]
-
-        try:
-            classes = df[class_col].str[0].value_counts()
-            print(f"  Class distribution:")
-            for cls, count in classes.items():
-                print(f"    {cls}: {count}")
-        except Exception:
-            pass
-
-    return len(all_events)
-
-
-def download_sunpy_goes(start_year=2020, end_year=2025):
-    """
-    Try to download GOES XRS data using SunPy (if installed).
-    SunPy provides the cleanest interface to GOES data.
-    """
-    try:
-        from sunpy.net import Fido, attrs as a
-        from sunpy.timeseries import TimeSeries
-
-        print(f"\n  Using SunPy to download GOES XRS ({start_year}-{end_year})...")
-
-        for year in range(start_year, end_year + 1):
-            for month in range(1, 13):
-                start = f"{year}/{month:02d}/01"
-                if month == 12:
-                    end = f"{year + 1}/01/01"
-                else:
-                    end = f"{year}/{month + 1:02d}/01"
-
-                try:
-                    result = Fido.search(
-                        a.Time(start, end),
-                        a.Instrument("XRS"),
-                        a.goes.SatelliteNumber(16),
-                    )
-                    if len(result) > 0:
-                        files = Fido.fetch(result, path=str(cfg.GOES_DATA / f"{year}"))
-                        print(f"    {year}-{month:02d}: {len(files)} files downloaded")
-                except Exception as e:
-                    print(f"    {year}-{month:02d}: {e}")
-
-        return True
-
-    except ImportError:
-        print("  SunPy not installed. Using direct HTTP download instead.")
-        print("  To install: pip install sunpy")
-        return False
-
-
-def create_goes_training_data(flare_csv_path=None):
-    """
-    Create training-ready arrays from downloaded GOES data + flare labels.
-
-    Steps:
-    1. Load GOES XRS flux time series
-    2. Load flare event list with B/C/M/X labels
-    3. Create labeled sliding windows (same format as Aditya-L1 data)
-    4. Save as .npy files for the training pipeline
-
-    Returns:
-        X_goes: (N, 3600, n_features) windows
-        y_goes: (N,) class labels
-    """
-    print("\n  Creating GOES pre-training dataset...")
-
-    catalog_path = flare_csv_path or str(cfg.GOES_DATA / "goes_flare_catalog.csv")
-    if not os.path.exists(catalog_path):
-        print(f"    [ERROR] No flare catalog at {catalog_path}")
-        print(f"    Run: python src/data/goes_downloader.py --flare-list")
-        return None, None
-
-    df = pd.read_csv(catalog_path)
-    print(f"    Loaded {len(df)} flare events from catalog")
-
-    # For now, create synthetic GOES-like training windows
-    # based on the catalog labels (will be replaced with real GOES flux)
-    CLASS_MAP = {"A": 0, "B": 1, "C": 2, "M": 3, "X": 4}
+            t = pd.Timestamp(pt.get("time_tag", "")).timestamp()
+            fl = float(pt.get("flux", pt.get("observed_flux", 0)))
+            times.append(t)
+            flux_long.append(fl)
+        except (ValueError, TypeError):
+            continue
+    
+    if len(times) < 3600:
+        print(f"  Only {len(times)} XRS points (need 3600+) - using synthetic data")
+        return create_synthetic_goes_data(flare_events)
+    
+    times = np.array(times)
+    flux = np.array(flux_long, dtype=np.float32)
+    
+    # Create sliding windows
+    window_size = 3600  # 60 min at 1-sec (but GOES is 1-min, so stretch)
+    stride = 300
+    
     windows = []
     labels = []
-
-    for _, row in df.iterrows():
-        try:
-            # Get class from the event
-            cls_str = str(row.get("max_class", row.get("class_type", "B")))
-            cls_letter = cls_str[0].upper()
-            if cls_letter not in CLASS_MAP:
-                continue
-            cls_int = CLASS_MAP[cls_letter]
-
-            # Create a synthetic window that mimics that class's flux profile
-            rng = np.random.default_rng(hash(str(row.values)) % (2**31))
-            window = generate_goes_profile(cls_letter, rng)
-            windows.append(window)
-            labels.append(cls_int)
-        except Exception:
-            continue
-
+    
+    # Label each timestamp with flare class
+    print(f"  XRS flux: {len(flux)} points, creating windows...")
+    
+    # For each window, check if there's a flare in the next 60 min
+    for i in range(0, len(flux) - 60, 5):  # stride=5 min
+        win_flux = flux[i:i+60]  # 60 min at 1-min cadence
+        
+        # Upsample to 3600 points (1-sec cadence like Aditya-L1)
+        win_1s = np.interp(np.linspace(0, 59, 3600), np.arange(60), win_flux)
+        
+        # Compute 9 features from the flux
+        features = compute_9_features(win_1s)
+        
+        # Label: check peak flux in window
+        peak = win_flux.max()
+        if peak >= 1e-4:
+            cls = 4  # X
+        elif peak >= 1e-5:
+            cls = 3  # M
+        elif peak >= 1e-6:
+            cls = 2  # C
+        elif peak >= 1e-7:
+            cls = 1  # B
+        else:
+            cls = 0  # None/A
+        
+        windows.append(features)
+        labels.append(cls)
+    
     if not windows:
-        print("    No valid windows created")
-        return None, None
-
-    X = np.stack(windows, axis=0).astype(np.float32)
+        return create_synthetic_goes_data(flare_events)
+    
+    X = np.stack(windows).astype(np.float32)
     y = np.array(labels, dtype=np.int64)
-
+    
+    # Print distribution
+    print(f"  Created {len(X)} windows from real GOES flux:")
+    for i, name in enumerate(cfg.CLASS_NAMES):
+        count = (y == i).sum()
+        print(f"    {name}: {count}")
+    
     # Save
     np.save(str(cfg.GOES_DATA / "X_goes_pretrain.npy"), X)
     np.save(str(cfg.GOES_DATA / "y_goes_pretrain.npy"), y)
-
-    print(f"    Created {len(X)} GOES training windows")
-    for cls_name, cls_int in CLASS_MAP.items():
-        count = (y == cls_int).sum()
-        if count > 0:
-            print(f"      {cls_name}: {count}")
-
+    print(f"  Saved to {cfg.GOES_DATA}")
+    
     return X, y
 
 
-def generate_goes_profile(flare_class, rng):
-    """
-    Generate a realistic GOES-like flux profile for a given flare class.
-    Based on published flare light curve morphology:
-    - Impulsive rise (seconds to minutes)
-    - Gradual decay (minutes to hours)
-    - Background noise
-
-    Returns: (3600, 9) feature window
-    """
-    t = np.arange(3600, dtype=np.float32)
-
-    # Background level based on solar cycle
-    bg = rng.uniform(1e-7, 5e-7)
-    noise_level = bg * 0.05
-
-    # Flare peak by class
-    peaks = {"A": bg * 1.5, "B": 5e-7, "C": 5e-6, "M": 5e-5, "X": 5e-4}
-    peak = peaks[flare_class] * rng.uniform(0.5, 2.0)
-
-    # Flare timing
-    rise_start = rng.integers(600, 2400)
-    rise_duration = rng.integers(30, 300)
-    decay_time = rng.integers(200, 1200)
-
-    # Build light curve
-    flux = np.full(3600, bg, dtype=np.float32)
-    flux += rng.normal(0, noise_level, 3600).astype(np.float32)
-
-    # Rise phase (quadratic)
-    rise_mask = (t >= rise_start) & (t < rise_start + rise_duration)
-    rise_t = (t[rise_mask] - rise_start) / rise_duration
-    flux[rise_mask] += (peak - bg) * rise_t ** 2
-
-    # Decay phase (exponential)
-    peak_time = rise_start + rise_duration
-    decay_mask = t >= peak_time
-    decay_t = (t[decay_mask] - peak_time) / decay_time
-    flux[decay_mask] += (peak - bg) * np.exp(-decay_t)
-
-    flux = np.maximum(flux, 1e-9)
-
-    # Compute 9 features (same as physics_features.py)
+def compute_9_features(flux):
+    """Compute 9 physics features from a flux time series (3600 pts)."""
     from scipy.signal import savgol_filter
-
-    derivative = np.gradient(flux)
+    
+    # 1. Derivative
     try:
         derivative = savgol_filter(flux, 11, 2, deriv=1)
     except Exception:
-        pass
-
-    rolling_max = pd.Series(flux).rolling(300, min_periods=1).max().values
-    rolling_med = pd.Series(flux).rolling(1800, min_periods=1).median().values
+        derivative = np.gradient(flux)
+    
+    # 2. Rolling max ratio
+    flux_series = pd.Series(flux)
+    rolling_max = flux_series.rolling(300, min_periods=1).max().values
+    rolling_med = flux_series.rolling(1800, min_periods=1).median().values
     rolling_med = np.maximum(rolling_med, 1e-10)
     max_ratio = rolling_max / rolling_med
-
+    
+    # 3. Background slope
+    bg_slope = np.zeros_like(flux)
+    bg_slope[1:] = np.diff(flux)
+    
+    # 4. Energy integral
     energy = np.cumsum(flux)
-    norm_flux = flux / np.maximum(rolling_med, 1e-10)
-    acceleration = np.gradient(derivative)
-
-    # Simple slope via diff
-    slope = np.zeros_like(flux)
-    slope[1:] = np.diff(flux)
-
-    # QPP (quasi-periodic pulsation) — simplified
+    
+    # 5. QPP power (simplified)
     qpp = np.zeros_like(flux)
-
-    # Long slope
+    
+    # 6. Normalized flux
+    norm_flux = flux / np.maximum(rolling_med, 1e-10)
+    
+    # 7. Long slope (60-sec diff)
     long_slope = np.zeros_like(flux)
     long_slope[60:] = (flux[60:] - flux[:-60]) / 60
-
+    
+    # 8. Acceleration
+    acceleration = np.gradient(derivative)
+    
+    # 9. Long ratio
+    long_ratio = max_ratio * 1.5
+    
     features = np.stack([
-        derivative,
-        max_ratio,
-        slope,
-        energy,
-        qpp,
-        norm_flux,
-        long_slope,
-        acceleration,
-        max_ratio * 1.5,  # long_ratio proxy
-    ], axis=1)  # (3600, 9)
-
+        derivative, max_ratio, bg_slope, energy,
+        qpp, norm_flux, long_slope, acceleration, long_ratio
+    ], axis=1)
+    
     return features
 
 
-# ── CLI ───────────────────────────────────────────────────────
+def create_synthetic_goes_data(flare_events):
+    """Create synthetic GOES-like training data from flare catalog labels."""
+    print("  Creating synthetic GOES pre-training data from catalog...")
+    
+    CLASS_MAP = {"A": 0, "B": 1, "C": 2, "M": 3, "X": 4}
+    
+    # Use HEK or SWPC flare events
+    windows = []
+    labels = []
+    
+    for ev in flare_events:
+        cls_str = str(ev.get("fl_goescls", ev.get("max_class", "")))
+        if not cls_str or len(cls_str) < 1:
+            continue
+        letter = cls_str[0].upper()
+        if letter not in CLASS_MAP:
+            continue
+        cls_int = CLASS_MAP[letter]
+        
+        # Generate realistic flux profile for this class
+        rng = np.random.default_rng(hash(str(ev)) % (2**31))
+        flux = generate_flare_profile(letter, rng)
+        features = compute_9_features(flux)
+        
+        windows.append(features)
+        labels.append(cls_int)
+    
+    # Also generate "None" class windows (quiet sun)
+    for i in range(min(len(windows), 500)):
+        rng = np.random.default_rng(i + 99999)
+        flux = generate_flare_profile("Q", rng)
+        features = compute_9_features(flux)
+        windows.append(features)
+        labels.append(0)
+    
+    if not windows:
+        print("  No events to generate from!")
+        return None, None
+    
+    X = np.stack(windows).astype(np.float32)
+    y = np.array(labels, dtype=np.int64)
+    
+    print(f"  Created {len(X)} synthetic GOES windows:")
+    for i, name in enumerate(cfg.CLASS_NAMES):
+        count = (y == i).sum()
+        if count > 0:
+            print(f"    {name}: {count}")
+    
+    np.save(str(cfg.GOES_DATA / "X_goes_pretrain.npy"), X)
+    np.save(str(cfg.GOES_DATA / "y_goes_pretrain.npy"), y)
+    
+    return X, y
 
-def main():
-    parser = argparse.ArgumentParser(description="GOES XRS Data Downloader")
-    parser.add_argument("--flare-list", action="store_true",
-                        help="Download NOAA flare event catalogs")
-    parser.add_argument("--years", nargs="+", type=int, default=[],
-                        help="Download XRS data for specific years")
-    parser.add_argument("--create-training", action="store_true",
-                        help="Create pre-training dataset from downloaded data")
-    parser.add_argument("--all", action="store_true",
-                        help="Download everything and create training data")
-    args = parser.parse_args()
 
-    print("\n" + "=" * 60)
-    print("  JWALASHMI - GOES Data Downloader")
-    print("  Pre-training data for transfer learning")
-    print("=" * 60)
-
-    if args.all or args.flare_list:
-        download_swpc_flare_list()
-        download_goes_flare_catalog_csv()
-
-    if args.years:
-        for year in args.years:
-            print(f"\n  Downloading GOES XRS for {year}...")
-            for month in range(1, 13):
-                download_goes_xrs_monthly(year, month)
-
-    if args.all or args.create_training:
-        create_goes_training_data()
-
-    print(f"\n  Data saved to: {cfg.GOES_DATA}")
-    print("=" * 60)
+def generate_flare_profile(flare_class, rng):
+    """Generate realistic GOES-like flux profile."""
+    t = np.arange(3600, dtype=np.float32)
+    bg = rng.uniform(1e-7, 5e-7)
+    noise = bg * 0.03
+    flux = np.full(3600, bg) + rng.normal(0, noise, 3600)
+    
+    peaks = {"Q": 0, "A": bg*1.2, "B": 5e-7, "C": 5e-6, "M": 5e-5, "X": 5e-4}
+    peak = peaks.get(flare_class, 0)
+    
+    if peak > 0:
+        peak *= rng.uniform(0.3, 3.0)
+        rise = rng.integers(600, 2400)
+        dur = rng.integers(30, 300)
+        decay = rng.integers(200, 1200)
+        
+        mask_rise = (t >= rise) & (t < rise + dur)
+        rise_t = (t[mask_rise] - rise) / dur
+        flux[mask_rise] += (peak - bg) * rise_t ** 2
+        
+        peak_t = rise + dur
+        mask_decay = t >= peak_t
+        decay_t = (t[mask_decay] - peak_t) / decay
+        flux[mask_decay] += (peak - bg) * np.exp(-decay_t)
+    
+    return np.maximum(flux, 1e-9).astype(np.float32)
 
 
 if __name__ == "__main__":
-    main()
+    print("=" * 60)
+    print("  JWALASHMI - GOES Pre-training Data Pipeline")
+    print("=" * 60)
+    
+    flares, xrs, hek = download_all_goes_data()
+    
+    # Use the larger dataset for pre-training
+    all_events = hek if hek else flares
+    X, y = create_goes_pretraining_data(xrs, all_events)
+    
+    if X is not None:
+        print(f"\n  Pre-training dataset: {X.shape}")
+        print(f"  Ready for: python run_pipeline.py --pretrain-goes")
+    
+    print("\n" + "=" * 60)

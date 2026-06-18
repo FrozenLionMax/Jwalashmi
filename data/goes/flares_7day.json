@@ -1,61 +1,5 @@
 [
   {
-    "time_tag": "2026-06-10T22:36:00Z",
-    "begin_time": "2026-06-10T22:36:00Z",
-    "begin_class": "B6.8",
-    "max_time": "2026-06-10T22:43:00Z",
-    "max_class": "B9.2",
-    "max_xrlong": 9.20508853141655e-07,
-    "max_ratio": 0.26192949147466393,
-    "max_ratio_time": "2026-06-10T22:39:53Z",
-    "current_int_xrlong": 0.0007590636960230768,
-    "end_time": "2026-06-10T22:50:00Z",
-    "end_class": "B7.8",
-    "satellite": 18
-  },
-  {
-    "time_tag": "2026-06-10T23:30:00Z",
-    "begin_time": "2026-06-10T23:30:00Z",
-    "begin_class": "B9.9",
-    "max_time": "2026-06-11T00:02:00Z",
-    "max_class": "C6.7",
-    "max_xrlong": 6.745064638380427e-06,
-    "max_ratio": 0.147194686595007,
-    "max_ratio_time": "2026-06-10T23:44:34Z",
-    "current_int_xrlong": 0.022502731531858444,
-    "end_time": "2026-06-11T00:37:00Z",
-    "end_class": "C6.0",
-    "satellite": 18
-  },
-  {
-    "time_tag": "2026-06-11T00:37:00Z",
-    "begin_time": "2026-06-11T00:37:00Z",
-    "begin_class": "C6.0",
-    "max_time": "2026-06-11T00:44:00Z",
-    "max_class": "C6.1",
-    "max_xrlong": 6.197057246026816e-06,
-    "max_ratio": 0.10190288997502416,
-    "max_ratio_time": "2026-06-11T00:37:15Z",
-    "current_int_xrlong": 0.004341070540249348,
-    "end_time": "2026-06-11T00:46:00Z",
-    "end_class": "C5.9",
-    "satellite": 18
-  },
-  {
-    "time_tag": "2026-06-11T06:38:00Z",
-    "begin_time": "2026-06-11T06:38:00Z",
-    "begin_class": "B7.1",
-    "max_time": "2026-06-11T06:47:00Z",
-    "max_class": "C1.2",
-    "max_xrlong": 1.2712602028841502e-06,
-    "max_ratio": null,
-    "max_ratio_time": null,
-    "current_int_xrlong": 0.0012253603199496865,
-    "end_time": "2026-06-11T06:56:00Z",
-    "end_class": "B9.7",
-    "satellite": 18
-  },
-  {
     "time_tag": "2026-06-11T08:00:00Z",
     "begin_time": "2026-06-11T08:00:00Z",
     "begin_class": "C1.0",
@@ -627,6 +571,34 @@
     "current_int_xrlong": 0.0002681711339391768,
     "end_time": "2026-06-17T18:41:00Z",
     "end_class": "B5.5",
+    "satellite": 18
+  },
+  {
+    "time_tag": "2026-06-18T03:24:00Z",
+    "begin_time": "2026-06-18T03:24:00Z",
+    "begin_class": "B4.2",
+    "max_time": "2026-06-18T03:32:00Z",
+    "max_class": "B6.0",
+    "max_xrlong": 6.096788069953618e-07,
+    "max_ratio": null,
+    "max_ratio_time": null,
+    "current_int_xrlong": 0.0006386858294717968,
+    "end_time": "2026-06-18T03:42:00Z",
+    "end_class": "B5.0",
+    "satellite": 18
+  },
+  {
+    "time_tag": "2026-06-18T05:37:00Z",
+    "begin_time": "2026-06-18T05:37:00Z",
+    "begin_class": "B4.0",
+    "max_time": "2026-06-18T05:45:00Z",
+    "max_class": "B5.7",
+    "max_xrlong": 5.772149052063469e-07,
+    "max_ratio": null,
+    "max_ratio_time": null,
+    "current_int_xrlong": 0.0004463176883291453,
+    "end_time": "2026-06-18T05:50:00Z",
+    "end_class": "B4.8",
     "satellite": 18
   }
 ]

@@ -177,15 +177,21 @@ class EnsembleForecaster:
                        lead_times: np.ndarray,
                        epochs: int = 30,
                        augment: bool = True,
-                       aug_multiplier: int = 5) -> Dict:
+                       aug_multiplier: int = 5,
+                       pretrained_weights: str = None) -> Dict:
         """
         Train N models with different seeds and data splits.
         
         Uses k-fold-like approach: each model sees slightly different
         data through augmentation with different seeds.
+        
+        Args:
+            pretrained_weights: Path to pre-trained model weights (e.g. from GOES)
         """
         print(f"\n{'='*70}")
         print(f"  ENSEMBLE TRAINING: {self.n_models} models")
+        if pretrained_weights:
+            print(f"  Transfer learning from: {os.path.basename(pretrained_weights)}")
         print(f"{'='*70}")
         
         self.models = []
@@ -230,6 +236,14 @@ class EnsembleForecaster:
             
             # Create model
             model = FlareForecaster(n_input_channels=self.n_features).to(self.device)
+            
+            # Load pre-trained weights if available (transfer learning)
+            if pretrained_weights and os.path.exists(pretrained_weights):
+                state = torch.load(pretrained_weights, map_location=self.device, weights_only=True)
+                model.load_state_dict(state, strict=False)
+                if model_idx == 0:
+                    print(f"  Loaded GOES pre-trained weights")
+            
             criterion = FlareForecasterLoss().to(self.device)
             optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(

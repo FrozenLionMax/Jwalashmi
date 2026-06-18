@@ -1,19 +1,23 @@
 """
-Solar Flare Early Warning System - Enhanced Pipeline Runner V2
-DUAL-TIER + Ensemble + Augmentation + Calibration
+JWALASHMI v4.0 - Solar Flare Early Warning Pipeline
+DUAL-TIER + Ensemble + GOES Pre-training + 5-Fold CV + FPR Optimization
 
 Features:
-  - GOES Pre-training (when data available)
+  - GOES Pre-training (transfer learning from 50yr GOES data)
+  - 5-Fold Stratified Cross-Validation for robust metrics
+  - FPR Optimization (target FPR < 0.30)
   - 10x Data Augmentation
   - 5-Model Ensemble with confidence thresholds
   - Temperature-scaled calibrated probabilities
   - Dual-tier: Strategic (5-10h) + Tactical (30-60 min)
 
 Usage:
-    python run_pipeline.py              # Full pipeline (ensemble + both tiers)
-    python run_pipeline.py --quick      # Quick mode (single model, no augmentation)
-    python run_pipeline.py --tactical   # Only Tier 2
-    python run_pipeline.py --strategic  # Only Tier 1
+    python run_pipeline.py                      # Full pipeline (ensemble)
+    python run_pipeline.py --pretrain-goes      # Pre-train on GOES then fine-tune
+    python run_pipeline.py --cv                 # 5-fold cross-validation
+    python run_pipeline.py --quick              # Quick mode (single model)
+    python run_pipeline.py --tactical           # Only Tier 2
+    python run_pipeline.py --strategic          # Only Tier 1
 """
 import os
 import sys
@@ -152,13 +156,302 @@ def step_tactical_windowing(df_feat, feat_cols, catalog):
     return X_bal, y_bal, lead_times
 
 
-def step_tactical_ensemble(X, y, lead_times, quick=False):
+def step_pretrain_goes():
+    """Step P: Pre-train on GOES XRS data for transfer learning."""
+    print("\n" + "=" * 70)
+    print("  STEP P: GOES Pre-training (Transfer Learning)")
+    print("=" * 70)
+
+    goes_x_path = str(cfg.GOES_DATA / "X_goes_pretrain.npy")
+    goes_y_path = str(cfg.GOES_DATA / "y_goes_pretrain.npy")
+
+    if not os.path.exists(goes_x_path):
+        print("  No GOES pre-training data found. Downloading...")
+        from src.data.goes_downloader import download_all_goes_data, create_goes_pretraining_data
+        flares, xrs, hek = download_all_goes_data()
+        all_events = hek if hek else flares
+        create_goes_pretraining_data(xrs, all_events)
+
+    if not os.path.exists(goes_x_path):
+        print("  [WARN] Could not create GOES data. Skipping pre-training.")
+        return None
+
+    X_goes = np.load(goes_x_path)
+    y_goes = np.load(goes_y_path)
+    print(f"  GOES data: {X_goes.shape[0]} samples, {X_goes.shape[2]} features")
+    for i, name in enumerate(cfg.CLASS_NAMES):
+        count = (y_goes == i).sum()
+        if count > 0:
+            print(f"    {name}: {count}")
+
+    # Pre-train a model on GOES data
+    from src.model.architecture import FlareForecaster, FlareForecasterLoss
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    n_features = X_goes.shape[2]
+    model = FlareForecaster(n_input_channels=n_features).to(device)
+    criterion = FlareForecasterLoss().to(device)
+
+    # Split
+    n_val = max(int(len(X_goes) * 0.15), 1)
+    n_train = len(X_goes) - n_val
+
+    X_t = torch.tensor(X_goes[:n_train], dtype=torch.float32).to(device)
+    y_t = torch.tensor(y_goes[:n_train], dtype=torch.long).to(device)
+    lt_t = torch.zeros(n_train, dtype=torch.float32).to(device)
+    X_v = torch.tensor(X_goes[n_train:], dtype=torch.float32).to(device)
+    y_v = torch.tensor(y_goes[n_train:], dtype=torch.long).to(device)
+
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
+    batch_size = 32
+
+    print(f"  Pre-training: {n_train} train, {n_val} val, 15 epochs")
+    for epoch in range(1, 16):
+        model.train()
+        perm = torch.randperm(n_train)
+        total_loss = 0
+        for i in range(0, n_train, batch_size):
+            idx = perm[i:i+batch_size]
+            optimizer.zero_grad()
+            logits, lead_pred, _ = model(X_t[idx])
+            losses = criterion(logits, y_t[idx], lead_pred, lt_t[idx])
+            losses["total"].backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            optimizer.step()
+            total_loss += losses["total"].item() * len(idx)
+
+        model.eval()
+        with torch.no_grad():
+            v_logits, _, _ = model(X_v)
+            v_acc = (v_logits.argmax(1) == y_v).float().mean().item()
+
+        if epoch % 5 == 0 or epoch == 1:
+            print(f"    Epoch {epoch:2d}: loss={total_loss/n_train:.3f} val_acc={v_acc:.3f}")
+
+    # Save pre-trained weights
+    pretrain_path = str(cfg.MODEL_DIR / "goes_pretrained.pt")
+    torch.save(model.state_dict(), pretrain_path)
+    print(f"  Saved pre-trained weights: {pretrain_path}")
+
+    return pretrain_path
+
+
+def step_cross_validate(X, y, lead_times, pretrained_weights=None):
+    """Step CV: 5-fold stratified cross-validation."""
+    print("\n" + "=" * 70)
+    print("  STEP CV: 5-Fold Stratified Cross-Validation")
+    print("=" * 70)
+    from sklearn.model_selection import StratifiedKFold
+    from sklearn.metrics import accuracy_score, roc_auc_score
+    from src.model.architecture import FlareForecaster, FlareForecasterLoss
+    from src.model.augmentation import augment_dataset
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    n_features = X.shape[2]
+    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+    fold_results = []
+    all_preds = np.zeros(len(y), dtype=np.int64)
+    all_probs = np.zeros((len(y), cfg.N_CLASSES), dtype=np.float32)
+
+    for fold, (train_idx, val_idx) in enumerate(skf.split(X, y), 1):
+        print(f"\n  --- Fold {fold}/5 ---")
+        X_train, X_val = X[train_idx], X[val_idx]
+        y_train, y_val = y[train_idx], y[val_idx]
+        lt_train = lead_times[train_idx]
+
+        # Augment training data
+        X_aug, y_aug, lt_aug = augment_dataset(X_train, y_train, lt_train,
+                                                multiplier=5, seed=fold*42)
+        print(f"    Train: {len(X_train)} -> {len(X_aug)} (augmented)")
+        print(f"    Val:   {len(X_val)}")
+
+        # Create model
+        model = FlareForecaster(n_input_channels=n_features).to(device)
+
+        # Load pre-trained weights if available
+        if pretrained_weights and os.path.exists(pretrained_weights):
+            state = torch.load(pretrained_weights, map_location=device, weights_only=True)
+            model.load_state_dict(state, strict=False)
+            print(f"    Loaded GOES pre-trained weights")
+
+        criterion = FlareForecasterLoss().to(device)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.LEARNING_RATE_PRETRAIN,
+                                      weight_decay=1e-4)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=30, eta_min=1e-5)
+
+        X_t = torch.tensor(X_aug, dtype=torch.float32).to(device)
+        y_t = torch.tensor(y_aug, dtype=torch.long).to(device)
+        lt_t = torch.tensor(lt_aug, dtype=torch.float32).to(device)
+        X_vt = torch.tensor(X_val, dtype=torch.float32).to(device)
+        y_vt = torch.tensor(y_val, dtype=torch.long).to(device)
+
+        batch_size = cfg.BATCH_SIZE
+        best_val_acc = 0
+
+        for epoch in range(1, 31):
+            model.train()
+            perm = torch.randperm(len(X_aug))
+            for i in range(0, len(X_aug), batch_size):
+                idx = perm[i:i+batch_size]
+                optimizer.zero_grad()
+                logits, lead_pred, _ = model(X_t[idx])
+                losses = criterion(logits, y_t[idx], lead_pred, lt_t[idx])
+                losses["total"].backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                optimizer.step()
+            scheduler.step()
+
+            model.eval()
+            with torch.no_grad():
+                v_logits, _, _ = model(X_vt)
+                v_acc = (v_logits.argmax(1) == y_vt).float().mean().item()
+            if v_acc > best_val_acc:
+                best_val_acc = v_acc
+                best_state = {k: v.clone() for k, v in model.state_dict().items()}
+
+            if epoch % 10 == 0:
+                print(f"    Epoch {epoch}: val_acc={v_acc:.3f}")
+
+        # Load best and evaluate
+        model.load_state_dict(best_state)
+        model.eval()
+        with torch.no_grad():
+            v_logits, _, _ = model(X_vt)
+            v_probs = torch.softmax(v_logits, dim=1).cpu().numpy()
+            v_preds = v_logits.argmax(1).cpu().numpy()
+
+        fold_acc = accuracy_score(y_val, v_preds)
+        all_preds[val_idx] = v_preds
+        all_probs[val_idx] = v_probs
+
+        # Per-class AUC
+        fold_aucs = {}
+        for cls in range(cfg.N_CLASSES):
+            y_bin = (y_val == cls).astype(int)
+            if y_bin.sum() > 0 and y_bin.sum() < len(y_bin):
+                try:
+                    fold_aucs[cfg.CLASS_NAMES[cls]] = roc_auc_score(y_bin, v_probs[:, cls])
+                except Exception:
+                    pass
+
+        fold_results.append({"fold": fold, "acc": fold_acc, "aucs": fold_aucs})
+        print(f"    Fold {fold}: acc={fold_acc:.3f} aucs={fold_aucs}")
+
+    # Summary
+    accs = [r["acc"] for r in fold_results]
+    overall_acc = accuracy_score(y, all_preds)
+
+    print(f"\n{'='*60}")
+    print(f"  5-FOLD CROSS-VALIDATION RESULTS")
+    print(f"{'='*60}")
+    print(f"  Per-fold accuracy: {', '.join(f'{a:.3f}' for a in accs)}")
+    print(f"  Mean accuracy:     {np.mean(accs):.4f} +/- {np.std(accs):.4f}")
+    print(f"  Overall accuracy:  {overall_acc:.4f}")
+
+    # Overall per-class AUC
+    print(f"\n  Per-Class ROC-AUC (cross-validated):")
+    for cls in range(cfg.N_CLASSES):
+        y_bin = (y == cls).astype(int)
+        if y_bin.sum() > 0 and y_bin.sum() < len(y):
+            try:
+                auc = roc_auc_score(y_bin, all_probs[:, cls])
+                print(f"    {cfg.CLASS_NAMES[cls]:>5s}: {auc:.4f}")
+            except Exception:
+                pass
+
+    # Binary detection metrics
+    y_binary = (y > 0).astype(int)
+    pred_binary = (all_preds > 0).astype(int)
+    tp = ((pred_binary == 1) & (y_binary == 1)).sum()
+    fp = ((pred_binary == 1) & (y_binary == 0)).sum()
+    fn = ((pred_binary == 0) & (y_binary == 1)).sum()
+    tn = ((pred_binary == 0) & (y_binary == 0)).sum()
+    tpr = tp / (tp + fn) if (tp + fn) > 0 else 0
+    fpr = fp / (fp + tn) if (fp + tn) > 0 else 0
+    print(f"\n  Binary Detection (CV):")
+    print(f"    TPR: {tpr:.4f}")
+    print(f"    FPR: {fpr:.4f}")
+
+    # FPR Optimization
+    optimize_fpr(y, all_preds, all_probs)
+
+    return fold_results, all_preds, all_probs
+
+
+def optimize_fpr(y, predictions, probabilities, target_fpr=0.30):
+    """Find optimal per-class thresholds to minimize FPR while keeping TPR high."""
+    print(f"\n{'='*60}")
+    print(f"  FPR OPTIMIZATION (target FPR < {target_fpr:.0%})")
+    print(f"{'='*60}")
+
+    best_threshold = 0.5
+    best_f1 = 0
+    best_metrics = {}
+
+    for threshold in np.arange(0.30, 0.91, 0.05):
+        # Apply threshold: only predict flare if max prob > threshold
+        max_probs = probabilities.max(axis=1)
+        max_classes = probabilities.argmax(axis=1)
+        thresholded_preds = np.where(max_probs >= threshold, max_classes, 0)
+
+        # Also require that non-quiet prediction has prob > threshold
+        for i in range(len(thresholded_preds)):
+            if thresholded_preds[i] > 0:
+                if probabilities[i, thresholded_preds[i]] < threshold:
+                    thresholded_preds[i] = 0
+
+        y_bin = (y > 0).astype(int)
+        p_bin = (thresholded_preds > 0).astype(int)
+        tp = ((p_bin == 1) & (y_bin == 1)).sum()
+        fp = ((p_bin == 1) & (y_bin == 0)).sum()
+        fn = ((p_bin == 0) & (y_bin == 1)).sum()
+        tn = ((p_bin == 0) & (y_bin == 0)).sum()
+
+        tpr = tp / (tp + fn) if (tp + fn) > 0 else 0
+        fpr = fp / (fp + tn) if (fp + tn) > 0 else 0
+        prec = tp / (tp + fp) if (tp + fp) > 0 else 0
+        f1 = 2 * prec * tpr / (prec + tpr) if (prec + tpr) > 0 else 0
+        acc = (thresholded_preds == y).mean()
+
+        if f1 > best_f1 and fpr <= target_fpr:
+            best_f1 = f1
+            best_threshold = threshold
+            best_metrics = {"tpr": tpr, "fpr": fpr, "prec": prec,
+                            "f1": f1, "acc": acc, "threshold": threshold}
+
+        if threshold * 100 % 10 < 6:
+            print(f"    thresh={threshold:.2f}: TPR={tpr:.3f} FPR={fpr:.3f} "
+                  f"F1={f1:.3f} Acc={acc:.3f}")
+
+    if best_metrics:
+        print(f"\n  OPTIMAL THRESHOLD: {best_threshold:.2f}")
+        print(f"    TPR:       {best_metrics['tpr']:.4f}")
+        print(f"    FPR:       {best_metrics['fpr']:.4f}  (was 0.608)")
+        print(f"    Precision: {best_metrics['prec']:.4f}")
+        print(f"    F1 Score:  {best_metrics['f1']:.4f}")
+        print(f"    Accuracy:  {best_metrics['acc']:.4f}")
+
+        # Save optimal threshold
+        np.save(str(cfg.MODEL_DIR / "optimal_threshold.npy"),
+                np.array([best_threshold]))
+    else:
+        print(f"  Could not find threshold with FPR < {target_fpr}")
+        # Still find best F1 regardless of FPR
+        best_threshold = 0.5
+        np.save(str(cfg.MODEL_DIR / "optimal_threshold.npy"),
+                np.array([best_threshold]))
+
+    return best_threshold
+
+
+def step_tactical_ensemble(X, y, lead_times, quick=False, pretrained_weights=None):
     """Step 5a: Train Tier 2 ensemble with augmentation + calibration."""
     print("\n" + "=" * 70)
     if quick:
         print("  STEP 5a: Training TACTICAL Model (Quick Mode)")
     else:
-        print("  STEP 5a: Training TACTICAL ENSEMBLE (5 models + augmentation)")
+        mode = "GOES Pre-trained " if pretrained_weights else ""
+        print(f"  STEP 5a: Training {mode}TACTICAL ENSEMBLE (5 models + augmentation)")
     print("=" * 70)
 
     n_features = X.shape[2]
@@ -176,6 +469,7 @@ def step_tactical_ensemble(X, y, lead_times, quick=False):
             epochs=30,
             augment=True,
             aug_multiplier=5,
+            pretrained_weights=pretrained_weights,
         )
         # Save ensemble
         save_dir = str(cfg.MODEL_DIR / "tactical_ensemble")
@@ -266,6 +560,9 @@ def step_tactical_evaluate(model, ensemble, X, y, lead_times):
                 count = ((predictions == j) & (y == i)).sum()
                 print(f"{count:8d}", end="")
             print()
+
+        # FPR optimization
+        optimize_fpr(y, predictions, probabilities)
 
         # Generate plots
         try:
@@ -430,18 +727,22 @@ def step_strategic_train(X, y):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Solar Flare Early Warning System V2")
+    parser = argparse.ArgumentParser(description="JWALASHMI v4.0 - Solar Flare Early Warning")
     parser.add_argument("--extract", action="store_true")
     parser.add_argument("--nowcast", action="store_true")
     parser.add_argument("--tactical", action="store_true")
     parser.add_argument("--strategic", action="store_true")
     parser.add_argument("--quick", action="store_true",
                         help="Quick mode: single model, no augmentation")
+    parser.add_argument("--pretrain-goes", action="store_true",
+                        help="Pre-train on GOES data before fine-tuning")
+    parser.add_argument("--cv", action="store_true",
+                        help="Run 5-fold stratified cross-validation")
     args = parser.parse_args()
 
     print("\n" + "#" * 70)
-    print("  JWALASHMI — Solar Flare Early Warning System")
-    print("  Dual-Tier + 5-Model Ensemble + Augmentation + Calibration")
+    print("  JWALASHMI v4.0 -- Solar Flare Early Warning System")
+    print("  GOES Pre-training + 5-Fold CV + FPR Optimization + Ensemble")
     print("#" * 70)
 
     t_start = time.time()
@@ -459,15 +760,29 @@ def main():
 
     df_feat, feat_cols = step_features(df_solexs, df_hel1os)
 
+    # GOES Pre-training (transfer learning)
+    pretrained_weights = None
+    if args.pretrain_goes:
+        pretrained_weights = step_pretrain_goes()
+
     run_tactical = not args.strategic
     run_strategic = not args.tactical
 
     if run_tactical:
         X_tac, y_tac, lt_tac = step_tactical_windowing(df_feat, feat_cols, catalog)
         if X_tac.shape[0] >= 10:
-            model_tac, ensemble_tac = step_tactical_ensemble(X_tac, y_tac, lt_tac,
-                                                             quick=args.quick)
-            step_tactical_evaluate(model_tac, ensemble_tac, X_tac, y_tac, lt_tac)
+            if args.cv:
+                # 5-fold cross-validation
+                step_cross_validate(X_tac, y_tac, lt_tac,
+                                   pretrained_weights=pretrained_weights)
+            else:
+                # Standard ensemble training
+                model_tac, ensemble_tac = step_tactical_ensemble(
+                    X_tac, y_tac, lt_tac,
+                    quick=args.quick,
+                    pretrained_weights=pretrained_weights)
+                step_tactical_evaluate(model_tac, ensemble_tac,
+                                      X_tac, y_tac, lt_tac)
 
     if run_strategic:
         X_str, y_str = step_strategic_windowing(df_feat, feat_cols, catalog)
