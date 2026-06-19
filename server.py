@@ -41,44 +41,74 @@ flare_catalog_df = None
 INFERENCE_MODE = "none"  # "ensemble", "single", "none"
 
 
+# V6.1 ensemble models (list of FlareForecaster)
+v6_models = []
+v6_thresholds = None
+
+
 def load_models():
-    """Load tactical + strategic models and preprocessed data."""
+    """Load V6.1 ensemble + strategic models and preprocessed data."""
     global ensemble, tactical_single, strategic_model, INFERENCE_MODE
     global feature_mean, feature_std
     global X_tactical, y_tactical, lt_tactical
     global X_strategic, y_strategic
     global flare_catalog_df
+    global v6_models, v6_thresholds
 
     from src.model.architecture import FlareForecaster, StrategicForecaster
 
-    # ── Load tactical model ──────────────────────────────────
-    # Priority 1: Full ensemble
-    ens_dir = str(cfg.MODEL_DIR / "tactical_ensemble")
-    ens_file = str(cfg.MODEL_DIR / "ensemble_model_0.pt")
-    single_path = str(cfg.MODEL_DIR / "best_pretrain_model.pt")
-
-    if os.path.exists(ens_file):
+    # ── Priority 1: V6.1 ensemble (10 models) ────────────────
+    v6_dir = str(cfg.MODEL_DIR / "v6_1_ensemble")
+    if os.path.exists(v6_dir):
         try:
-            from src.model.ensemble import EnsembleForecaster
-            ensemble = EnsembleForecaster(n_models=5, n_features=9)
-            ensemble.load(str(cfg.MODEL_DIR))
-            INFERENCE_MODE = "ensemble"
-            print(f"  [OK] Tactical ensemble loaded ({len(ensemble.models)} models)")
+            for i in range(10):
+                model_path = os.path.join(v6_dir, f"model_{i}.pt")
+                if os.path.exists(model_path):
+                    model = FlareForecaster(n_input_channels=9)
+                    model.load_state_dict(
+                        torch.load(model_path, map_location="cpu", weights_only=True)
+                    )
+                    model.eval()
+                    v6_models.append(model)
+            if len(v6_models) > 0:
+                INFERENCE_MODE = "ensemble"
+                print(f"  [OK] V6.1 ensemble loaded ({len(v6_models)} models)")
+                # Load optimized thresholds
+                thresh_path = os.path.join(v6_dir, "thresholds.npy")
+                if os.path.exists(thresh_path):
+                    v6_thresholds = np.load(thresh_path)
+                    print(f"  [OK] Optimized thresholds: None={v6_thresholds[0]:.1f} B={v6_thresholds[1]:.1f} C={v6_thresholds[2]:.1f}")
         except Exception as e:
-            print(f"  [WARN] Ensemble load failed: {e}")
+            print(f"  [WARN] V6.1 load failed: {e}")
 
-    # Priority 2: Single model from quick training
-    if INFERENCE_MODE == "none" and os.path.exists(single_path):
-        try:
-            tactical_single = FlareForecaster(n_input_channels=9)
-            tactical_single.load_state_dict(
-                torch.load(single_path, map_location="cpu", weights_only=True)
-            )
-            tactical_single.eval()
-            INFERENCE_MODE = "single"
-            print(f"  [OK] Tactical single model loaded")
-        except Exception as e:
-            print(f"  [WARN] Single model load failed: {e}")
+    # ── Priority 2: Old tactical ensemble ─────────────────────
+    if INFERENCE_MODE == "none":
+        ens_file = str(cfg.MODEL_DIR / "ensemble_model_0.pt")
+        single_path = str(cfg.MODEL_DIR / "best_pretrain_model.pt")
+        if os.path.exists(ens_file):
+            try:
+                from src.model.ensemble import EnsembleForecaster
+                ensemble = EnsembleForecaster(n_models=5, n_features=9)
+                ensemble.load(str(cfg.MODEL_DIR))
+                INFERENCE_MODE = "ensemble"
+                print(f"  [OK] Tactical ensemble loaded ({len(ensemble.models)} models)")
+            except Exception as e:
+                print(f"  [WARN] Ensemble load failed: {e}")
+
+    # ── Priority 3: Single model ─────────────────────────────
+    if INFERENCE_MODE == "none":
+        single_path = str(cfg.MODEL_DIR / "best_pretrain_model.pt")
+        if os.path.exists(single_path):
+            try:
+                tactical_single = FlareForecaster(n_input_channels=9)
+                tactical_single.load_state_dict(
+                    torch.load(single_path, map_location="cpu", weights_only=True)
+                )
+                tactical_single.eval()
+                INFERENCE_MODE = "single"
+                print(f"  [OK] Tactical single model loaded")
+            except Exception as e:
+                print(f"  [WARN] Single model load failed: {e}")
 
     # ── Load strategic model ─────────────────────────────────
     strat_path = str(cfg.MODEL_DIR / "best_strategic_model.pt")
@@ -136,14 +166,67 @@ def load_models():
 
 
 def predict_tactical(window):
-    """Run tactical prediction using ensemble or single model."""
+    """Run tactical prediction using V6.1 ensemble, old ensemble, or single model."""
+    # Priority 1: V6.1 ensemble (10 models)
+    if len(v6_models) > 0:
+        x_tensor = torch.tensor(window, dtype=torch.float32)
+        all_probs = []
+        all_leads = []
+        all_attns = []
+        with torch.no_grad():
+            for model in v6_models:
+                logits, lead_pred, attn = model(x_tensor)
+                probs = F.softmax(logits, dim=1).numpy()[0]
+                all_probs.append(probs)
+                if lead_pred is not None:
+                    all_leads.append(float(lead_pred[0, 0]))
+                if attn is not None:
+                    all_attns.append(attn.numpy()[0])
+
+        # Average probabilities across ensemble
+        avg_probs = np.mean(all_probs, axis=0)
+
+        # Apply optimized thresholds if available
+        if v6_thresholds is not None:
+            adjusted = avg_probs.copy()
+            adjusted[1] *= v6_thresholds[1]  # B boost
+            pred_class = int(adjusted.argmax())
+        else:
+            pred_class = int(avg_probs.argmax())
+
+        confidence = float(avg_probs.max())
+
+        # 3-Tier alert (GREEN/YELLOW/RED)
+        if pred_class >= 3:  # M or X
+            alert = "RED"
+        elif pred_class == 2:  # C
+            alert = "YELLOW"
+        else:  # None or B
+            alert = "GREEN"
+
+        pred = {
+            "class_name": cfg.CLASS_NAMES[pred_class],
+            "confidence": confidence,
+            "alert_level": alert,
+            "probabilities": avg_probs.tolist(),
+            "lead_time_min": float(np.mean(all_leads)) if all_leads else 0,
+        }
+
+        # Uncertainty from model disagreement
+        prob_std = np.std(all_probs, axis=0)
+        uncertainty = float(np.mean(prob_std))
+
+        return pred, uncertainty
+
+    # Priority 2: Old ensemble
     if INFERENCE_MODE == "ensemble" and ensemble is not None:
         detailed = ensemble.predict_detailed(window)
         pred = detailed[0]
         uncertainty = float(ensemble.get_uncertainty(window)[0])
         return pred, uncertainty
 
-    elif INFERENCE_MODE == "single" and tactical_single is not None:
+    # Priority 3: Single model
+    elif tactical_single is not None:
         x_tensor = torch.tensor(window, dtype=torch.float32)
         with torch.no_grad():
             logits, lead_pred, attn = tactical_single(x_tensor)
@@ -151,10 +234,9 @@ def predict_tactical(window):
             pred_class = int(probs.argmax())
             confidence = float(probs.max())
 
-        # Determine alert level
-        if pred_class >= 3 and confidence > 0.6:
+        if pred_class >= 3:
             alert = "RED"
-        elif pred_class >= 2 and confidence > 0.5:
+        elif pred_class == 2:
             alert = "YELLOW"
         else:
             alert = "GREEN"
@@ -166,7 +248,6 @@ def predict_tactical(window):
             "probabilities": probs.tolist(),
             "lead_time_min": float(lead_pred[0, 0]) if lead_pred is not None else 0,
         }
-        # Uncertainty from entropy
         entropy = -np.sum(probs * np.log(probs + 1e-10))
         uncertainty = float(entropy / np.log(len(probs)))
         return pred, uncertainty
@@ -177,7 +258,9 @@ def predict_tactical(window):
 def compute_gradient_attribution(window):
     """Compute real gradient-based feature importance for a window."""
     model = None
-    if INFERENCE_MODE == "ensemble" and ensemble is not None:
+    if len(v6_models) > 0:
+        model = v6_models[0]
+    elif INFERENCE_MODE == "ensemble" and ensemble is not None:
         model = ensemble.models[0]
     elif INFERENCE_MODE == "single" and tactical_single is not None:
         model = tactical_single
@@ -259,8 +342,8 @@ def get_latest_prediction():
         "flux_helios": helios_flux,
         "inference_mode": INFERENCE_MODE,
         "system": {
-            "ensemble_models": len(ensemble.models) if ensemble else (1 if tactical_single else 0),
-            "temperature": ensemble.calibrator.temperature if ensemble and hasattr(ensemble, 'calibrator') else 1.0,
+            "ensemble_models": len(v6_models) if v6_models else (len(ensemble.models) if ensemble else (1 if tactical_single else 0)),
+            "version": "V6.1" if v6_models else "legacy",
             "data_windows": len(X_tactical),
         }
     }
@@ -363,22 +446,21 @@ def metrics():
     """Return real model performance metrics from latest training."""
     return jsonify({
         "tactical": {
-            "accuracy": 0.4452,
-            "binary_f1": 0.8375,
-            "tpr": 0.9967,
-            "fpr": 0.9583,
-            "roc_auc": 0.7142,
-            "mean_lead_time_min": 30.8,
-            "median_lead_time_min": 31.8,
-            "lead_ge_15min": 0.753,
-            "lead_ge_30min": 0.533,
+            "version": "V6.1",
+            "accuracy_5class": 0.778,
+            "accuracy_3tier": 0.866,
+            "green_accuracy": 0.926,
+            "yellow_accuracy": 0.592,
+            "red_accuracy": 0.973,
+            "m_class_accuracy": 0.934,
+            "x_class_accuracy": 0.950,
+            "binary_tpr": 0.919,
+            "binary_fpr": 0.175,
             "x_class_auc": 0.9990,
-            "m_class_auc": 0.9696,
-            "c_class_auc": 0.8456,
-            "b_class_auc": 0.7295,
-            "none_class_auc": 0.7143,
-            "m_class_recall": 1.000,
-            "x_class_recall": 1.000,
+            "m_class_auc": 0.9965,
+            "c_class_auc": 0.9469,
+            "b_class_auc": 0.8779,
+            "none_class_auc": 0.9512,
         },
         "strategic": {
             "accuracy": 0.9311,
@@ -389,19 +471,20 @@ def metrics():
         "training": {
             "data_days": 25,
             "total_flares": 192,
-            "class_distribution": {"B": 158, "C": 29, "M": 4, "X": 1},
-            "tactical_windows": 420,
-            "strategic_windows": 363,
+            "aditya_l1_windows": 7188,
+            "goes_windows": 2271,
+            "balanced_samples": 1763,
+            "class_distribution": {"None": 400, "B": 400, "C": 400, "M": 363, "X": 200},
             "features": 9,
-            "training_time_min": 9.4,
+            "ensemble_models": 10,
+            "training_platform": "Google Colab T4 GPU",
         },
         "config": {
             "inference_mode": INFERENCE_MODE,
-            "n_models": len(ensemble.models) if ensemble else (1 if tactical_single else 0),
-            "batch_size": cfg.BATCH_SIZE,
-            "learning_rate": cfg.LEARNING_RATE_PRETRAIN,
-            "focal_gamma": 3.0,
-            "class_weights": cfg.CLASS_WEIGHTS,
+            "n_models": len(v6_models) if v6_models else (len(ensemble.models) if ensemble else 0),
+            "architecture": "CNN-Attention (3-layer + 4-head)",
+            "transfer_learning": "GOES XRS pre-trained",
+            "augmentation": "Online (fresh every epoch)",
         },
     })
 
@@ -515,7 +598,7 @@ if __name__ == "__main__":
     print("\nLoading models & data...")
     load_models()
 
-    mode_emoji = {"ensemble": "5-Model Ensemble", "single": "Single Model", "none": "Simulation"}
+    mode_emoji = {"ensemble": f"V6.1 {len(v6_models)}-Model Ensemble" if v6_models else "5-Model Ensemble", "single": "Single Model", "none": "Simulation"}
     print(f"\n  Mode:      {mode_emoji.get(INFERENCE_MODE, INFERENCE_MODE)}")
     print(f"  Dashboard: http://localhost:5000")
     print(f"  API:       http://localhost:5000/api/predict")
