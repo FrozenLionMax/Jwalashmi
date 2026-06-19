@@ -256,7 +256,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 <!-- TOP BAR -->
 <div class="topbar">
     <span class="tb-brand">JWALASHMI</span>
-    <span class="tb-ver">v2.1.0</span>
+    <span class="tb-ver">v6.1.0</span>
     <div class="tb-sep"></div>
     <div class="tb-pipe">
         <div class="tb-dot on" id="dotSol"></div>SoLEXS
@@ -447,14 +447,14 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
             <button class="c-filter" data-t="warn" onclick="filterConsole('warn',this)">Warn</button>
             <button class="c-filter" data-t="err" onclick="filterConsole('err',this)">Err</button>
         </div>
-        <span style="font-size:8px;color:var(--t3);margin-left:auto">5-model ensemble &bull; temp-calibrated &bull; thresh=0.60</span>
+        <span style="font-size:8px;color:var(--t3);margin-left:auto">10-model ensemble &bull; GOES transfer learning &bull; V6.1</span>
     </div>
     <div class="console-body" id="consoleBody"></div>
 </div>
 
 <!-- STATUS BAR -->
 <div class="status-bar">
-    <div class="sb-item"><div class="sb-dot"></div>Ensemble <span class="sb-val">5/5</span></div>
+    <div class="sb-item"><div class="sb-dot"></div>Ensemble <span class="sb-val">10/10</span></div>
     <div class="sb-sep"></div>
     <div class="sb-item">Cycle <span class="sb-val" id="sbCycle">#0</span></div>
     <div class="sb-sep"></div>
@@ -552,10 +552,10 @@ function filterConsole(t,el){
         l.classList.toggle('hidden',t!=='all'&&l.dataset.type!==t)});
     consoleEl.scrollTop=consoleEl.scrollHeight;
 }
-clog('JWALASHMI v2.1.0 initialized','ok');
-clog('5 ensemble models loaded (CNN+Temporal Attention)','ok');
-clog('Temperature calibration: T=2.04 (NLL-optimized)','info');
-clog('Confidence threshold: 0.60 | FPR target: <50%','info');
+clog('JWALASHMI v6.1.0 initialized','ok');
+clog('V6.1: 10 ensemble models loaded (CNN+Attention+GOES)','ok');
+clog('GOES transfer learning + Aditya-L1 fine-tuning','info');
+clog('3-Tier alerts: GREEN(92.6%) YELLOW(59.2%) RED(97.3%)','info');
 clog('Pipeline: SoLEXS (1-8 keV) + HEL1OS (10-30 keV)','ok');
 clog('Shortcuts: [1]Both [2]SoLEXS [3]HEL1OS [D]Derivative [A]Attention','info');
 

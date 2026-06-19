@@ -25,6 +25,14 @@ import config as cfg
 
 app = Flask(__name__, static_folder="dashboard", static_url_path="")
 
+# CORS support for external integration
+@app.after_request
+def add_cors(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    return response
+
 # ── Global state ──────────────────────────────────────────────
 ensemble = None
 tactical_single = None
@@ -420,6 +428,58 @@ def predict():
     try:
         result = get_latest_prediction()
         return jsonify(result)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/predict", methods=["POST"])
+def predict_post():
+    """Accept raw flux array and return V6.1 ensemble prediction.
+    
+    Usage:
+        curl -X POST http://localhost:5000/api/predict \
+             -H 'Content-Type: application/json' \
+             -d '{"flux": [3600 values], "features": 9}'
+    
+    For ISRO ISTRAC integration: POST raw SoLEXS flux data
+    and receive real-time flare classification.
+    """
+    try:
+        data = request.get_json()
+        if data is None:
+            return jsonify({"error": "No JSON body provided"}), 400
+
+        # Accept flux array or full feature window
+        if "window" in data:
+            # Full (3600, 9) feature window
+            window = np.array(data["window"], dtype=np.float32)
+            if window.ndim == 2:
+                window = window[np.newaxis, :]  # (1, T, F)
+        elif "flux" in data:
+            # Raw flux array - pad to (1, 3600, 9)
+            flux = np.array(data["flux"], dtype=np.float32)
+            if flux.ndim == 1:
+                T = len(flux)
+                window = np.zeros((1, T, 9), dtype=np.float32)
+                window[0, :, 0] = flux  # SoLEXS flux as feature 0
+        else:
+            return jsonify({"error": "Provide 'flux' or 'window' in JSON body"}), 400
+
+        # Normalize
+        if feature_mean is not None and feature_std is not None:
+            window = (window - feature_mean) / (feature_std + 1e-8)
+
+        pred, uncertainty = predict_tactical(window)
+        if pred is None:
+            return jsonify({"error": "No model loaded"}), 503
+
+        return jsonify({
+            "prediction": pred,
+            "uncertainty": uncertainty,
+            "model_version": "V6.1",
+            "ensemble_models": len(v6_models),
+        })
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
