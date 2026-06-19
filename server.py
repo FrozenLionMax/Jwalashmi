@@ -12,6 +12,8 @@ import os
 import sys
 import json
 import time
+import threading
+import urllib.request
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -47,11 +49,19 @@ y_strategic = None
 flare_catalog_df = None
 
 INFERENCE_MODE = "none"  # "ensemble", "single", "none"
-
+DATA_SOURCE = "aditya-l1"  # "aditya-l1", "goes-live", "simulation"
 
 # V6.1 ensemble models (list of FlareForecaster)
 v6_models = []
 v6_thresholds = None
+
+# Live GOES data buffer
+goes_buffer = []  # list of (timestamp, flux_value) tuples
+goes_last_fetch = 0
+goes_lock = threading.Lock()
+
+# Aditya-L1 replay state
+al1_replay_idx = 0
 
 
 def load_models():
@@ -292,7 +302,15 @@ def compute_gradient_attribution(window):
 
 
 def get_latest_prediction():
-    """Generate prediction from the most recent data window."""
+    """Generate prediction based on active data source."""
+    if DATA_SOURCE == "goes-live":
+        return get_goes_prediction()
+    elif DATA_SOURCE == "aditya-l1":
+        return get_aditya_replay()
+    else:
+        return generate_simulation()
+
+    # Fallback to old behavior if above fails
     if X_tactical is None or INFERENCE_MODE == "none":
         return generate_simulation()
 
@@ -362,13 +380,11 @@ def generate_simulation():
     t = time.time()
     rng = np.random.default_rng(int(t) // 30)
 
-    # Simulate solar flux with realistic profile
     x = np.linspace(0, 3600, 3600)
     base = 3e-7 + 1e-8 * np.sin(2 * np.pi * x / 1200)
     noise = rng.normal(0, 2e-8, 3600)
     flux = base + noise
 
-    # Random flare injection
     class_idx = rng.choice([0, 0, 0, 1, 1, 2, 3, 4], p=[0.3, 0.15, 0.15, 0.2, 0.1, 0.05, 0.03, 0.02])
     class_names = ["None", "B", "C", "M", "X"]
     peaks = {"None": 0, "B": 5e-7, "C": 5e-6, "M": 5e-5, "X": 5e-4}
@@ -402,17 +418,205 @@ def generate_simulation():
             "uncertainty": float(rng.uniform(0.05, 0.25)),
             "true_class": cls,
         },
-        "strategic": {
-            "predicted_class": pred_cls,
-            "class_name": class_names[min(pred_cls, 4)],
-            "confidence": float(rng.uniform(0.5, 0.95)),
-            "probabilities": rng.dirichlet([1, 2, 3, 1.5, 0.5]).tolist(),
-            "true_class": cls,
-        },
+        "strategic": None,
         "flux_solexs": flux.tolist(),
         "flux_helios": (flux * 0.3 + rng.normal(0, 1e-8, 3600)).tolist(),
         "inference_mode": "simulation",
-        "system": {"ensemble_models": 0, "temperature": 1.0, "data_windows": 0},
+        "data_source": "simulation",
+        "system": {"ensemble_models": 0, "version": "V6.1", "data_windows": 0},
+    }
+
+
+# ── Live Data Sources ─────────────────────────────────────────
+
+def fetch_goes_realtime():
+    """Fetch real-time GOES XRS data from NOAA SWPC API."""
+    global goes_buffer, goes_last_fetch
+    url = "https://services.swpc.noaa.gov/json/goes/primary/xrays-1-day.json"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "JWALASHMI/6.1"})
+        resp = urllib.request.urlopen(req, timeout=10)
+        data = json.loads(resp.read().decode())
+
+        with goes_lock:
+            goes_buffer = []
+            for entry in data:
+                if entry.get("energy") == "0.1-0.8nm":
+                    ts = entry.get("time_tag", "")
+                    flux = entry.get("flux", 0)
+                    if flux and flux > 0:
+                        goes_buffer.append({"time": ts, "flux": float(flux)})
+
+        goes_last_fetch = time.time()
+        print(f"  [GOES] Fetched {len(goes_buffer)} data points")
+        return True
+    except Exception as e:
+        print(f"  [GOES] Fetch failed: {e}")
+        return False
+
+
+def goes_fetch_thread():
+    """Background thread to fetch GOES data every 60 seconds."""
+    while True:
+        try:
+            fetch_goes_realtime()
+        except Exception:
+            pass
+        time.sleep(60)
+
+
+def get_goes_prediction():
+    """Generate prediction from live GOES XRS data."""
+    with goes_lock:
+        if len(goes_buffer) < 60:
+            return generate_simulation()
+
+        # Get last 3600 points (or pad if less)
+        recent = goes_buffer[-3600:]
+        flux_values = [p["flux"] for p in recent]
+
+        # Pad to 3600 if needed
+        while len(flux_values) < 3600:
+            flux_values = [flux_values[0]] + flux_values
+
+        flux = np.array(flux_values, dtype=np.float32)
+        timestamps = [p["time"] for p in recent]
+
+    # Build feature window (3600, 9)
+    window = np.zeros((1, 3600, 9), dtype=np.float32)
+    window[0, :, 0] = flux  # SoLEXS-equivalent flux
+    window[0, :, 1] = flux * 0.3  # HEL1OS-like (approximation)
+
+    # Compute derived features
+    window[0, 1:, 2] = np.diff(flux)  # dF/dt
+    window[0, :, 6] = flux / (np.median(flux) + 1e-12)  # Normalized rate
+
+    # Rolling slope
+    for i in range(60, 3600):
+        seg = flux[i-60:i]
+        if np.std(seg) > 0:
+            window[0, i, 7] = np.polyfit(np.arange(60), seg, 1)[0]
+
+    # Acceleration
+    window[0, 2:, 8] = np.diff(flux, 2)
+
+    # Normalize
+    if feature_mean is not None and feature_std is not None:
+        window = (window - feature_mean) / (feature_std + 1e-8)
+
+    # Predict
+    pred, uncertainty = predict_tactical(window)
+    if pred is None:
+        return generate_simulation()
+
+    # Determine current GOES class from peak flux
+    peak_flux = float(np.max(flux))
+    if peak_flux >= 1e-4:
+        true_cls = "X"
+    elif peak_flux >= 1e-5:
+        true_cls = "M"
+    elif peak_flux >= 1e-6:
+        true_cls = "C"
+    elif peak_flux >= 1e-7:
+        true_cls = "B"
+    else:
+        true_cls = "None"
+
+    return {
+        "timestamp": timestamps[-1] if timestamps else time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "tactical": {
+            "predicted_class": pred["class_name"],
+            "confidence": pred["confidence"],
+            "alert_level": pred["alert_level"],
+            "lead_time_min": pred.get("lead_time_min", 0),
+            "probabilities": {
+                cfg.CLASS_NAMES[i]: pred["probabilities"][i]
+                for i in range(len(cfg.CLASS_NAMES))
+            },
+            "uncertainty": uncertainty,
+            "true_class": true_cls,
+        },
+        "strategic": None,
+        "flux_solexs": flux.tolist(),
+        "flux_helios": (flux * 0.3).tolist(),
+        "inference_mode": INFERENCE_MODE,
+        "data_source": "goes-live",
+        "goes_peak_flux": peak_flux,
+        "goes_class": true_cls,
+        "goes_points": len(goes_buffer),
+        "system": {
+            "ensemble_models": len(v6_models),
+            "version": "V6.1",
+            "data_windows": len(goes_buffer),
+        }
+    }
+
+
+def get_aditya_replay():
+    """Replay real Aditya-L1 data through the model."""
+    global al1_replay_idx
+
+    if X_tactical is None or INFERENCE_MODE == "none":
+        return generate_simulation()
+
+    # Cycle through all windows sequentially for replay effect
+    idx = al1_replay_idx % len(X_tactical)
+    al1_replay_idx += 1
+
+    window = X_tactical[idx:idx+1]
+    true_class = int(y_tactical[idx])
+
+    pred, uncertainty = predict_tactical(window)
+    if pred is None:
+        return generate_simulation()
+
+    win = window[0]
+    solexs_flux = win[:, 0].tolist()
+    helios_flux = win[:, 1].tolist() if win.shape[1] > 1 else solexs_flux
+
+    # Strategic prediction
+    strat_result = None
+    if X_strategic is not None and strategic_model is not None:
+        s_idx = idx % len(X_strategic)
+        s_window = torch.tensor(X_strategic[s_idx:s_idx+1], dtype=torch.float32)
+        with torch.no_grad():
+            s_logits, _ = strategic_model(s_window)
+            s_probs = torch.softmax(s_logits, dim=1).numpy()[0]
+            s_pred = int(s_probs.argmax())
+        strat_result = {
+            "predicted_class": s_pred,
+            "class_name": cfg.CLASS_NAMES[s_pred],
+            "confidence": float(s_probs.max()),
+            "probabilities": s_probs.tolist(),
+            "true_class": cfg.CLASS_NAMES[int(y_strategic[s_idx])],
+        }
+
+    return {
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "tactical": {
+            "predicted_class": pred["class_name"],
+            "confidence": pred["confidence"],
+            "alert_level": pred["alert_level"],
+            "lead_time_min": pred.get("lead_time_min", 0),
+            "probabilities": {
+                cfg.CLASS_NAMES[i]: pred["probabilities"][i]
+                for i in range(len(cfg.CLASS_NAMES))
+            },
+            "uncertainty": uncertainty,
+            "true_class": cfg.CLASS_NAMES[true_class],
+        },
+        "strategic": strat_result,
+        "flux_solexs": solexs_flux,
+        "flux_helios": helios_flux,
+        "inference_mode": INFERENCE_MODE,
+        "data_source": "aditya-l1",
+        "replay_window": idx,
+        "total_windows": len(X_tactical),
+        "system": {
+            "ensemble_models": len(v6_models),
+            "version": "V6.1",
+            "data_windows": len(X_tactical),
+        }
     }
 
 
@@ -421,6 +625,39 @@ def generate_simulation():
 @app.route("/")
 def index():
     return send_from_directory("dashboard", "index.html")
+
+
+@app.route("/api/datasource", methods=["GET", "POST"])
+def datasource():
+    """Get or switch data source: aditya-l1, goes-live, simulation."""
+    global DATA_SOURCE
+    if request.method == "POST":
+        data = request.get_json() or {}
+        new_source = data.get("source", request.args.get("source", ""))
+        if new_source in ("aditya-l1", "goes-live", "simulation"):
+            DATA_SOURCE = new_source
+            if new_source == "goes-live" and len(goes_buffer) == 0:
+                fetch_goes_realtime()  # Immediate first fetch
+            print(f"  [DATA] Switched to: {DATA_SOURCE}")
+    return jsonify({
+        "active_source": DATA_SOURCE,
+        "available": ["aditya-l1", "goes-live", "simulation"],
+        "goes_buffer_size": len(goes_buffer),
+        "goes_last_fetch": goes_last_fetch,
+        "aditya_windows": len(X_tactical) if X_tactical is not None else 0,
+    })
+
+
+@app.route("/api/datasource/<source>")
+def datasource_switch(source):
+    """Quick switch: /api/datasource/goes-live"""
+    global DATA_SOURCE
+    if source in ("aditya-l1", "goes-live", "simulation"):
+        DATA_SOURCE = source
+        if source == "goes-live" and len(goes_buffer) == 0:
+            fetch_goes_realtime()
+        print(f"  [DATA] Switched to: {DATA_SOURCE}")
+    return jsonify({"active_source": DATA_SOURCE})
 
 
 @app.route("/api/predict")
@@ -648,21 +885,29 @@ def feature_importance():
         return jsonify({"features": feat_names, "importance": [0.11]*9, "error": str(e)})
 
 
+
 # ── Entry point ───────────────────────────────────────────────
 
 if __name__ == "__main__":
     print("\n" + "=" * 60)
-    print("  JWALASHMI \u2014 Solar Flare Early Warning System")
+    print("  JWALASHMI -- Solar Flare Early Warning System")
     print("  AI-Powered Mission Control Dashboard")
     print("=" * 60)
     print("\nLoading models & data...")
     load_models()
 
+    # Start GOES real-time fetch thread
+    goes_thread = threading.Thread(target=goes_fetch_thread, daemon=True)
+    goes_thread.start()
+    print("  [OK] GOES real-time feed started (60s interval)")
+
     mode_emoji = {"ensemble": f"V6.1 {len(v6_models)}-Model Ensemble" if v6_models else "5-Model Ensemble", "single": "Single Model", "none": "Simulation"}
     print(f"\n  Mode:      {mode_emoji.get(INFERENCE_MODE, INFERENCE_MODE)}")
+    print(f"  Source:    {DATA_SOURCE}")
     print(f"  Dashboard: http://localhost:5000")
     print(f"  API:       http://localhost:5000/api/predict")
+    print(f"  Switch:    http://localhost:5000/api/datasource/goes-live")
+    print(f"  Switch:    http://localhost:5000/api/datasource/aditya-l1")
     print(f"  Health:    http://localhost:5000/api/health")
-    print(f"  Metrics:   http://localhost:5000/api/metrics")
     print(f"  Catalog:   http://localhost:5000/api/catalog\n")
     app.run(host="0.0.0.0", port=5000, debug=False)
