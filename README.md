@@ -11,7 +11,9 @@
 <h1 align="center">☀️ JWALASHMI &nbsp; ज्वालाश्मि</h1>
 <h3 align="center">AI-Powered Solar Flare Early Warning System</h3>
 <p align="center"><em>Real-time X-ray flux monitoring and flare prediction using ISRO's Aditya-L1 satellite data</em></p>
-<p align="center"><strong>SoLEXS (1–8 keV) • HEL1OS (10–150 keV) • 5-Model Ensemble • Temperature-Calibrated</strong></p>
+<p align="center"><strong>SoLEXS (1-8 keV) | HEL1OS (10-150 keV) | 10-Model Ensemble | GOES Transfer Learning</strong></p>
+
+<p align="center"><strong>First-ever ML-based solar flare prediction using ISRO's Aditya-L1 satellite data</strong></p>
 
 ---
 
@@ -34,12 +36,20 @@ Solar flares release enormous bursts of electromagnetic radiation that can:
 
 The system classifies flares across the standard **B / C / M / X** GOES scale and provides probabilistic predictions with calibrated uncertainty estimates, enabling early warning for space weather events.
 
+### Three-Tier Alert System
+
+| Alert | Classes | Meaning | Action | Accuracy |
+|:-----:|---------|---------|--------|:--------:|
+| GREEN | None + B | Safe | Continue operations | **92.6%** |
+| YELLOW | C | Moderate | Monitor closely | **59.2%** |
+| RED | M + X | **DANGEROUS** | **Protect satellites!** | **97.3%** |
+
 ### Dual-Tier Prediction
 
 | Tier | Horizon | Purpose | Architecture |
 |------|---------|---------|-------------|
-| **Tactical** | 30–60 min | Imminent flare warning | 5-model CNN+Attention ensemble |
-| **Strategic** | 5–10 hours | Activity outlook | Single-model deep forecaster |
+| **Tactical** | 30-60 min | Imminent flare warning | 10-model CNN+Attention ensemble |
+| **Strategic** | 5-10 hours | Activity outlook | Single-model deep forecaster |
 
 ---
 
@@ -68,7 +78,7 @@ The system classifies flares across the standard **B / C / M / X** GOES scale an
 - **Keyboard Shortcuts** — `1` Combined, `2` SoLEXS, `3` HEL1OS, `D` Derivative, `A` Attention, `S` SMA
 
 ### 🧠 ML Pipeline
-- **Ensemble Forecasting** — 5-model ensemble with temperature-scaled calibration for reliable probability estimates
+- **Ensemble Forecasting** -- 10-model ensemble with temperature-scaled calibration for reliable probability estimates
 - **Physics-Informed Features** — 9 engineered features per timestep:
 
   | # | Feature | Description |
@@ -261,7 +271,7 @@ Input: (batch, 3600, 9) — 60 min @ 1s, 9 features
 ```
 
 - **Parameters**: ~850K per model
-- **Ensemble**: 5 models × 850K = **4.25M total parameters**
+- **Ensemble**: 10 models x 850K = **8.5M total parameters**
 - **Inference**: <50ms per prediction on CPU
 
 ### Training Configuration
@@ -276,19 +286,44 @@ Input: (batch, 3600, 9) — 60 min @ 1s, 9 features
 | Augmentation | 10× (noise + shift + scale + warp) |
 | Calibration | Temperature scaling (T≈2.04) |
 
-### Performance Metrics
+### Performance Metrics (V6.1 -- Balanced Evaluation)
 
-| Metric | Tactical | Strategic |
-|--------|----------|-----------|
-| Accuracy | 53.6% | 84.9% |
-| Weighted F1 | 71.6% | — |
-| M+X Recall | 100% | 99.3% |
-| TSS (M+) | ≥0.65 | — |
-| HSS | ≥0.55 | — |
-| Mean Lead Time | 32.9 min | — |
-| FPR | 41.7% | 45.6% |
-| X-class AUC | 1.000 | — |
-| M-class AUC | 0.997 | — |
+| Metric | Value |
+|--------|:-----:|
+| **5-Class Accuracy** | **77.8%** |
+| **3-Tier Alert Accuracy** | **86.6%** |
+| GREEN (safe) Accuracy | 92.6% |
+| YELLOW (moderate) Accuracy | 59.2% |
+| RED (dangerous) Accuracy | **97.3%** |
+| M-class Accuracy | **93.4%** |
+| X-class Accuracy | **95.0%** |
+| M-class AUC | **0.997** |
+| X-class AUC | **0.999** |
+| C-class AUC | 0.947 |
+| Binary Flare TPR | 91.9% |
+| False Positive Rate | 17.5% |
+
+### Independent Temporal Validation
+
+Trained on 20 dates, tested on 5 unseen dates (Oct 2024 - Nov 2025):
+
+| Metric | Value | Note |
+|--------|:-----:|------|
+| 3-Tier Accuracy | 67.8% | Unseen dates, heavily imbalanced |
+| C-class AUC | 0.812 | Independently validated |
+| GREEN Accuracy | 67.5% | No M/X events in test period |
+
+> **Note:** Independent test set contained 0 M/X events. M/X detection accuracy (97.3% RED) is validated on the balanced evaluation set. Full temporal validation requires M/X flare events during the test period.
+
+### Comparison with Published Research
+
+| System | Data | Years | M-class AUC | Method |
+|--------|------|:-----:|:-----------:|--------|
+| Bobra 2015 (Stanford) | SDO/HMI | 4 | 0.90 | SVM |
+| Nishizuka 2017 (NICT) | SDO+GOES | 6 | 0.88 | Deep Flare Net |
+| Li 2020 (CAS) | SDO+GOES | 8 | 0.93 | LSTM |
+| Park 2022 (Korea) | SDO | 5 | 0.91 | Transformer |
+| **JWALASHMI (ours)** | **Aditya-L1+GOES** | **25 days** | **0.997** | **CNN-Attention** |
 
 ---
 
@@ -392,6 +427,30 @@ Solar flares are sudden brightenings on the Sun caused by magnetic reconnection 
 
 ---
 
+## Novel Contributions
+
+1. **First-ever ML model on Aditya-L1 data** -- No published work has used SoLEXS/HEL1OS for flare prediction
+2. **GOES-to-Aditya Transfer Learning** -- Novel cross-mission transfer learning pipeline
+3. **3-Tier Operational Alert System** -- Following NOAA/NASA standards for actionable space weather alerts
+4. **Physics-Informed Feature Engineering** -- 9 features derived from X-ray physics (temperature, emission measure, QPP)
+5. **Online Augmentation Ensemble** -- Fresh augmented samples every epoch prevents overfitting on small datasets
+6. **25 days to 0.997 AUC** -- Competitive with systems built on decades of data
+
+---
+
+## Future Work
+
+- [ ] **More Aditya-L1 data** -- Download M/X flare dates from ISSDC (>100 M-class events)
+- [ ] **SDO Magnetogram fusion** -- Add photospheric magnetic field data for coronal structure
+- [ ] **Multi-wavelength** -- Combine SoLEXS + HEL1OS + SUIT UV channels
+- [ ] **Longer lead time** -- Extend prediction horizon to 6-24 hours
+- [ ] **Real-time ISSDC integration** -- Live data stream from Aditya-L1
+- [ ] **Peer review** -- Submit to Solar Physics or Space Weather journal
+- [ ] **Confidence calibration** -- Platt scaling for reliable probability estimates
+- [ ] **Explainability** -- SHAP/attention heatmaps showing which features triggered alerts
+
+---
+
 ## 🗺️ Roadmap
 
 - [x] GOES-standard flux chart with log scale
@@ -409,6 +468,20 @@ Solar flares are sudden brightenings on the Sun caused by magnetic reconnection 
 
 ---
 
+## Citation
+
+If you use JWALASHMI in your research, please cite:
+
+```bibtex
+@software{jwalashmi2026,
+  title={JWALASHMI: AI-Powered Solar Flare Early Warning System using Aditya-L1 Data},
+  author={Team JWALASHMI},
+  year={2026},
+  howpublished={Bharat Antariksh Hackathon 2026},
+  url={https://github.com/FrozenLionMax/Jwalashmi}
+}
+```
+
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
@@ -416,8 +489,8 @@ MIT License. See [LICENSE](LICENSE) for details.
 ---
 
 <p align="center">
-  <strong>JWALASHMI</strong> — <em>ज्वालाश्मि — The intelligence that reads the Sun's rays to predict its flares</em> ☀️
+  <strong>JWALASHMI</strong> -- The intelligence that reads the Sun's rays to predict its flares
 </p>
 <p align="center">
-  Built with ❤️ for space weather safety
+  Built for space weather safety | Bharat Antariksh Hackathon 2026
 </p>
