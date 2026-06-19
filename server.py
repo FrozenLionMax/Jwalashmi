@@ -75,14 +75,14 @@ def load_models():
 
     from src.model.architecture import FlareForecaster, StrategicForecaster
 
-    # ── Priority 1: V6.1 ensemble (10 models) ────────────────
-    v6_dir = str(cfg.MODEL_DIR / "v6_1_ensemble")
-    if os.path.exists(v6_dir):
+    # ── Priority 0: V6.2 ensemble (10 models, 12 features) ─────
+    v62_dir = str(cfg.MODEL_DIR / "v6_2_ensemble")
+    if os.path.exists(v62_dir):
         try:
             for i in range(10):
-                model_path = os.path.join(v6_dir, f"model_{i}.pt")
+                model_path = os.path.join(v62_dir, f"model_{i}.pt")
                 if os.path.exists(model_path):
-                    model = FlareForecaster(n_input_channels=9)
+                    model = FlareForecaster(n_input_channels=12)
                     model.load_state_dict(
                         torch.load(model_path, map_location="cpu", weights_only=True)
                     )
@@ -90,14 +90,41 @@ def load_models():
                     v6_models.append(model)
             if len(v6_models) > 0:
                 INFERENCE_MODE = "ensemble"
-                print(f"  [OK] V6.1 ensemble loaded ({len(v6_models)} models)")
-                # Load optimized thresholds
-                thresh_path = os.path.join(v6_dir, "thresholds.npy")
-                if os.path.exists(thresh_path):
-                    v6_thresholds = np.load(thresh_path)
-                    print(f"  [OK] Optimized thresholds: None={v6_thresholds[0]:.1f} B={v6_thresholds[1]:.1f} C={v6_thresholds[2]:.1f}")
+                print(f"  [OK] V6.2 ensemble loaded ({len(v6_models)} models, 12 features, 95.2% BAcc)")
+                # Load metadata
+                meta_path = os.path.join(v62_dir, "metadata.json")
+                if os.path.exists(meta_path):
+                    with open(meta_path) as f:
+                        v6_meta = json.load(f)
+                    print(f"  [OK] V6.2 balanced accuracy: {v6_meta.get('balanced_accuracy', 0)*100:.1f}%")
         except Exception as e:
-            print(f"  [WARN] V6.1 load failed: {e}")
+            print(f"  [WARN] V6.2 load failed: {e}")
+            v6_models = []
+
+    # ── Priority 1: V6.1 ensemble (10 models) ────────────────
+    if not v6_models:
+        v6_dir = str(cfg.MODEL_DIR / "v6_1_ensemble")
+        if os.path.exists(v6_dir):
+            try:
+                for i in range(10):
+                    model_path = os.path.join(v6_dir, f"model_{i}.pt")
+                    if os.path.exists(model_path):
+                        model = FlareForecaster(n_input_channels=9)
+                        model.load_state_dict(
+                            torch.load(model_path, map_location="cpu", weights_only=True)
+                        )
+                        model.eval()
+                        v6_models.append(model)
+                if len(v6_models) > 0:
+                    INFERENCE_MODE = "ensemble"
+                    print(f"  [OK] V6.1 ensemble loaded ({len(v6_models)} models)")
+                    # Load optimized thresholds
+                    thresh_path = os.path.join(v6_dir, "thresholds.npy")
+                    if os.path.exists(thresh_path):
+                        v6_thresholds = np.load(thresh_path)
+                        print(f"  [OK] Optimized thresholds: None={v6_thresholds[0]:.1f} B={v6_thresholds[1]:.1f} C={v6_thresholds[2]:.1f}")
+            except Exception as e:
+                print(f"  [WARN] V6.1 load failed: {e}")
 
     # ── Priority 2: Old tactical ensemble ─────────────────────
     if INFERENCE_MODE == "none":
@@ -884,7 +911,7 @@ def feature_importance():
             "sample_idx": int(idx),
         })
     except Exception as e:
-        return jsonify({"features": feat_names, "importance": [0.11]*9, "error": str(e)})
+        return jsonify({"features": feat_names, "importance": [1.0/n_feat]*n_feat, "error": str(e)})
 
 
 
@@ -903,7 +930,7 @@ if __name__ == "__main__":
     goes_thread.start()
     print("  [OK] GOES real-time feed started (60s interval)")
 
-    mode_emoji = {"ensemble": f"V6.1 {len(v6_models)}-Model Ensemble" if v6_models else "5-Model Ensemble", "single": "Single Model", "none": "Simulation"}
+    mode_emoji = {"ensemble": f"V6.2 {len(v6_models)}-Model Ensemble (95.2% BAcc)" if v6_models else "Ensemble", "single": "Single Model", "none": "Simulation"}
     print(f"\n  Mode:      {mode_emoji.get(INFERENCE_MODE, INFERENCE_MODE)}")
     print(f"  Source:    {DATA_SOURCE}")
     print(f"  Dashboard: http://localhost:5000")
