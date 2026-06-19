@@ -64,6 +64,21 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .f-btn:first-child{border-radius:3px 0 0 3px}.f-btn:last-child{border-radius:0 3px 3px 0}
 .f-btn.on{background:rgba(34,211,238,0.06);color:var(--cyan);border-color:rgba(34,211,238,0.2)}
 .f-btn:hover:not(.on){background:rgba(255,255,255,0.03);color:var(--t1)}
+
+/* DATA SOURCE TOGGLE */
+.ds-toggles{display:flex;gap:0;margin-left:2px}
+.ds-btn{padding:3px 8px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;
+    background:rgba(255,255,255,0.02);color:var(--t3);border:1px solid var(--border);
+    cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all 0.3s;position:relative}
+.ds-btn:first-child{border-radius:3px 0 0 3px}
+.ds-btn:last-child{border-radius:0 3px 3px 0}
+.ds-btn.on-al1{background:rgba(249,115,22,0.1);color:#f97316;border-color:rgba(249,115,22,0.3)}
+.ds-btn.on-goes{background:rgba(16,185,129,0.1);color:#10b981;border-color:rgba(16,185,129,0.3)}
+.ds-btn.on-sim{background:rgba(168,85,247,0.1);color:#a855f7;border-color:rgba(168,85,247,0.3)}
+.ds-btn:hover:not([class*='on-']){background:rgba(255,255,255,0.04);color:var(--t1)}
+.ds-btn .ds-live{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:3px;
+    background:var(--green);box-shadow:0 0 4px var(--green);animation:livePulse 2s ease-in-out infinite}
+@keyframes livePulse{0%,100%{opacity:1}50%{opacity:0.3}}
 .flux-stats{position:absolute;top:8px;right:16px;z-index:10;display:flex;gap:14px;font-size:9px}
 .flux-stat{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
 .flux-stat-k{color:var(--t3);font-size:8px;text-transform:uppercase}
@@ -271,6 +286,12 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
         <span class="tb-scale tb-s0" id="scG">G0<span class="tb-tip">Geomagnetic Storm (G0=None, G5=Extreme geomagnetic)</span></span>
     </div>
     <div class="tb-sep"></div>
+    <div class="ds-toggles">
+        <button class="ds-btn on-al1" id="dsAL1" onclick="switchSource('aditya-l1')"><span style="color:#f97316">&#9702;</span> ISRO Aditya-L1</button>
+        <button class="ds-btn" id="dsGOES" onclick="switchSource('goes-live')"><span class="ds-live" style="display:none" id="goesLiveDot"></span>GOES Live</button>
+        <button class="ds-btn" id="dsSIM" onclick="switchSource('simulation')">Sim</button>
+    </div>
+    <div class="tb-sep"></div>
     <div style="font-size:9px;color:var(--t3)">Flare <span id="tbFlareProb" style="color:var(--green);font-weight:700">0%</span></div>
     <div class="tb-right">
         <span class="tb-date" id="clkDate">--</span>
@@ -456,6 +477,8 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 <div class="status-bar">
     <div class="sb-item"><div class="sb-dot"></div>Ensemble <span class="sb-val">10/10</span></div>
     <div class="sb-sep"></div>
+    <div class="sb-item">Source <span class="sb-val" id="sbSource" style="color:#f97316">Aditya-L1</span></div>
+    <div class="sb-sep"></div>
     <div class="sb-item">Cycle <span class="sb-val" id="sbCycle">#0</span></div>
     <div class="sb-sep"></div>
     <div class="sb-item">Latency <span class="sb-val" id="sbLat">--</span></div>
@@ -558,6 +581,28 @@ clog('GOES transfer learning + Aditya-L1 fine-tuning','info');
 clog('3-Tier alerts: GREEN(92.6%) YELLOW(59.2%) RED(97.3%)','info');
 clog('Pipeline: SoLEXS (1-8 keV) + HEL1OS (10-30 keV)','ok');
 clog('Shortcuts: [1]Both [2]SoLEXS [3]HEL1OS [D]Derivative [A]Attention','info');
+
+/* DATA SOURCE SWITCHING */
+let activeSource='aditya-l1';
+function switchSource(src){
+    activeSource=src;
+    fetch('/api/datasource/'+src).then(r=>r.json()).then(d=>{
+        clog('Data source: '+d.active_source,'ok');
+    }).catch(()=>clog('Source switch (offline mode)','warn'));
+    // Update button styles
+    document.getElementById('dsAL1').className='ds-btn'+(src==='aditya-l1'?' on-al1':'');
+    document.getElementById('dsGOES').className='ds-btn'+(src==='goes-live'?' on-goes':'');
+    document.getElementById('dsSIM').className='ds-btn'+(src==='simulation'?' on-sim':'');
+    // Live dot
+    document.getElementById('goesLiveDot').style.display=src==='goes-live'?'inline-block':'none';
+    // Status bar
+    const srcEl=document.getElementById('sbSource');
+    const names={'aditya-l1':'Aditya-L1','goes-live':'GOES Live','simulation':'Simulation'};
+    const colors={'aditya-l1':'#f97316','goes-live':'#10b981','simulation':'#a855f7'};
+    srcEl.textContent=names[src]||src;
+    srcEl.style.color=colors[src]||'var(--cyan)';
+    clog('Switched to: '+(names[src]||src),'ok');
+}
 
 /* ECHARTS INIT */
 const fluxEC=echarts.init(document.getElementById('fluxChart'),null,{renderer:'canvas'});
