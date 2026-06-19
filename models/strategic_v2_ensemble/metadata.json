@@ -1,0 +1,16 @@
+{
+  "version": "Strategic_V2",
+  "n_features": 12,
+  "n_models": 5,
+  "window_minutes": 720,
+  "window_hours": 12,
+  "lead_time_hours": "5-12",
+  "balanced_accuracy": 0.9853535222633909,
+  "val_accs": [
+    0.9668050408363342,
+    0.9751037955284119,
+    0.9751037955284119,
+    0.970954418182373,
+    0.9792531728744507
+  ]
+}
