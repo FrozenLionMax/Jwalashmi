@@ -849,12 +849,14 @@ def catalog():
 def feature_importance():
     """Return real gradient-based feature attribution."""
     feat_names = [
-        "SoLEXS Flux", "HEL1OS Flux", "dF/dt", "Temperature",
-        "Emission Measure", "QPP Index", "Norm Rate", "Slope", "Acceleration"
+        "Derivative", "Max Ratio", "BG Slope", "Energy Integral",
+        "QPP Power", "Norm Flux", "Long Slope", "Acceleration", "Long Ratio",
+        "Hard/Soft Ratio", "Neupert Effect", "Spectral Hardness"
     ]
 
+    n_feat = len(feat_names)
     if X_tactical is None:
-        return jsonify({"features": feat_names, "importance": [0.11]*9, "method": "uniform"})
+        return jsonify({"features": feat_names, "importance": [1.0/n_feat]*n_feat, "method": "uniform"})
 
     try:
         rng = np.random.default_rng(int(time.time()) // 60)
