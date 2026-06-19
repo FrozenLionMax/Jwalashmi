@@ -22,6 +22,7 @@ node_modules/
 *.pt
 *.pth
 *.h5
+*.zip
 .DS_Store
 Thumbs.db
 
@@ -30,5 +31,12 @@ Helios/
 Solexs/
 data/raw/
 data/processed/
-models/saved/
+data/goes/
+models/
 plots/
+extracted/
+noaa/
+
+# Colab files
+JWALASHMI_colab_data.zip
+JWALASHMI_Colab.ipynb
