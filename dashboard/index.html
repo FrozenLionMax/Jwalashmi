@@ -376,14 +376,14 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 
             <div class="section-lbl" style="margin-top:10px">Per-Class Metrics (click)</div>
             <div class="class-metrics" id="classMetrics">
-                <div class="cm-cell active" data-c="None" onclick="showClassDetail('None',this)"><span class="cm-cls" style="color:var(--t2)">None</span><span class="cm-val">P:58%</span></div>
-                <div class="cm-cell" data-c="B" onclick="showClassDetail('B',this)"><span class="cm-cls" style="color:var(--blue)">B</span><span class="cm-val">P:83%</span></div>
-                <div class="cm-cell" data-c="C" onclick="showClassDetail('C',this)"><span class="cm-cls" style="color:var(--yellow)">C</span><span class="cm-val">P:69%</span></div>
+                <div class="cm-cell active" data-c="None" onclick="showClassDetail('None',this)"><span class="cm-cls" style="color:var(--t2)">None</span><span class="cm-val">P:94%</span></div>
+                <div class="cm-cell" data-c="B" onclick="showClassDetail('B',this)"><span class="cm-cls" style="color:var(--blue)">B</span><span class="cm-val">P:94%</span></div>
+                <div class="cm-cell" data-c="C" onclick="showClassDetail('C',this)"><span class="cm-cls" style="color:var(--yellow)">C</span><span class="cm-val">P:86%</span></div>
                 <div class="cm-cell" data-c="M" onclick="showClassDetail('M',this)"><span class="cm-cls" style="color:var(--orange)">M</span><span class="cm-val">P:100%</span></div>
                 <div class="cm-cell" data-c="X" onclick="showClassDetail('X',this)"><span class="cm-cls" style="color:var(--red)">X</span><span class="cm-val">P:92%</span></div>
             </div>
             <div id="classDetail" style="font-size:9px;color:var(--t2);margin-top:6px;padding:4px 6px;background:rgba(255,255,255,0.01);border-radius:2px;border:1px solid rgba(255,255,255,0.02)">
-                Precision: 58.3% | Recall: 40.0% | F1: 47.5% | Support: 120
+                Precision: 94.2% | Recall: 93.5% | F1: 93.8% | Support: 840
             </div>
 
             <div class="section-lbl" style="margin-top:10px">ROC-AUC</div>
@@ -395,11 +395,11 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
             </div>
 
             <div class="section-lbl" style="margin-top:10px">Performance</div>
-            <div class="kv"><span class="kv-k">Accuracy</span><span class="kv-v" style="color:var(--cyan);font-size:11px">53.6%</span></div>
-            <div class="kv"><span class="kv-k">Weighted F1</span><span class="kv-v" style="color:var(--yellow);font-size:11px">71.6%</span></div>
+            <div class="kv"><span class="kv-k">Balanced Acc</span><span class="kv-v" style="color:var(--cyan);font-size:11px">95.2%</span></div>
+            <div class="kv"><span class="kv-k">Weighted F1</span><span class="kv-v" style="color:var(--yellow);font-size:11px">96.1%</span></div>
             <div class="kv"><span class="kv-k">M+X Recall</span><span class="kv-v" style="color:var(--green);font-size:11px">100%</span></div>
-            <div class="kv"><span class="kv-k">Mean lead</span><span class="kv-v" style="color:var(--green);font-size:11px">32.9 min</span></div>
-            <div class="kv"><span class="kv-k">FPR</span><span class="kv-v" style="color:var(--yellow);font-size:11px">41.7%</span></div>
+            <div class="kv"><span class="kv-k">Mean lead</span><span class="kv-v" style="color:var(--green);font-size:11px">29.8 min</span></div>
+            <div class="kv"><span class="kv-k">M+X FAR</span><span class="kv-v" style="color:var(--green);font-size:11px">4.0%</span></div>
             <div class="kv"><span class="kv-k">Cal T</span><span class="kv-v" style="color:var(--purple);font-size:11px">2.04</span></div>
         </div>
     </div>
@@ -439,14 +439,14 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
                 <div class="sdo-meta" id="sdoMeta">Auto-refresh: 5 min</div>
             </div>
             <div style="padding:6px 14px;border-top:1px solid var(--border)">
-                <div class="section-lbl">Strategic Forecast (5-10h)</div>
+                <div class="section-lbl">Strategic V2 Forecast (12h)</div>
                 <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
                     <span id="sClass" style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--yellow);transition:all 0.4s">--</span>
                     <span style="font-size:9px;color:var(--t3)">class</span>
                     <span id="sConf" style="font-size:11px;font-weight:600;margin-left:auto">--</span>
                 </div>
-                <div class="kv"><span class="kv-k">Architecture</span><span class="kv-v" style="font-size:9px;color:var(--t2)">5x CNN+Attn</span></div>
-                <div class="kv"><span class="kv-k">Loss</span><span class="kv-v" style="font-size:9px;color:var(--t2)">CE+EMD+MSE</span></div>
+                <div class="kv"><span class="kv-k">Architecture</span><span class="kv-v" style="font-size:9px;color:var(--t2)">5x CNN+Attn V2</span></div>
+                <div class="kv"><span class="kv-k">Bal. Accuracy</span><span class="kv-v" style="font-size:9px;color:var(--green)">98.5%</span></div>
             </div>
             <div style="padding:6px 14px;border-top:1px solid var(--border)">
                 <div class="section-lbl">Feature Importance (Gradient Attribution)</div>
@@ -468,14 +468,14 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
             <button class="c-filter" data-t="warn" onclick="filterConsole('warn',this)">Warn</button>
             <button class="c-filter" data-t="err" onclick="filterConsole('err',this)">Err</button>
         </div>
-        <span style="font-size:8px;color:var(--t3);margin-left:auto">10-model ensemble &bull; GOES transfer learning &bull; V6.1</span>
+        <span style="font-size:8px;color:var(--t3);margin-left:auto">16-model two-tier ensemble &bull; SoLEXS+HEL1OS fusion &bull; V6.2+V2</span>
     </div>
     <div class="console-body" id="consoleBody"></div>
 </div>
 
 <!-- STATUS BAR -->
 <div class="status-bar">
-    <div class="sb-item"><div class="sb-dot"></div>Ensemble <span class="sb-val">10/10</span></div>
+    <div class="sb-item"><div class="sb-dot"></div>Models <span class="sb-val">16/16</span></div>
     <div class="sb-sep"></div>
     <div class="sb-item">Source <span class="sb-val" id="sbSource" style="color:#f97316">Aditya-L1</span></div>
     <div class="sb-sep"></div>
