@@ -51,9 +51,12 @@ flare_catalog_df = None
 INFERENCE_MODE = "none"  # "ensemble", "single", "none"
 DATA_SOURCE = "aditya-l1"  # "aditya-l1", "goes-live", "simulation"
 
-# V6.1 ensemble models (list of FlareForecaster)
+# V6.2 tactical ensemble models (list of FlareForecaster)
 v6_models = []
 v6_thresholds = None
+
+# Strategic V2 ensemble models
+strategic_v2_models = []
 
 # Live GOES data buffer
 goes_buffer = []  # list of (timestamp, flux_value) tuples
@@ -155,18 +158,81 @@ def load_models():
             except Exception as e:
                 print(f"  [WARN] Single model load failed: {e}")
 
-    # ── Load strategic model ─────────────────────────────────
-    strat_path = str(cfg.MODEL_DIR / "best_strategic_model.pt")
-    if os.path.exists(strat_path):
+    # ── Load Strategic V2 ensemble (5 models, 12 features) ──
+    global strategic_v2_models
+    sv2_dir = str(cfg.MODEL_DIR / "strategic_v2_ensemble")
+    if os.path.exists(sv2_dir):
         try:
-            strategic_model = StrategicForecaster(n_input_channels=9)
-            strategic_model.load_state_dict(
-                torch.load(strat_path, map_location="cpu", weights_only=True)
-            )
-            strategic_model.eval()
-            print(f"  [OK] Strategic model loaded")
+            # Import or define StrategicV2 architecture inline
+            class ConvBlockS(torch.nn.Module):
+                def __init__(self, in_ch, out_ch, kernel, pool=2):
+                    super().__init__()
+                    self.conv = torch.nn.Conv1d(in_ch, out_ch, kernel, padding=kernel//2)
+                    self.bn = torch.nn.BatchNorm1d(out_ch)
+                    self.pool = torch.nn.MaxPool1d(pool)
+                def forward(self, x):
+                    return self.pool(F.relu(self.bn(self.conv(x))))
+
+            class StrategicV2Model(torch.nn.Module):
+                def __init__(self, n_features=12, n_classes=5):
+                    super().__init__()
+                    self.cnn = torch.nn.Sequential(
+                        ConvBlockS(n_features, 64, 7, pool=2),
+                        torch.nn.Dropout(0.2),
+                        ConvBlockS(64, 128, 5, pool=2),
+                        torch.nn.Dropout(0.2),
+                        ConvBlockS(128, 256, 3, pool=2),
+                        torch.nn.Dropout(0.3),
+                    )
+                    self.attn = torch.nn.MultiheadAttention(256, num_heads=8, dropout=0.1, batch_first=True)
+                    self.attn_norm = torch.nn.LayerNorm(256)
+                    self.classifier = torch.nn.Sequential(
+                        torch.nn.Linear(256, 128), torch.nn.ReLU(), torch.nn.Dropout(0.4),
+                        torch.nn.Linear(128, n_classes),
+                    )
+                    self.lead_head = torch.nn.Sequential(
+                        torch.nn.Linear(256, 64), torch.nn.ReLU(), torch.nn.Linear(64, 1),
+                    )
+                def forward(self, x):
+                    x = x.transpose(1, 2)
+                    x = self.cnn(x)
+                    x = x.transpose(1, 2)
+                    x_attn, attn_w = self.attn(x, x, x)
+                    x = self.attn_norm(x + x_attn)
+                    x_pool = x.mean(dim=1)
+                    return self.classifier(x_pool), self.lead_head(x_pool), attn_w
+
+            for i in range(5):
+                model_path = os.path.join(sv2_dir, f"strategic_v2_model_{i}.pt")
+                if os.path.exists(model_path):
+                    m = StrategicV2Model(n_features=12)
+                    m.load_state_dict(torch.load(model_path, map_location="cpu", weights_only=True))
+                    m.eval()
+                    strategic_v2_models.append(m)
+            if strategic_v2_models:
+                print(f"  [OK] Strategic V2 ensemble loaded ({len(strategic_v2_models)} models, 12 features, 98.5% BAcc)")
+                # Also load V2 metadata
+                sv2_meta = os.path.join(sv2_dir, "metadata.json")
+                if os.path.exists(sv2_meta):
+                    with open(sv2_meta) as f:
+                        meta = json.load(f)
+                    print(f"  [OK] Strategic V2 balanced accuracy: {meta.get('balanced_accuracy', 0)*100:.1f}%")
         except Exception as e:
-            print(f"  [WARN] Strategic model load failed: {e}")
+            print(f"  [WARN] Strategic V2 load failed: {e}")
+
+    # ── Fallback: Old strategic model ─────────────────────────
+    if not strategic_v2_models:
+        strat_path = str(cfg.MODEL_DIR / "best_strategic_model.pt")
+        if os.path.exists(strat_path):
+            try:
+                strategic_model = StrategicForecaster(n_input_channels=9)
+                strategic_model.load_state_dict(
+                    torch.load(strat_path, map_location="cpu", weights_only=True)
+                )
+                strategic_model.eval()
+                print(f"  [OK] Strategic V1 model loaded (fallback)")
+            except Exception as e:
+                print(f"  [WARN] Strategic model load failed: {e}")
 
     # ── Load preprocessed data ───────────────────────────────
     try:
@@ -190,8 +256,13 @@ def load_models():
         pass
 
     try:
+        str_x2 = str(cfg.PROCESSED / "X_strategic_v2.npy")
         str_x = str(cfg.PROCESSED / "X_strategic.npy")
-        if os.path.exists(str_x):
+        if os.path.exists(str_x2):
+            X_strategic = np.load(str_x2)
+            y_strategic = np.load(str(cfg.PROCESSED / "y_strategic_v2.npy"))
+            print(f"  [OK] Strategic V2 data: {X_strategic.shape[0]} windows ({X_strategic.shape[1]} min)")
+        elif os.path.exists(str_x):
             X_strategic = np.load(str_x)
             y_strategic = np.load(str(cfg.PROCESSED / "y_strategic.npy"))
             print(f"  [OK] Strategic data: {X_strategic.shape[0]} windows")

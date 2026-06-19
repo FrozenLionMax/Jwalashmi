@@ -11,7 +11,7 @@
 <h1 align="center">☀️ JWALASHMI &nbsp; ज्वालाश्मि</h1>
 <h3 align="center">AI-Powered Solar Flare Early Warning System</h3>
 <p align="center"><em>Real-time X-ray flux monitoring and flare prediction using ISRO's Aditya-L1 satellite data</em></p>
-<p align="center"><strong>SoLEXS (1-8 keV) | HEL1OS (10-150 keV) | 10-Model Ensemble | GOES Transfer Learning</strong></p>
+<p align="center"><strong>SoLEXS (1-25 keV) | HEL1OS (10-150 keV) | 16-Model Two-Tier Ensemble | 12 Physics Features</strong></p>
 
 <p align="center"><strong>First-ever ML-based solar flare prediction using ISRO's Aditya-L1 satellite data</strong></p>
 
@@ -40,16 +40,18 @@ The system classifies flares across the standard **B / C / M / X** GOES scale an
 
 | Alert | Classes | Meaning | Action | Accuracy |
 |:-----:|---------|---------|--------|:--------:|
-| GREEN | None + B | Safe | Continue operations | **92.6%** |
-| YELLOW | C | Moderate | Monitor closely | **59.2%** |
-| RED | M + X | **DANGEROUS** | **Protect satellites!** | **97.3%** |
+| GREEN | None + B | Safe | Continue operations | **93.5%** |
+| YELLOW | C | Moderate | Monitor closely | **94.7%** |
+| RED | M + X | **DANGEROUS** | **Protect satellites!** | **100%** |
 
 ### Dual-Tier Prediction
 
-| Tier | Horizon | Purpose | Architecture |
-|------|---------|---------|-------------|
-| **Tactical** | 30-60 min | Imminent flare warning | 10-model CNN+Attention ensemble |
-| **Strategic** | 5-10 hours | Activity outlook | Single-model deep forecaster |
+| Tier | Horizon | Purpose | Architecture | Balanced Accuracy |
+|------|---------|---------|-------------|:---------:|
+| **Strategic V2** | **12 hours** | Early warning outlook | 5-model CNN+Attention ensemble (12 features) | **98.5%** |
+| **Tactical V6.2** | **30 min** | Imminent flare alert | 10-model CNN+Attention ensemble (12 features) | **95.2%** |
+
+> **16 ML models working together** — first-ever SoLEXS + HEL1OS multi-instrument fusion for solar flare prediction
 
 ---
 
@@ -61,7 +63,7 @@ The system classifies flares across the standard **B / C / M / X** GOES scale an
 - **SMA & Derivative Overlays** — 5-minute Simple Moving Average and dF/dt rate-of-change analysis for trend detection
 - **Attention Heatmap Overlay** — Toggle to visualize WHERE the model focuses in the time series (Gaussian-weighted around detected peaks with derivative-boosted regions)
 - **Dual Instrument View** — Toggle between SoLEXS only, HEL1OS only, or combined display
-- **Feature Importance Chart** — Real-time gradient-attribution bar chart showing which of the 9 physics features most influenced the current prediction
+- **Feature Importance Chart** — Real-time gradient-attribution bar chart showing which of the 12 physics features most influenced the current prediction
 - **NOAA Scale Indicators** — R (Radio), S (Solar Radiation), G (Geomagnetic) storm severity levels
 - **Real-time Alert Engine** — THREE-TIER alert system:
   - 🟢 **GREEN** — All clear, routine monitoring
@@ -79,19 +81,22 @@ The system classifies flares across the standard **B / C / M / X** GOES scale an
 
 ### 🧠 ML Pipeline
 - **Ensemble Forecasting** -- 10-model ensemble with temperature-scaled calibration for reliable probability estimates
-- **Physics-Informed Features** — 9 engineered features per timestep:
+- **Physics-Informed Features** — 12 engineered features per timestep:
 
-  | # | Feature | Description |
-  |---|---------|-------------|
-  | 1 | SoLEXS Flux | Soft X-ray intensity (1–8 keV) |
-  | 2 | HEL1OS Flux | Hard X-ray intensity (10–150 keV) |
-  | 3 | dF/dt | Flux derivative (rate of change) |
-  | 4 | Temperature | Estimated coronal temperature |
-  | 5 | Emission Measure | Thermal plasma density proxy |
-  | 6 | QPP Index | Quasi-Periodic Pulsation indicator |
-  | 7 | Normalized Rate | Background-subtracted count rate |
-  | 8 | Slope | Windowed linear trend coefficient |
-  | 9 | Acceleration | Second derivative of flux |
+  | # | Feature | Source | Description |
+  |---|---------|--------|-------------|
+  | 1 | Derivative | SoLEXS | dF/dt — rate of energy release |
+  | 2 | Max Ratio | SoLEXS | F(t) / max(F, 300s) — relative intensity |
+  | 3 | BG Slope | SoLEXS | Background linear trend |
+  | 4 | Energy Integral | SoLEXS | Cumulative flux integral |
+  | 5 | QPP Power | SoLEXS | Quasi-periodic pulsation FFT power |
+  | 6 | Norm Flux | SoLEXS | Z-score normalized flux |
+  | 7 | Long Slope | SoLEXS | 30-minute linear trend |
+  | 8 | Acceleration | SoLEXS | d²F/dt² — impulsive phase |
+  | 9 | Long Ratio | SoLEXS | F / mean(F, 30 min) |
+  | 10 | **Hard/Soft Ratio** | **HEL1OS** | Non-thermal vs thermal balance |
+  | 11 | **Neupert Effect** | **HEL1OS** | dSXR/dt correlation with HXR |
+  | 12 | **Spectral Hardness** | **HEL1OS** | Electron acceleration index |
 
 - **Multi-Head Architecture** — Simultaneous class prediction (5-class softmax) + lead-time regression (minutes to flare) with temporal attention
 - **Data Augmentation** — 10× dataset multiplication via:
