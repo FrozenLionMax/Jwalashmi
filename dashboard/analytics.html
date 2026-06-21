@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JWALASHMI | Model Analytics</title>
+<meta name="description" content="JWALASHMI Research Analytics — Model performance, confusion matrix, ROC curves, training history">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+    --bg:#020408;--panel:#0a0e17;--panel2:#0d1220;--border:rgba(255,255,255,0.06);
+    --borderHi:rgba(34,211,238,0.18);
+    --t0:#e8ecf4;--t1:#c4cce0;--t2:#7e8ba4;--t3:#4a5572;
+    --cyan:#22d3ee;--blue:#3b82f6;--green:#10b981;--yellow:#eab308;
+    --orange:#f97316;--red:#ef4444;--purple:#a855f7;
+}
+html{scroll-behavior:smooth}
+body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0);
+    -webkit-font-smoothing:antialiased;min-height:100vh}
+
+/* === TOPBAR === */
+.topbar{display:flex;align-items:center;height:48px;padding:0 24px;
+    background:linear-gradient(180deg,#0c1120,#080c18);border-bottom:1px solid var(--border);
+    position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
+.tb-brand{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
+    color:var(--cyan);letter-spacing:1.2px}
+.tb-sep{width:1px;height:22px;background:var(--border);margin:0 16px}
+.tb-title{font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--t1);font-weight:600}
+.tb-badge{font-size:9px;font-weight:700;padding:3px 8px;border-radius:4px;margin-left:10px;
+    background:rgba(168,85,247,0.1);color:var(--purple);border:1px solid rgba(168,85,247,0.2);
+    text-transform:uppercase;letter-spacing:0.5px}
+.tb-back{margin-left:auto;font-size:11px;color:var(--cyan);text-decoration:none;
+    padding:5px 14px;border:1px solid rgba(34,211,238,0.15);border-radius:4px;
+    transition:all 0.3s;font-weight:600;font-family:'JetBrains Mono',monospace}
+.tb-back:hover{background:rgba(34,211,238,0.08);border-color:rgba(34,211,238,0.3)}
+
+/* === GRID === */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:20px 24px;max-width:1400px;margin:0 auto}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;
+    transition:all 0.3s;position:relative}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(34,211,238,0.08),transparent)}
+.card:hover{border-color:var(--borderHi);box-shadow:0 4px 24px rgba(0,0,0,0.3)}
+.card-hdr{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;
+    background:rgba(255,255,255,0.01)}
+.card-title{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;
+    color:var(--t1);text-transform:uppercase;letter-spacing:0.8px}
+.card-badge{font-size:8px;font-weight:700;padding:2px 8px;border-radius:3px;margin-left:auto}
+.card-body{padding:16px 18px}
+.card-full{grid-column:1/-1}
+
+/* === METRICS ROW === */
+.metrics-row{grid-column:1/-1;display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+.metric{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px;
+    text-align:center;transition:all 0.3s;position:relative;overflow:hidden}
+.metric::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 8px 8px;
+    transition:all 0.4s}
+.metric:hover{border-color:var(--borderHi);transform:translateY(-2px)}
+.metric-val{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;
+    background:linear-gradient(135deg,var(--cyan),var(--blue));-webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;transition:all 0.4s}
+.metric-label{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:0.6px;margin-top:4px}
+.metric-sub{font-size:10px;color:var(--t2);margin-top:2px}
+.m-cyan::after{background:var(--cyan)}.m-green::after{background:var(--green)}
+.m-yellow::after{background:var(--yellow)}.m-red::after{background:var(--red)}
+.m-purple::after{background:var(--purple)}.m-blue::after{background:var(--blue)}
+
+/* === TABLE === */
+.tbl{width:100%;border-collapse:separate;border-spacing:0 3px;font-size:11px}
+.tbl th{font-size:9px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;
+    text-align:left;padding:6px 10px;border-bottom:1px solid var(--border)}
+.tbl td{padding:8px 10px;color:var(--t1);background:rgba(255,255,255,0.008);transition:all 0.2s}
+.tbl tr:hover td{background:rgba(34,211,238,0.03)}
+.tbl td:first-child{border-radius:4px 0 0 4px;font-weight:600}
+.tbl td:last-child{border-radius:0 4px 4px 0}
+.cls-none{color:var(--t2)}.cls-b{color:var(--blue)}.cls-c{color:var(--yellow)}
+.cls-m{color:var(--orange)}.cls-x{color:var(--red)}
+
+/* === PROGRESS BAR === */
+.pbar{height:6px;border-radius:3px;background:rgba(255,255,255,0.03);overflow:hidden;margin-top:4px}
+.pbar-fill{height:100%;border-radius:3px;transition:width 1.5s cubic-bezier(0.4,0,0.2,1)}
+
+/* === CHART CONTAINERS === */
+.chart-box{width:100%;height:300px}
+.chart-box-sm{width:100%;height:220px}
+
+/* === MODEL TIMELINE === */
+.timeline{position:relative;padding:10px 0}
+.tl-item{display:flex;align-items:flex-start;gap:14px;padding:10px 0;position:relative}
+.tl-item::before{content:'';position:absolute;left:15px;top:30px;bottom:-10px;width:1px;
+    background:var(--border)}
+.tl-item:last-child::before{display:none}
+.tl-dot{width:30px;height:30px;border-radius:50%;border:2px solid var(--border);display:grid;
+    place-items:center;font-size:10px;font-weight:700;flex-shrink:0;transition:all 0.3s;
+    background:var(--panel)}
+.tl-dot.active{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 12px rgba(34,211,238,0.15)}
+.tl-content{flex:1}
+.tl-title{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;color:var(--t0)}
+.tl-meta{font-size:9px;color:var(--t3);margin-top:2px}
+.tl-acc{font-size:11px;font-weight:600;margin-top:4px}
+
+/* === FOOTER === */
+.footer{text-align:center;padding:20px;color:var(--t3);font-size:9px;border-top:1px solid var(--border);margin-top:20px}
+
+/* === ANIMATIONS === */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.animate{animation:fadeUp 0.6s ease forwards;opacity:0}
+.d1{animation-delay:0.1s}.d2{animation-delay:0.2s}.d3{animation-delay:0.3s}
+.d4{animation-delay:0.4s}.d5{animation-delay:0.5s}.d6{animation-delay:0.6s}
+
+@media(max-width:900px){
+    .grid{grid-template-columns:1fr}
+    .metrics-row{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+    <span class="tb-brand">JWALASHMI</span>
+    <div class="tb-sep"></div>
+    <span class="tb-title">Model Analytics</span>
+    <span class="tb-badge">Research Mode</span>
+    <a href="/" class="tb-back">&#8592; Mission Control</a>
+</div>
+
+<!-- HERO METRICS -->
+<div class="grid">
+    <div class="metrics-row">
+        <div class="metric m-cyan animate d1">
+            <div class="metric-val" id="mTacAcc">95.2%</div>
+            <div class="metric-label">Tactical Accuracy</div>
+            <div class="metric-sub">V6.2 Ensemble</div>
+        </div>
+        <div class="metric m-green animate d2">
+            <div class="metric-val" id="mStrAcc">98.5%</div>
+            <div class="metric-label">Strategic Accuracy</div>
+            <div class="metric-sub">V2 Ensemble</div>
+        </div>
+        <div class="metric m-red animate d3">
+            <div class="metric-val">100%</div>
+            <div class="metric-label">M+X Recall</div>
+            <div class="metric-sub">Zero missed flares</div>
+        </div>
+        <div class="metric m-yellow animate d4">
+            <div class="metric-val">4.0%</div>
+            <div class="metric-label">M+X False Alarm</div>
+            <div class="metric-sub">Only 8 false alarms</div>
+        </div>
+        <div class="metric m-purple animate d5">
+            <div class="metric-val">16</div>
+            <div class="metric-label">ML Models</div>
+            <div class="metric-sub">10 Tactical + 5 Strategic</div>
+        </div>
+        <div class="metric m-blue animate d6">
+            <div class="metric-val">29.8m</div>
+            <div class="metric-label">Mean Lead Time</div>
+            <div class="metric-sub">&plusmn;7.7 min error</div>
+        </div>
+    </div>
+
+    <!-- CONFUSION MATRIX -->
+    <div class="card animate d2">
+        <div class="card-hdr">
+            <span class="card-title">Confusion Matrix — Tactical V6.2</span>
+            <span class="card-badge" style="background:rgba(34,211,238,0.06);color:var(--cyan);border:1px solid rgba(34,211,238,0.12)">2,380 samples</span>
+        </div>
+        <div class="card-body"><div class="chart-box" id="confusionChart"></div></div>
+    </div>
+
+    <!-- PER-CLASS METRICS -->
+    <div class="card animate d3">
+        <div class="card-hdr">
+            <span class="card-title">Per-Class Performance</span>
+            <span class="card-badge" style="background:rgba(16,185,129,0.06);color:var(--green);border:1px solid rgba(16,185,129,0.12)">V6.2</span>
+        </div>
+        <div class="card-body">
+            <table class="tbl">
+                <thead><tr><th>Class</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th><th>Confidence</th><th>FAR</th></tr></thead>
+                <tbody>
+                    <tr><td class="cls-none">None</td><td>94.2%</td><td>93.5%</td><td>0.938</td><td>840</td><td>78.3%</td><td>—</td></tr>
+                    <tr><td class="cls-b">B</td><td>93.7%</td><td>88.1%</td><td>0.908</td><td>840</td><td>70.9%</td><td>6.3%</td></tr>
+                    <tr><td class="cls-c">C</td><td>86.4%</td><td>94.7%</td><td>0.903</td><td>508</td><td>74.1%</td><td>13.6%</td></tr>
+                    <tr><td class="cls-m">M</td><td>93.9%</td><td>100%</td><td>0.969</td><td>108</td><td>98.0%</td><td>6.1%</td></tr>
+                    <tr><td class="cls-x">X</td><td>98.8%</td><td>100%</td><td>0.994</td><td>84</td><td>99.2%</td><td>1.2%</td></tr>
+                </tbody>
+            </table>
+            <div style="margin-top:14px">
+                <div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px">Confidence Distribution</div>
+                <div id="confDistChart" class="chart-box-sm"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FALSE ALARM ANALYSIS -->
+    <div class="card animate d3">
+        <div class="card-hdr">
+            <span class="card-title">Detection Metrics (POD / FAR / CSI)</span>
+            <span class="card-badge" style="background:rgba(239,68,68,0.06);color:var(--red);border:1px solid rgba(239,68,68,0.12)">Operational</span>
+        </div>
+        <div class="card-body"><div class="chart-box" id="farChart"></div></div>
+    </div>
+
+    <!-- LEAD TIME -->
+    <div class="card animate d4">
+        <div class="card-hdr">
+            <span class="card-title">Lead Time Analysis</span>
+            <span class="card-badge" style="background:rgba(234,179,8,0.06);color:var(--yellow);border:1px solid rgba(234,179,8,0.12)">Minutes</span>
+        </div>
+        <div class="card-body"><div class="chart-box" id="leadChart"></div></div>
+    </div>
+
+    <!-- ENSEMBLE AGREEMENT -->
+    <div class="card animate d4">
+        <div class="card-hdr">
+            <span class="card-title">Ensemble Agreement</span>
+            <span class="card-badge" style="background:rgba(168,85,247,0.06);color:var(--purple);border:1px solid rgba(168,85,247,0.12)">10 Models</span>
+        </div>
+        <div class="card-body"><div class="chart-box" id="agreeChart"></div></div>
+    </div>
+
+    <!-- FEATURE IMPORTANCE -->
+    <div class="card animate d5">
+        <div class="card-hdr">
+            <span class="card-title">Feature Importance (12 Features)</span>
+            <span class="card-badge" style="background:rgba(249,115,22,0.06);color:var(--orange);border:1px solid rgba(249,115,22,0.12)">SoLEXS + HEL1OS</span>
+        </div>
+        <div class="card-body"><div class="chart-box" id="featChart"></div></div>
+    </div>
+
+    <!-- MODEL EVOLUTION -->
+    <div class="card card-full animate d5">
+        <div class="card-hdr">
+            <span class="card-title">Model Evolution — V1 to V6.2</span>
+            <span class="card-badge" style="background:rgba(34,211,238,0.06);color:var(--cyan);border:1px solid rgba(34,211,238,0.12)">7 Versions</span>
+        </div>
+        <div class="card-body"><div class="chart-box" id="evoChart"></div></div>
+    </div>
+
+    <!-- STRATEGIC V2 -->
+    <div class="card animate d6">
+        <div class="card-hdr">
+            <span class="card-title">Strategic V2 — Per-Class</span>
+            <span class="card-badge" style="background:rgba(16,185,129,0.06);color:var(--green);border:1px solid rgba(16,185,129,0.12)">98.5%</span>
+        </div>
+        <div class="card-body">
+            <table class="tbl">
+                <thead><tr><th>Class</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th></tr></thead>
+                <tbody>
+                    <tr><td class="cls-none">None</td><td>99.7%</td><td>93.9%</td><td>0.967</td><td>345</td></tr>
+                    <tr><td class="cls-b">B</td><td>96.0%</td><td>99.2%</td><td>0.976</td><td>363</td></tr>
+                    <tr><td class="cls-c">C</td><td>99.2%</td><td>99.6%</td><td>0.994</td><td>244</td></tr>
+                    <tr><td class="cls-m">M</td><td>95.7%</td><td>100%</td><td>0.978</td><td>110</td></tr>
+                    <tr><td class="cls-x">X</td><td>98.3%</td><td>100%</td><td>0.991</td><td>114</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- SYSTEM SPECS -->
+    <div class="card animate d6">
+        <div class="card-hdr">
+            <span class="card-title">System Specifications</span>
+        </div>
+        <div class="card-body" style="font-size:11px">
+            <table class="tbl">
+                <tbody>
+                    <tr><td style="color:var(--t3)">Data Source</td><td>ISRO Aditya-L1 (PRADAN)</td></tr>
+                    <tr><td style="color:var(--t3)">Instruments</td><td>SoLEXS + HEL1OS</td></tr>
+                    <tr><td style="color:var(--t3)">Training Days</td><td>54 days</td></tr>
+                    <tr><td style="color:var(--t3)">Total Flares</td><td>325 events detected</td></tr>
+                    <tr><td style="color:var(--t3)">Tactical Input</td><td>(3600, 12) — 60 min @ 1 sec</td></tr>
+                    <tr><td style="color:var(--t3)">Strategic Input</td><td>(720, 12) — 12 hr @ 1 min</td></tr>
+                    <tr><td style="color:var(--t3)">Architecture</td><td>CNN + Multi-Head Attention</td></tr>
+                    <tr><td style="color:var(--t3)">Parameters</td><td>Tactical: 5M | Strategic: 460K</td></tr>
+                    <tr><td style="color:var(--t3)">Inference</td><td>~50ms (CPU) | ~8ms (GPU)</td></tr>
+                    <tr><td style="color:var(--t3)">Training</td><td>Kaggle T4 GPU</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="footer">
+    JWALASHMI &bull; AI-Powered Solar Flare Early Warning System &bull; ISRO Aditya-L1 &bull; SoLEXS + HEL1OS &bull; 16-Model Two-Tier Ensemble
+</div>
+
+<script>
+const C={none:'#7e8ba4',B:'#3b82f6',C:'#eab308',M:'#f97316',X:'#ef4444'};
+
+// === CONFUSION MATRIX ===
+(function(){
+    const c=echarts.init(document.getElementById('confusionChart'));
+    const cls=['None','B','C','M','X'];
+    const matrix=[[785,50,5,0,0],[45,740,55,0,0],[3,20,481,4,0],[0,0,0,108,0],[0,0,0,0,84]];
+    const data=[];
+    for(let i=0;i<5;i++)for(let j=0;j<5;j++)data.push([j,4-i,matrix[i][j]]);
+    c.setOption({
+        tooltip:{formatter:p=>`Actual: ${cls[4-p.data[1]]}<br>Predicted: ${cls[p.data[0]]}<br>Count: <b>${p.data[2]}</b>`},
+        grid:{left:60,right:20,top:20,bottom:40},
+        xAxis:{type:'category',data:cls,axisLabel:{color:'#7e8ba4',fontSize:11,fontWeight:600},axisLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}},name:'Predicted',nameTextStyle:{color:'#4a5572',fontSize:10}},
+        yAxis:{type:'category',data:[...cls].reverse(),axisLabel:{color:'#7e8ba4',fontSize:11,fontWeight:600},axisLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}},name:'Actual',nameTextStyle:{color:'#4a5572',fontSize:10}},
+        visualMap:{min:0,max:840,show:false,inRange:{color:['#0a0e17','#0d3331','#10b981','#22d3ee','#3b82f6']}},
+        series:[{type:'heatmap',data,label:{show:true,color:'#e8ecf4',fontSize:12,fontWeight:600,formatter:p=>p.data[2]>0?p.data[2]:''},itemStyle:{borderColor:'#020408',borderWidth:2,borderRadius:3},emphasis:{itemStyle:{borderColor:'#22d3ee',borderWidth:2}}}]
+    });
+    window.addEventListener('resize',()=>c.resize());
+})();
+
+// === CONFIDENCE DISTRIBUTION ===
+(function(){
+    const c=echarts.init(document.getElementById('confDistChart'));
+    c.setOption({
+        tooltip:{trigger:'axis'},
+        legend:{data:['None','B','C','M','X'],textStyle:{color:'#7e8ba4',fontSize:10},top:0,right:0},
+        grid:{left:40,right:10,top:30,bottom:30},
+        xAxis:{type:'category',data:['30-50%','50-70%','70-80%','80-90%','90-95%','95-100%'],axisLabel:{color:'#4a5572',fontSize:9},axisLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}}},
+        yAxis:{type:'value',axisLabel:{color:'#4a5572',fontSize:9},splitLine:{lineStyle:{color:'rgba(255,255,255,0.03)'}}},
+        series:[
+            {name:'None',type:'bar',stack:'a',data:[42,180,210,200,120,88],itemStyle:{color:'#7e8ba4',borderRadius:[0,0,0,0]}},
+            {name:'B',type:'bar',stack:'a',data:[55,220,200,180,100,85],itemStyle:{color:'#3b82f6'}},
+            {name:'C',type:'bar',stack:'a',data:[10,80,120,150,80,68],itemStyle:{color:'#eab308'}},
+            {name:'M',type:'bar',stack:'a',data:[0,0,2,5,10,91],itemStyle:{color:'#f97316'}},
+            {name:'X',type:'bar',stack:'a',data:[0,0,1,2,5,76],itemStyle:{color:'#ef4444',borderRadius:[3,3,0,0]}}
+        ]
+    });
+    window.addEventListener('resize',()=>c.resize());
+})();
+
+// === FAR/POD/CSI ===
+(function(){
+    const c=echarts.init(document.getElementById('farChart'));
+    c.setOption({
+        tooltip:{trigger:'axis'},
+        legend:{data:['POD (Detection)','FAR (False Alarm)','CSI (Skill)'],textStyle:{color:'#7e8ba4',fontSize:10},top:0},
+        grid:{left:40,right:20,top:40,bottom:30},
+        xAxis:{type:'category',data:['B','C','M','X'],axisLabel:{color:'#c4cce0',fontSize:13,fontWeight:700},axisLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}}},
+        yAxis:{type:'value',max:1,axisLabel:{color:'#4a5572',fontSize:9,formatter:v=>(v*100)+'%'},splitLine:{lineStyle:{color:'rgba(255,255,255,0.03)'}}},
+        series:[
+            {name:'POD (Detection)',type:'bar',data:[0.881,0.947,1.0,1.0],itemStyle:{color:'#10b981',borderRadius:[4,4,0,0]},barWidth:24},
+            {name:'FAR (False Alarm)',type:'bar',data:[0.063,0.136,0.061,0.012],itemStyle:{color:'#ef4444',borderRadius:[4,4,0,0]},barWidth:24},
+            {name:'CSI (Skill)',type:'line',data:[0.831,0.824,0.939,0.988],lineStyle:{color:'#22d3ee',width:3},symbol:'circle',symbolSize:10,itemStyle:{color:'#22d3ee'}}
+        ]
+    });
+    window.addEventListener('resize',()=>c.resize());
+})();
+
+// === LEAD TIME ===
+(function(){
+    const c=echarts.init(document.getElementById('leadChart'));
+    c.setOption({
+        tooltip:{trigger:'axis',formatter:p=>{let s=p[0].name+'<br>';p.forEach(x=>s+=`${x.marker}${x.seriesName}: <b>${x.value} min</b><br>`);return s}},
+        legend:{data:['Actual Lead','Predicted Lead','Error'],textStyle:{color:'#7e8ba4',fontSize:10},top:0},
+        grid:{left:50,right:20,top:40,bottom:30},
+        xAxis:{type:'category',data:['B','C','M','X'],axisLabel:{color:'#c4cce0',fontSize:13,fontWeight:700},axisLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}}},
+        yAxis:{type:'value',name:'Minutes',nameTextStyle:{color:'#4a5572',fontSize:10},axisLabel:{color:'#4a5572',fontSize:9},splitLine:{lineStyle:{color:'rgba(255,255,255,0.03)'}}},
+        series:[
+            {name:'Actual Lead',type:'bar',data:[30.3,29.7,30.1,29.5],itemStyle:{color:'#3b82f6',borderRadius:[4,4,0,0]},barWidth:30},
+            {name:'Predicted Lead',type:'bar',data:[36.5,37.1,37.4,36.9],itemStyle:{color:'#22d3ee',borderRadius:[4,4,0,0]},barWidth:30},
+            {name:'Error',type:'line',data:[7.4,8.0,7.7,7.7],lineStyle:{color:'#f97316',width:3,type:'dashed'},symbol:'diamond',symbolSize:12,itemStyle:{color:'#f97316'}}
+        ]
+    });
+    window.addEventListener('resize',()=>c.resize());
+})();
+
+// === ENSEMBLE AGREEMENT ===
+(function(){
+    const c=echarts.init(document.getElementById('agreeChart'));
+    c.setOption({
+        tooltip:{trigger:'item'},
+        series:[{
+            type:'pie',radius:['45%','75%'],center:['50%','55%'],
+            data:[
+                {value:953,name:'10/10 Agree (40%)',itemStyle:{color:'#10b981'}},
+                {value:816,name:'8-9/10 (34.3%)',itemStyle:{color:'#22d3ee'}},
+                {value:421,name:'6-7/10 (17.7%)',itemStyle:{color:'#eab308'}},
+                {value:190,name:'<6/10 (8%)',itemStyle:{color:'#ef4444'}}
+            ],
+            label:{color:'#c4cce0',fontSize:11,formatter:'{b}'},
+            emphasis:{scaleSize:8,label:{fontSize:13,fontWeight:700}}
+        }],
+        graphic:{elements:[{type:'text',left:'center',top:'48%',style:{text:'85.0%\nMean',fill:'#22d3ee',fontSize:22,fontWeight:700,textAlign:'center',fontFamily:'Space Grotesk'}}]}
+    });
+    window.addEventListener('resize',()=>c.resize());
+})();
+
+// === FEATURE IMPORTANCE ===
+(function(){
+    const c=echarts.init(document.getElementById('featChart'));
+    const feats=['Derivative','Max Ratio','BG Slope','Energy Integral','QPP Power',
+        'Norm Flux','Long Slope','Acceleration','Long Ratio','Hard/Soft Ratio','Neupert Effect','Spectral Hardness'];
+    const vals=[0.18,0.14,0.11,0.10,0.09,0.08,0.07,0.06,0.05,0.04,0.05,0.03];
+    const colors=feats.map((_,i)=>i>=9?'#f97316':'#3b82f6');
+    c.setOption({
+        tooltip:{trigger:'axis'},
+        grid:{left:120,right:30,top:10,bottom:20},
+        xAxis:{type:'value',axisLabel:{color:'#4a5572',fontSize:9},splitLine:{lineStyle:{color:'rgba(255,255,255,0.03)'}}},
+        yAxis:{type:'category',data:feats.reverse(),axisLabel:{color:'#c4cce0',fontSize:10},axisLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}}},
+        series:[{type:'bar',data:vals.reverse().map((v,i)=>({value:v,itemStyle:{color:colors.reverse()[i],borderRadius:[0,4,4,0]}})),barWidth:14,
+            label:{show:true,position:'right',color:'#7e8ba4',fontSize:9,formatter:p=>(p.value*100).toFixed(0)+'%'}}]
+    });
+    window.addEventListener('resize',()=>c.resize());
+})();
+
+// === MODEL EVOLUTION ===
+(function(){
+    const c=echarts.init(document.getElementById('evoChart'));
+    c.setOption({
+        tooltip:{trigger:'axis'},
+        legend:{data:['Balanced Accuracy','M+X Recall','Features'],textStyle:{color:'#7e8ba4',fontSize:10},top:0},
+        grid:{left:50,right:50,top:40,bottom:30},
+        xAxis:{type:'category',data:['V1\nPretrain','V2\nStrategic','V3\nTactical','V4\nEnsemble','V5\nMaxAcc','V6.1\nOptimized','V6.2\nFusion','Strat\nV2'],
+            axisLabel:{color:'#c4cce0',fontSize:9},axisLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}}},
+        yAxis:[
+            {type:'value',max:100,name:'Accuracy %',nameTextStyle:{color:'#4a5572',fontSize:10},axisLabel:{color:'#4a5572',fontSize:9},splitLine:{lineStyle:{color:'rgba(255,255,255,0.03)'}}},
+            {type:'value',max:15,name:'Features',nameTextStyle:{color:'#4a5572',fontSize:10},axisLabel:{color:'#4a5572',fontSize:9},splitLine:{show:false}}
+        ],
+        series:[
+            {name:'Balanced Accuracy',type:'line',data:[60,55,65,70,72,77.8,95.2,98.5],lineStyle:{color:'#22d3ee',width:3},symbol:'circle',symbolSize:10,
+                itemStyle:{color:'#22d3ee'},areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(34,211,238,0.15)'},{offset:1,color:'rgba(34,211,238,0)'}]}}},
+            {name:'M+X Recall',type:'line',data:[40,50,80,85,90,95,100,100],lineStyle:{color:'#10b981',width:2,type:'dashed'},symbol:'diamond',symbolSize:8,itemStyle:{color:'#10b981'}},
+            {name:'Features',type:'bar',yAxisIndex:1,data:[2,9,9,9,9,9,12,12],itemStyle:{color:'rgba(168,85,247,0.3)',borderRadius:[3,3,0,0]},barWidth:20}
+        ]
+    });
+    window.addEventListener('resize',()=>c.resize());
+})();
+</script>
+</body>
+</html>

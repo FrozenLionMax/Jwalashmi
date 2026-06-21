@@ -19,7 +19,33 @@
 }
 html,body{height:100%;overflow:hidden}
 body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0);
-    display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+    display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;position:relative}
+
+/* === STARFIELD === */
+#starfield{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.4}
+.main,.topbar,.flux-row,.mid,.console-row,.status-bar,.loader-overlay{position:relative;z-index:1}
+
+/* === MISSION BADGE === */
+.mission-badge{display:flex;align-items:center;gap:6px;margin-right:8px;padding:2px 8px 2px 4px;
+    background:linear-gradient(135deg,rgba(249,115,22,0.08),rgba(34,211,238,0.05));
+    border:1px solid rgba(249,115,22,0.15);border-radius:4px;cursor:default;transition:all 0.3s}
+.mission-badge:hover{border-color:rgba(249,115,22,0.3);box-shadow:0 0 12px rgba(249,115,22,0.08)}
+.badge-icon{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle,#f97316 30%,#ef4444 70%,transparent 72%);
+    box-shadow:0 0 8px rgba(249,115,22,0.3);position:relative;animation:sunGlow 3s ease-in-out infinite}
+.badge-icon::after{content:'';position:absolute;top:50%;left:50%;width:6px;height:6px;border-radius:50%;
+    background:#fbbf24;transform:translate(-50%,-50%);box-shadow:0 0 4px #fbbf24}
+@keyframes sunGlow{0%,100%{box-shadow:0 0 8px rgba(249,115,22,0.3)}50%{box-shadow:0 0 14px rgba(249,115,22,0.5)}}
+.badge-text{display:flex;flex-direction:column;line-height:1}
+.badge-org{font-size:7px;font-weight:700;color:var(--orange);letter-spacing:1px;text-transform:uppercase}
+.badge-mission{font-size:8px;font-weight:600;color:var(--t1);letter-spacing:0.5px}
+
+/* === CONNECTION BARS === */
+.conn-bars{display:flex;align-items:flex-end;gap:1.5px;height:14px;margin-left:8px;cursor:default;padding:0 4px}
+.conn-bar{width:3px;border-radius:1px;transition:all 0.4s;background:rgba(255,255,255,0.08)}
+.conn-bar.on{background:var(--green);box-shadow:0 0 3px rgba(16,185,129,0.3)}
+.conn-bar.warn{background:var(--yellow);box-shadow:0 0 3px rgba(234,179,8,0.3)}
+.conn-bar.off{background:var(--red);box-shadow:0 0 3px rgba(239,68,68,0.3)}
+.conn-label{font-size:7px;color:var(--t3);margin-left:4px;letter-spacing:0.3px}
 
 /* === TOP BAR === */
 .topbar{display:flex;align-items:center;height:40px;padding:0 18px;
@@ -249,6 +275,25 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     .sdo-img{width:90px;height:90px}.alert-ring{width:40px;height:40px}.alert-icon{font-size:16px}}
 @media(max-width:480px){.topbar{padding:4px 8px}.tb-brand{font-size:11px}.tb-utc,.tb-date{display:none}
     .flux-row{height:150px}.status-bar{font-size:8px;gap:6px}}
+
+/* === RED PULSE ANIMATION === */
+@keyframes redPulse{0%,100%{box-shadow:none}50%{box-shadow:0 0 20px rgba(239,68,68,0.3),inset 0 0 20px rgba(239,68,68,0.08)}}
+
+/* === ANALYTICS BUTTON === */
+.analytics-btn{display:flex;align-items:center;gap:5px;padding:3px 12px;font-size:9px;font-weight:700;
+    font-family:'JetBrains Mono',monospace;color:var(--purple);background:rgba(168,85,247,0.06);
+    border:1px solid rgba(168,85,247,0.15);border-radius:4px;cursor:pointer;
+    text-decoration:none;text-transform:uppercase;letter-spacing:0.5px;
+    transition:all 0.4s cubic-bezier(0.4,0,0.2,1);position:relative;overflow:hidden}
+.analytics-btn::before{content:'';position:absolute;top:50%;left:50%;width:0;height:0;
+    background:rgba(168,85,247,0.08);border-radius:50%;transform:translate(-50%,-50%);
+    transition:all 0.6s}
+.analytics-btn:hover{background:rgba(168,85,247,0.12);border-color:rgba(168,85,247,0.3);
+    box-shadow:0 0 16px rgba(168,85,247,0.12);transform:translateY(-1px)}
+.analytics-btn:hover::before{width:200px;height:200px}
+.analytics-btn .ab-dot{width:5px;height:5px;border-radius:50%;background:var(--purple);
+    box-shadow:0 0 6px var(--purple);animation:abPulse 2s ease-in-out infinite}
+@keyframes abPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
 </style>
 </head>
 <body>
@@ -268,10 +313,20 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     <div class="loader-text" style="position:absolute;bottom:60px;left:50%;transform:translateX(-50%)">Initializing JWALASHMI...</div>
 </div>
 
+<!-- STARFIELD -->
+<canvas id="starfield"></canvas>
+
 <!-- TOP BAR -->
 <div class="topbar">
+    <div class="mission-badge">
+        <div class="badge-icon"></div>
+        <div class="badge-text">
+            <span class="badge-org">ISRO</span>
+            <span class="badge-mission">Aditya-L1</span>
+        </div>
+    </div>
     <span class="tb-brand">JWALASHMI</span>
-    <span class="tb-ver">v6.1.0</span>
+    <span class="tb-ver">v6.2</span>
     <div class="tb-sep"></div>
     <div class="tb-pipe">
         <div class="tb-dot on" id="dotSol"></div>SoLEXS
@@ -293,6 +348,15 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     </div>
     <div class="tb-sep"></div>
     <div style="font-size:9px;color:var(--t3)">Flare <span id="tbFlareProb" style="color:var(--green);font-weight:700">0%</span></div>
+    <div class="conn-bars" id="connBars" title="Connection strength">
+        <div class="conn-bar on" style="height:3px"></div>
+        <div class="conn-bar on" style="height:5px"></div>
+        <div class="conn-bar on" style="height:7px"></div>
+        <div class="conn-bar on" style="height:9px"></div>
+        <div class="conn-bar on" style="height:11px"></div>
+        <div class="conn-bar on" style="height:13px"></div>
+        <span class="conn-label" id="connLabel">LIVE</span>
+    </div>
     <div class="tb-right">
         <span class="tb-date" id="clkDate">--</span>
         <span class="tb-clk" id="clkIST">--:--:--</span><span class="tb-clk-label">IST</span>
@@ -320,11 +384,18 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
             <button class="f-btn" id="btnDeriv" onclick="toggleDeriv()">dF/dt</button>
             <button class="f-btn" id="btnAttn" onclick="toggleAttn()">ATTN</button>
         </div>
+        <div class="flux-toggles" style="margin-left:4px">
+            <button class="f-btn on" id="btnAutoScroll" onclick="toggleAutoScroll()">AUTO</button>
+            <button class="f-btn" id="btnThresh" onclick="toggleThresholds()">THRESH</button>
+            <button class="f-btn" onclick="resetZoom()">RESET</button>
+        </div>
     </div>
     <div class="flux-stats">
+        <div class="flux-stat"><span class="flux-stat-k">Current</span><span class="flux-stat-v" id="fsCurrent" style="color:var(--cyan);font-size:13px">--</span></div>
         <div class="flux-stat"><span class="flux-stat-k">Peak</span><span class="flux-stat-v" id="fsPeak" style="color:var(--cyan)">--</span></div>
         <div class="flux-stat"><span class="flux-stat-k">Class</span><span class="flux-stat-v" id="fsClass" style="color:var(--t2)">--</span></div>
         <div class="flux-stat"><span class="flux-stat-k">Mean</span><span class="flux-stat-v" id="fsMean" style="color:var(--t1)">--</span></div>
+        <div class="flux-stat"><span class="flux-stat-k">Rate</span><span class="flux-stat-v" id="fsRate" style="color:var(--green)">--</span></div>
         <div class="flux-stat"><span class="flux-stat-k">Slope</span><span class="flux-stat-v" id="fsSlope" style="color:var(--green)">--</span></div>
         <div class="flux-stat"><span class="flux-stat-k">Samples</span><span class="flux-stat-v" id="fsSamples" style="color:var(--t2)">0</span></div>
     </div>
@@ -374,50 +445,41 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
                 <div class="pi"><span class="pi-name" style="color:var(--red)">X</span><div class="pi-bar"><div class="pi-fill" id="bX" style="background:var(--red)"></div></div><span class="pi-val" id="pX">0%</span></div>
             </div>
 
-            <div class="section-lbl" style="margin-top:10px">Per-Class Metrics (click)</div>
-            <div class="class-metrics" id="classMetrics">
-                <div class="cm-cell active" data-c="None" onclick="showClassDetail('None',this)"><span class="cm-cls" style="color:var(--t2)">None</span><span class="cm-val">P:94%</span></div>
-                <div class="cm-cell" data-c="B" onclick="showClassDetail('B',this)"><span class="cm-cls" style="color:var(--blue)">B</span><span class="cm-val">P:94%</span></div>
-                <div class="cm-cell" data-c="C" onclick="showClassDetail('C',this)"><span class="cm-cls" style="color:var(--yellow)">C</span><span class="cm-val">P:86%</span></div>
-                <div class="cm-cell" data-c="M" onclick="showClassDetail('M',this)"><span class="cm-cls" style="color:var(--orange)">M</span><span class="cm-val">P:100%</span></div>
-                <div class="cm-cell" data-c="X" onclick="showClassDetail('X',this)"><span class="cm-cls" style="color:var(--red)">X</span><span class="cm-val">P:92%</span></div>
-            </div>
-            <div id="classDetail" style="font-size:9px;color:var(--t2);margin-top:6px;padding:4px 6px;background:rgba(255,255,255,0.01);border-radius:2px;border:1px solid rgba(255,255,255,0.02)">
-                Precision: 94.2% | Recall: 93.5% | F1: 93.8% | Support: 840
-            </div>
+            <div class="section-lbl" style="margin-top:10px">Space Weather</div>
+            <div class="kv"><span class="kv-k">Kp Index</span><span class="kv-v" style="color:var(--green);font-size:11px" id="vKp">2</span></div>
+            <div class="kv"><span class="kv-k">Solar Wind</span><span class="kv-v" style="color:var(--t1);font-size:10px" id="vSolarWind">385 km/s</span></div>
+            <div class="kv"><span class="kv-k">Proton Flux</span><span class="kv-v" style="color:var(--t2);font-size:10px" id="vProton">0.3 pfu</span></div>
+            <div class="kv"><span class="kv-k">Electron Flux</span><span class="kv-v" style="color:var(--t2);font-size:10px" id="vElectron">2.1e+02</span></div>
 
-            <div class="section-lbl" style="margin-top:10px">ROC-AUC</div>
-            <div class="pb">
-                <div class="pi"><span class="pi-name" style="color:var(--red)">X</span><div class="pi-bar"><div class="pi-fill" style="width:100%;background:var(--green)"></div></div><span class="pi-val" style="color:var(--green)">1.000</span></div>
-                <div class="pi"><span class="pi-name" style="color:var(--orange)">M</span><div class="pi-bar"><div class="pi-fill" style="width:99.7%;background:var(--green)"></div></div><span class="pi-val" style="color:var(--green)">0.997</span></div>
-                <div class="pi"><span class="pi-name" style="color:var(--yellow)">C</span><div class="pi-bar"><div class="pi-fill" style="width:90%;background:var(--cyan)"></div></div><span class="pi-val" style="color:var(--cyan)">0.900</span></div>
-                <div class="pi"><span class="pi-name" style="color:var(--blue)">B</span><div class="pi-bar"><div class="pi-fill" style="width:79%;background:var(--blue)"></div></div><span class="pi-val" style="color:var(--blue)">0.789</span></div>
-            </div>
-
-            <div class="section-lbl" style="margin-top:10px">Performance</div>
-            <div class="kv"><span class="kv-k">Balanced Acc</span><span class="kv-v" style="color:var(--cyan);font-size:11px">95.2%</span></div>
-            <div class="kv"><span class="kv-k">Weighted F1</span><span class="kv-v" style="color:var(--yellow);font-size:11px">96.1%</span></div>
-            <div class="kv"><span class="kv-k">M+X Recall</span><span class="kv-v" style="color:var(--green);font-size:11px">100%</span></div>
-            <div class="kv"><span class="kv-k">Mean lead</span><span class="kv-v" style="color:var(--green);font-size:11px">29.8 min</span></div>
-            <div class="kv"><span class="kv-k">M+X FAR</span><span class="kv-v" style="color:var(--green);font-size:11px">4.0%</span></div>
-            <div class="kv"><span class="kv-k">Cal T</span><span class="kv-v" style="color:var(--purple);font-size:11px">2.04</span></div>
+            <div class="section-lbl" style="margin-top:10px">Ensemble</div>
+            <div class="kv"><span class="kv-k">Models</span><span class="kv-v" style="color:var(--cyan);font-size:10px">16 (10T + 5S)</span></div>
+            <div class="kv"><span class="kv-k">Features</span><span class="kv-v" style="color:var(--t1);font-size:10px">12 (SoLEXS+HEL1OS)</span></div>
+            <div class="kv"><span class="kv-k">Latency</span><span class="kv-v" style="color:var(--t2);font-size:10px" id="vInference">~50ms</span></div>
         </div>
     </div>
 
-    <!-- Panel 3: Confusion + Events -->
+    <!-- Panel 3: Events + Impact -->
     <div class="pnl" style="border-right:1px solid var(--border)">
-        <div class="inner-split">
-            <div class="inner-left">
-                <div class="pnl-hdr"><span class="pnl-title">Confusion Matrix</span></div>
-                <div style="padding:4px;height:calc(100% - 33px)" id="confChart"></div>
+        <div class="pnl-hdr"><span class="pnl-title">Event Log</span>
+            <span class="pnl-badge" style="background:rgba(234,179,8,0.06);color:var(--yellow);border:1px solid rgba(234,179,8,0.12)" id="evCount">0</span></div>
+        <div class="pnl-body" style="padding:4px 6px">
+            <table class="ev-table"><thead><tr><th>Time</th><th>Class</th><th>Peak</th><th>Dur</th><th>Conf</th></tr></thead>
+            <tbody id="evBody"></tbody></table>
+
+            <div class="section-lbl" style="margin-top:12px">Impact Assessment</div>
+            <div id="impactPanel" style="font-size:9px">
+                <div class="kv" id="impRadio"><span class="kv-k">&#128225; HF Radio</span><span class="kv-v" style="color:var(--green);font-size:10px">Normal</span></div>
+                <div class="kv" id="impSat"><span class="kv-k">&#128752; Satellites</span><span class="kv-v" style="color:var(--green);font-size:10px">Safe</span></div>
+                <div class="kv" id="impNav"><span class="kv-k">&#127759; GPS/Nav</span><span class="kv-v" style="color:var(--green);font-size:10px">Normal</span></div>
+                <div class="kv" id="impPower"><span class="kv-k">&#9889; Power Grid</span><span class="kv-v" style="color:var(--green);font-size:10px">Stable</span></div>
+                <div class="kv" id="impAstro"><span class="kv-k">&#128104;&#8205;&#128640; EVA Risk</span><span class="kv-v" style="color:var(--green);font-size:10px">Low</span></div>
+                <div class="kv" id="impAviation"><span class="kv-k">&#9992;&#65039; Polar Flights</span><span class="kv-v" style="color:var(--green);font-size:10px">Clear</span></div>
             </div>
-            <div>
-                <div class="pnl-hdr"><span class="pnl-title">Event Log</span>
-                    <span class="pnl-badge" style="background:rgba(234,179,8,0.06);color:var(--yellow);border:1px solid rgba(234,179,8,0.12)" id="evCount">0</span></div>
-                <div class="pnl-body" style="padding:4px 6px">
-                    <table class="ev-table"><thead><tr><th>Time</th><th>Class</th><th>Peak</th><th>Dur</th><th>AR</th></tr></thead>
-                    <tbody id="evBody"></tbody></table>
-                </div>
+
+            <div class="section-lbl" style="margin-top:12px">Onset Countdown</div>
+            <div id="countdownBox" style="text-align:center;padding:6px;background:rgba(16,185,129,0.03);border:1px solid rgba(16,185,129,0.08);border-radius:4px;transition:all 0.4s">
+                <div id="countdownVal" style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--green);letter-spacing:1px;transition:all 0.4s">NO THREAT</div>
+                <div id="countdownLbl" style="font-size:8px;color:var(--t3);margin-top:2px">Estimated flare onset</div>
             </div>
         </div>
     </div>
@@ -430,13 +492,17 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
             <div class="sdo-wrap">
                 <div class="sdo-tabs">
                     <button class="sdo-tab on" onclick="setSDO('0193',this)">193</button>
+                    <button class="sdo-tab" onclick="setSDO('0131',this)">131</button>
                     <button class="sdo-tab" onclick="setSDO('0171',this)">171</button>
                     <button class="sdo-tab" onclick="setSDO('0304',this)">304</button>
+                    <button class="sdo-tab" onclick="setSDO('0211',this)">211</button>
+                    <button class="sdo-tab" onclick="setSDO('HMIB',this)">MAG</button>
                     <button class="sdo-tab" onclick="setSDO('HMIIC',this)">HMI</button>
+                    <button class="sdo-tab" onclick="setSDO('LASCO',this)">LASCO</button>
                 </div>
-                <img class="sdo-img" id="sdoImg" src="https://sdo.gsfc.nasa.gov/assets/img/latest/latest_256_0193.jpg" alt="SDO">
+                <img class="sdo-img" id="sdoImg" src="https://sdo.gsfc.nasa.gov/assets/img/latest/latest_512_0193.jpg" alt="SDO" style="width:150px;height:150px">
                 <div class="sdo-label" id="sdoLbl">AIA 193&#x212B; &mdash; 1.2 MK corona</div>
-                <div class="sdo-meta" id="sdoMeta">Auto-refresh: 5 min</div>
+                <div class="sdo-meta" id="sdoMeta">Live &bull; Auto-refresh 30s</div>
             </div>
             <div style="padding:6px 14px;border-top:1px solid var(--border)">
                 <div class="section-lbl">Strategic V2 Forecast (12h)</div>
@@ -490,11 +556,133 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     <div class="sb-item">Events <span class="sb-val" id="sbPreds">0</span></div>
     <div class="sb-sep"></div>
     <div class="sb-item">Samples <span class="sb-val" id="sbSamples">0</span></div>
-    <div class="sb-item" style="margin-left:auto;color:var(--t3)">ISRO Aditya-L1 &bull; SoLEXS + HEL1OS</div>
+    <div class="sb-item" style="margin-left:auto;display:flex;align-items:center;gap:12px">
+        <a href="/impact.html" class="analytics-btn" style="color:var(--orange);background:rgba(249,115,22,0.06);border-color:rgba(249,115,22,0.15)"><span class="ab-dot" style="background:var(--orange);box-shadow:0 0 6px var(--orange)"></span>Impact Map</a>
+        <a href="/analytics.html" class="analytics-btn"><span class="ab-dot"></span>Model Analytics</a>
+        <span style="color:var(--t3)">ISRO Aditya-L1 &bull; SoLEXS + HEL1OS</span>
+    </div>
 </div>
 </div>
 
 <script>
+/* === STARFIELD === */
+(function(){
+    const c=document.getElementById('starfield'),ctx=c.getContext('2d');
+    let stars=[];const N=200;
+    function resize(){c.width=window.innerWidth;c.height=window.innerHeight;init()}
+    function init(){
+        stars=[];
+        for(let i=0;i<N;i++){
+            stars.push({x:Math.random()*c.width,y:Math.random()*c.height,
+                r:Math.random()*1.2+0.2,speed:Math.random()*0.15+0.02,
+                alpha:Math.random()*0.8+0.2,twinkle:Math.random()*0.02+0.005,
+                phase:Math.random()*Math.PI*2});
+        }
+    }
+    function draw(){
+        ctx.clearRect(0,0,c.width,c.height);
+        const t=Date.now()*0.001;
+        for(const s of stars){
+            s.y+=s.speed;if(s.y>c.height){s.y=0;s.x=Math.random()*c.width}
+            const a=s.alpha*(0.6+0.4*Math.sin(t*s.twinkle*60+s.phase));
+            ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+            ctx.fillStyle='rgba(200,210,230,'+a+')';ctx.fill();
+            if(s.r>1){ctx.beginPath();ctx.arc(s.x,s.y,s.r*2.5,0,Math.PI*2);
+                ctx.fillStyle='rgba(180,200,230,'+a*0.08+')';ctx.fill()}
+        }
+        requestAnimationFrame(draw);
+    }
+    resize();draw();window.addEventListener('resize',resize);
+})();
+
+/* === CONNECTION STATUS === */
+let connStrength=6,lastSuccessTime=Date.now();
+function updateConnBars(success){
+    if(success){connStrength=6;lastSuccessTime=Date.now()}
+    else{connStrength=Math.max(0,connStrength-1)}
+    const bars=document.querySelectorAll('#connBars .conn-bar');
+    const label=document.getElementById('connLabel');
+    bars.forEach((bar,i)=>{
+        bar.className='conn-bar';
+        if(i<connStrength){
+            bar.classList.add(connStrength>=5?'on':connStrength>=3?'warn':'off');
+        }
+    });
+    if(connStrength>=5){label.textContent='LIVE';label.style.color='var(--green)'}
+    else if(connStrength>=3){label.textContent='WEAK';label.style.color='var(--yellow)'}
+    else if(connStrength>=1){label.textContent='POOR';label.style.color='var(--orange)'}
+    else{label.textContent='LOST';label.style.color='var(--red)'}
+}
+// Check connectivity every 5s
+setInterval(()=>{
+    const age=(Date.now()-lastSuccessTime)/1000;
+    if(age>30)updateConnBars(false);
+},5000);
+
+/* === ALERT SOUND (Web Audio API) === */
+const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+let lastAlertTime=0;
+function playAlertSound(level){
+    const now=Date.now();
+    if(now-lastAlertTime<10000)return; // Don't spam
+    lastAlertTime=now;
+    // Ensure audio context is running (needs user gesture first time)
+    if(audioCtx.state==='suspended')audioCtx.resume();
+    const freq=level==='X'?880:660;
+    const beeps=level==='X'?4:2;
+    for(let i=0;i<beeps;i++){
+        const osc=audioCtx.createOscillator();
+        const gain=audioCtx.createGain();
+        osc.connect(gain);gain.connect(audioCtx.destination);
+        osc.frequency.value=freq;osc.type='sine';
+        const t=audioCtx.currentTime+i*0.25;
+        gain.gain.setValueAtTime(0,t);
+        gain.gain.linearRampToValueAtTime(0.15,t+0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001,t+0.15);
+        osc.start(t);osc.stop(t+0.2);
+    }
+}
+
+/* === BROWSER NOTIFICATIONS === */
+let notifPermission='default';
+if('Notification' in window){
+    Notification.requestPermission().then(p=>{notifPermission=p});
+}
+function sendNotification(cls,conf,lead){
+    if(notifPermission!=='granted')return;
+    if(cls!=='M'&&cls!=='X')return;
+    const n=new Notification('JWALASHMI ALERT: '+cls+'-class Flare',{
+        body:'Confidence: '+(conf*100).toFixed(0)+'% | Lead: '+lead.toFixed(0)+' min\nTake protective action.',
+        icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%23f97316"/></svg>',
+        tag:'flare-alert',requireInteraction:true
+    });
+    setTimeout(()=>n.close(),15000);
+}
+
+/* === KEYBOARD SHORTCUTS === */
+let paused=false;
+document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+    switch(e.key){
+        case 'p':case 'P':paused=!paused;clog('Dashboard '+(paused?'PAUSED':'RESUMED'),'info');
+            document.title=paused?'[PAUSED] JWALASHMI':'JWALASHMI | Mission Control';break;
+        case '1':setSDO('0193',document.querySelector('.sdo-tab'));break;
+        case '2':setSDO('0131',document.querySelectorAll('.sdo-tab')[1]);break;
+        case '3':setSDO('0171',document.querySelectorAll('.sdo-tab')[2]);break;
+        case '4':setSDO('0304',document.querySelectorAll('.sdo-tab')[3]);break;
+        case '5':setSDO('0211',document.querySelectorAll('.sdo-tab')[4]);break;
+        case '6':setSDO('HMIB',document.querySelectorAll('.sdo-tab')[5]);break;
+        case '7':setSDO('HMIIC',document.querySelectorAll('.sdo-tab')[6]);break;
+        case '8':setSDO('LASCO',document.querySelectorAll('.sdo-tab')[7]);break;
+        case 't':case 'T':toggleThresholds();break;
+        case 's':case 'S':toggleSMA();break;
+        case 'd':case 'D':toggleDeriv();break;
+        case 'a':case 'A':toggleAttn();break;
+        case 'r':case 'R':resetZoom();break;
+        case '?':clog('Keys: P=pause 1-8=SDO T=thresh S=SMA D=deriv A=attn R=reset','info');break;
+    }
+});
+
 const startTime=Date.now();
 let cycle=0,lastDataTime=Date.now(),totalPreds=0,totalSamples=0,lastFlareCls='',lastFlareTime='';
 let prevConf=null,prevLead=null,showDeriv=false,consoleFilter='all';
@@ -531,22 +719,44 @@ document.addEventListener('keydown',e=>{
 });
 
 /* SDO */
-const SDO_D={'0193':'AIA 193\u212B \u2014 1.2 MK corona','0171':'AIA 171\u212B \u2014 600 kK loops',
-    '0304':'AIA 304\u212B \u2014 50 kK chromosphere','HMIIC':'HMI Intensitygram \u2014 photosphere'};
+const SDO_D={
+    '0193':'AIA 193\u212B \u2014 1.2 MK corona',
+    '0131':'AIA 131\u212B \u2014 10 MK flare plasma',
+    '0171':'AIA 171\u212B \u2014 600 kK coronal loops',
+    '0304':'AIA 304\u212B \u2014 50 kK chromosphere',
+    '0211':'AIA 211\u212B \u2014 2 MK active regions',
+    'HMIB':'HMI Magnetogram \u2014 magnetic field',
+    'HMIIC':'HMI Intensitygram \u2014 photosphere',
+    'LASCO':'SOHO LASCO C2 \u2014 coronagraph (CMEs)'
+};
 function setSDO(ch,el){document.querySelectorAll('.sdo-tab').forEach(t=>t.classList.remove('on'));el.classList.add('on');
-    document.getElementById('sdoImg').src='https://sdo.gsfc.nasa.gov/assets/img/latest/latest_256_'+ch+'.jpg';
-    document.getElementById('sdoLbl').textContent=SDO_D[ch];clog('SDO channel: '+ch,'info')}
+    if(ch==='LASCO'){
+        document.getElementById('sdoImg').src='https://sohowww.nascom.nasa.gov/data/realtime/c2/512/latest.jpg?t='+Date.now();
+        document.getElementById('sdoImg').style.borderRadius='4px';
+    } else {
+        document.getElementById('sdoImg').src='https://sdo.gsfc.nasa.gov/assets/img/latest/latest_512_'+ch+'.jpg?t='+Date.now();
+        document.getElementById('sdoImg').style.borderRadius='50%';
+    }
+    document.getElementById('sdoLbl').textContent=SDO_D[ch];
+    document.getElementById('sdoMeta').textContent='Live \u2022 '+new Date().toLocaleTimeString();
+    clog('SDO channel: '+ch,'info')}
 // SDO auto-cycle through wavelengths + refresh
-const SDO_CHANNELS=['0193','0171','0304','HMIIC'];
+const SDO_CHANNELS=['0193','0131','0171','0304','0211','HMIB','HMIIC','LASCO'];
 let sdoCycleIdx=0;
 setInterval(()=>{
     sdoCycleIdx=(sdoCycleIdx+1)%SDO_CHANNELS.length;
     const ch=SDO_CHANNELS[sdoCycleIdx];
-    document.getElementById('sdoImg').src='https://sdo.gsfc.nasa.gov/assets/img/latest/latest_256_'+ch+'.jpg?t='+Date.now();
+    if(ch==='LASCO'){
+        document.getElementById('sdoImg').src='https://sohowww.nascom.nasa.gov/data/realtime/c2/512/latest.jpg?t='+Date.now();
+        document.getElementById('sdoImg').style.borderRadius='4px';
+    } else {
+        document.getElementById('sdoImg').src='https://sdo.gsfc.nasa.gov/assets/img/latest/latest_512_'+ch+'.jpg?t='+Date.now();
+        document.getElementById('sdoImg').style.borderRadius='50%';
+    }
     document.getElementById('sdoLbl').textContent=SDO_D[ch];
     document.querySelectorAll('.sdo-tab').forEach((t,i)=>t.classList.toggle('on',i===sdoCycleIdx));
-    document.getElementById('sdoMeta').textContent='Live • '+new Date().toLocaleTimeString();
-},30000);
+    document.getElementById('sdoMeta').textContent='Live \u2022 '+new Date().toLocaleTimeString();
+},20000);
 
 /* PER-CLASS METRICS */
 function showClassDetail(cls,el){
@@ -606,19 +816,21 @@ function switchSource(src){
 
 /* ECHARTS INIT */
 const fluxEC=echarts.init(document.getElementById('fluxChart'),null,{renderer:'canvas'});
-const confEC=echarts.init(document.getElementById('confChart'),null,{renderer:'canvas'});
 const trendEC=echarts.init(document.getElementById('trendChart'),null,{renderer:'canvas'});
 const featEC=echarts.init(document.getElementById('featChart'),null,{renderer:'canvas'});
-window.addEventListener('resize',()=>{fluxEC.resize();confEC.resize();trendEC.resize();featEC.resize()});
+window.addEventListener('resize',()=>{fluxEC.resize();trendEC.resize();featEC.resize()});
 let chartMode='combined',lastSol=[],lastHel=[];
 
 /* TOGGLES */
-let showSMA=false,showAttn=false,timeWindow='1h';
+let showSMA=false,showAttn=false,timeWindow='1h',autoScroll=true,showThresh=false;
 function toggleDeriv(){showDeriv=!showDeriv;document.getElementById('btnDeriv').classList.toggle('on',showDeriv);buildFlux();clog('Derivative: '+(showDeriv?'ON':'OFF'),'info')}
 function toggleSMA(){showSMA=!showSMA;document.getElementById('btnSMA').classList.toggle('on',showSMA);buildFlux();clog('5-min SMA: '+(showSMA?'ON':'OFF'),'info')}
 function toggleAttn(){showAttn=!showAttn;document.getElementById('btnAttn').classList.toggle('on',showAttn);buildFlux();clog('Attention overlay: '+(showAttn?'ON':'OFF'),'info')}
 function setWindow(w){timeWindow=w;document.querySelectorAll('.f-btn[data-w]').forEach(b=>b.classList.toggle('on',b.dataset.w===w));buildFlux();clog('Window: '+w,'info')}
 function setMode(m){chartMode=m;document.querySelectorAll('.f-btn[data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===m));buildFlux();clog('Source: '+m,'info')}
+function toggleAutoScroll(){autoScroll=!autoScroll;document.getElementById('btnAutoScroll').classList.toggle('on',autoScroll);clog('Auto-scroll: '+(autoScroll?'ON':'OFF'),'info')}
+function toggleThresholds(){showThresh=!showThresh;document.getElementById('btnThresh').classList.toggle('on',showThresh);buildFlux();clog('Thresholds: '+(showThresh?'ON':'OFF'),'info')}
+function resetZoom(){fluxEC.dispatchAction({type:'dataZoom',start:0,end:100});clog('Zoom reset','info')}
 
 /* FEATURE IMPORTANCE */
 const FEAT_NAMES=['Derivative','Max Ratio','BG Slope','Energy Int','QPP Power','Norm Flux','Long Slope','Acceleration','Long Ratio','Hard/Soft','Neupert','Spectral H'];
@@ -671,11 +883,11 @@ function buildFlux(){
 
     const step=Math.max(1,Math.floor(viewData.length/600));
     const ds=[];for(let i=0;i<viewData.length;i+=step)ds.push(viewData[i]);
-    const solD=ds.map(d=>d.sol);
-    const helD=ds.map(d=>d.hel);
+    const solD=ds.map(d=>d.sol<=0?null:d.sol);
+    const helD=ds.map(d=>d.hel<=0?null:d.hel);
 
-    function aMin(a){let m=Infinity;for(let i=0;i<a.length;i++)if(a[i]>0&&a[i]<m)m=a[i];return m===Infinity?1e-8:m}
-    function aMax(a){let m=0;for(let i=0;i<a.length;i++)if(a[i]>m)m=a[i];return m||1e-6}
+    function aMin(a){let m=Infinity;for(let i=0;i<a.length;i++)if(a[i]!==null&&a[i]>0&&a[i]<m)m=a[i];return m===Infinity?1e-8:m}
+    function aMax(a){let m=0;for(let i=0;i<a.length;i++)if(a[i]!==null&&a[i]>m)m=a[i];return m||1e-6}
 
     const showSec=ds.length<200;
     const labels=ds.map(d=>{const p=d.lbl.split(':');return showSec?d.lbl:p[0]+':'+p[1]});
@@ -686,12 +898,12 @@ function buildFlux(){
     const yMax=Math.pow(10,Math.ceil(Math.log10(dMax||1e-4))+1);
 
     const srs=[];
-    if(chartMode!=='helios')srs.push({name:'SoLEXS (1\u20138 keV)',type:'line',smooth:0.15,symbol:'none',sampling:'lttb',
-        lineStyle:{color:'#22d3ee',width:1.6,shadowColor:'rgba(34,211,238,0.3)',shadowBlur:6},
+    if(chartMode!=='helios')srs.push({name:'SoLEXS (1\u20138 keV)',type:'line',smooth:0.3,symbol:'none',sampling:'lttb',connectNulls:true,
+        lineStyle:{color:'#22d3ee',width:1.8,shadowColor:'rgba(34,211,238,0.3)',shadowBlur:6},
         areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(34,211,238,0.08)'},{offset:1,color:'rgba(34,211,238,0)'}])},
         data:solD,z:10,markArea:null,markLine:null,markPoint:null});
-    if(chartMode!=='solexs')srs.push({name:'HEL1OS (10\u201330 keV)',type:'line',smooth:0.15,symbol:'none',sampling:'lttb',
-        lineStyle:{color:'#a855f7',width:1.4,shadowColor:'rgba(168,85,247,0.25)',shadowBlur:5},
+    if(chartMode!=='solexs')srs.push({name:'HEL1OS (10\u201330 keV)',type:'line',smooth:0.3,symbol:'none',sampling:'lttb',connectNulls:true,
+        lineStyle:{color:'#a855f7',width:1.6,shadowColor:'rgba(168,85,247,0.25)',shadowBlur:5},
         areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(168,85,247,0.06)'},{offset:1,color:'rgba(168,85,247,0)'}])},
         data:helD,z:9});
     if(showSMA&&solD.length>10){
@@ -742,8 +954,8 @@ function buildFlux(){
     const mA=BA.filter(b=>b[1]>yMin&&b[0]<yMax).map(b=>[{yAxis:Math.max(b[0],yMin),itemStyle:{color:b[2]}},{yAxis:Math.min(b[1],yMax)}]);
 
     if(srs.length>0){
-        srs[0].markArea={silent:true,data:mA};
-        srs[0].markLine={silent:true,symbol:'none',data:mL};
+        srs[0].markArea=showThresh?{silent:true,data:mA}:{silent:true,data:[]};
+        srs[0].markLine=showThresh?{silent:true,symbol:'none',data:mL}:{silent:true,symbol:'none',data:[]};
         srs[0].markPoint={silent:true,data:pk>0&&isFinite(pk)?[{
             xAxis:labels[pkI],yAxis:pk,symbol:'triangle',symbolSize:12,symbolRotate:180,
             itemStyle:{color:CCI[pkC]||'#22d3ee',borderColor:'rgba(0,0,0,0.3)',borderWidth:1,
@@ -785,17 +997,31 @@ function buildFlux(){
         series:srs
     });
 
-    const mn=solD.reduce((a,b)=>a+b,0)/solD.length;
-    const tl=Math.min(60,solD.length);
-    const sl=tl>1?(solD[solD.length-1]-solD[solD.length-tl])/tl:0;
+    const validSol=solD.filter(v=>v!==null&&v>0);
+    const mn=validSol.length?validSol.reduce((a,b)=>a+b,0)/validSol.length:0;
+    const tl=Math.min(60,validSol.length);
+    const sl=tl>1?(validSol[validSol.length-1]-validSol[validSol.length-tl])/tl:0;
+    const cur=validSol.length?validSol[validSol.length-1]:0;
+    const prev=validSol.length>10?validSol[validSol.length-10]:cur;
+    const rate=prev>0?((cur-prev)/prev*100):0;
+
+    document.getElementById('fsCurrent').textContent=isFinite(cur)?sciNot(cur):'--';
+    document.getElementById('fsCurrent').style.color=CCI[classifyFlux(cur)]||'var(--cyan)';
     document.getElementById('fsPeak').textContent=isFinite(pk)?sciNot(pk):'--';
     document.getElementById('fsPeak').style.color=CCI[pkC]||'var(--cyan)';
     document.getElementById('fsClass').textContent=pkC+'-class';
     document.getElementById('fsClass').style.color=CCI[pkC]||'var(--t2)';
     document.getElementById('fsMean').textContent=isFinite(mn)?sciNot(mn):'--';
+    document.getElementById('fsRate').textContent=isFinite(rate)?((rate>=0?'+':'')+rate.toFixed(1)+'%'):'--';
+    document.getElementById('fsRate').style.color=rate>20?'var(--red)':rate>5?'var(--orange)':rate>0?'var(--yellow)':rate<-5?'var(--cyan)':'var(--green)';
     document.getElementById('fsSlope').textContent=isFinite(sl)?((sl>=0?'+':'')+sciNot(sl)+'/s'):'--';
     document.getElementById('fsSlope').style.color=sl>1e-7?'var(--red)':sl>0?'var(--yellow)':'var(--green)';
     document.getElementById('fsSamples').textContent=viewData.length.toLocaleString();
+
+    // Auto-scroll to latest data
+    if(autoScroll&&viewData.length>100){
+        fluxEC.dispatchAction({type:'dataZoom',start:Math.max(0,100-Math.min(100,3600/viewData.length*100)),end:100});
+    }
 }
 
 /* TREND MINI-CHART */
@@ -811,29 +1037,8 @@ function updateTrend(conf,cls){
             barWidth:'60%'}]},true);
 }
 
-/* CONFUSION MATRIX */
-const cmD=[[70,1,22,26,1],[78,5,18,19,0],[27,0,90,3,0],[0,0,0,48,0],[0,0,0,0,12]];
-const cmL=['None','B','C','M','X'],cmF=[];
-cmD.forEach((r,i)=>r.forEach((v,j)=>cmF.push([j,4-i,v])));
-confEC.setOption({backgroundColor:'transparent',animation:true,
-    grid:{top:8,right:8,bottom:28,left:34},
-    xAxis:{type:'category',data:cmL,position:'bottom',
-        axisLabel:{color:'#7e8ba4',fontSize:10,fontFamily:'JetBrains Mono',fontWeight:600},
-        axisLine:{lineStyle:{color:'rgba(255,255,255,0.04)'}}},
-    yAxis:{type:'category',data:[...cmL].reverse(),
-        axisLabel:{color:'#7e8ba4',fontSize:10,fontFamily:'JetBrains Mono',fontWeight:600},
-        axisLine:{lineStyle:{color:'rgba(255,255,255,0.04)'}}},
-    visualMap:{min:0,max:90,show:false,inRange:{color:['#020408','#0d2847','#1a5276','#22d3ee','#10b981','#eab308']}},
-    tooltip:{backgroundColor:'rgba(10,15,28,0.95)',borderColor:'rgba(34,211,238,0.12)',padding:[8,12],
-        textStyle:{fontSize:10,fontFamily:'JetBrains Mono',color:'#e8ecf4'},
-        formatter:p=>{const a=cmL[4-p.value[1]],pr=cmL[p.value[0]],v=p.value[2];
-            return `Actual: <b>${a}</b><br>Predicted: <b>${pr}</b><br>Count: <b style="color:#22d3ee">${v}</b><br>${a===pr?'<span style="color:#10b981">Correct</span>':'<span style="color:#ef4444">Misclassified</span>'}`}},
-    series:[{type:'heatmap',data:cmF,
-        label:{show:true,color:'#e8ecf4',fontSize:11,fontFamily:'JetBrains Mono',fontWeight:700,
-            formatter:p=>p.value[2]||''},
-        itemStyle:{borderColor:'#020408',borderWidth:2,borderRadius:2},
-        emphasis:{itemStyle:{shadowBlur:8,shadowColor:'rgba(34,211,238,0.2)'}}}]
-});
+
+
 
 /* NOAA SCALES */
 function updateScales(cls,alert){
@@ -951,6 +1156,49 @@ function ui(d){
         document.getElementById('sConf').style.color=s.confidence>0.7?'var(--green)':s.confidence>0.4?'var(--yellow)':'var(--t2)';
     }
 
+    // Impact Assessment
+    const cls=t.predicted_class;
+    const impMap={
+        'None':{radio:['Normal','--green'],sat:['Safe','--green'],nav:['Normal','--green'],power:['Stable','--green'],astro:['Low','--green'],avia:['Clear','--green']},
+        'B':{radio:['Normal','--green'],sat:['Safe','--green'],nav:['Normal','--green'],power:['Stable','--green'],astro:['Low','--green'],avia:['Clear','--green']},
+        'C':{radio:['Minor fade','--yellow'],sat:['Monitor','--yellow'],nav:['Minor scintillation','--yellow'],power:['Stable','--green'],astro:['Low','--green'],avia:['Clear','--green']},
+        'M':{radio:['BLACKOUT R1-R2','--orange'],sat:['ALERT - Drag increase','--orange'],nav:['Degraded','--orange'],power:['GIC possible','--yellow'],astro:['ELEVATED','--orange'],avia:['Reroute polar','--orange']},
+        'X':{radio:['BLACKOUT R3-R5','--red'],sat:['DANGER - SEU risk','--red'],nav:['SEVERE disruption','--red'],power:['GIC ALERT','--red'],astro:['CRITICAL - Shelter','--red'],avia:['GROUND polar flights','--red']}
+    };
+    const imp=impMap[cls]||impMap['None'];
+    const setImp=(id,data)=>{const el=document.getElementById(id);if(el){const v=el.querySelector('.kv-v');if(v){v.textContent=data[0];v.style.color='var('+data[1]+')'}}};
+    setImp('impRadio',imp.radio);setImp('impSat',imp.sat);setImp('impNav',imp.nav);
+    setImp('impPower',imp.power);setImp('impAstro',imp.astro);setImp('impAviation',imp.avia);
+
+    // Countdown Timer
+    const cdBox=document.getElementById('countdownBox');
+    const cdVal=document.getElementById('countdownVal');
+    if(cls==='M'||cls==='X'){
+        const leadMin=t.lead_time_min||30;
+        const mm=Math.floor(leadMin);const ss=Math.floor((leadMin-mm)*60);
+        cdVal.textContent='T-'+String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+        cdVal.style.color=cls==='X'?'var(--red)':'var(--orange)';
+        cdBox.style.background=cls==='X'?'rgba(239,68,68,0.06)':'rgba(249,115,22,0.04)';
+        cdBox.style.borderColor=cls==='X'?'rgba(239,68,68,0.2)':'rgba(249,115,22,0.15)';
+    } else if(cls==='C'){
+        cdVal.textContent='WATCH';cdVal.style.color='var(--yellow)';
+        cdBox.style.background='rgba(234,179,8,0.03)';cdBox.style.borderColor='rgba(234,179,8,0.1)';
+    } else {
+        cdVal.textContent='NO THREAT';cdVal.style.color='var(--green)';
+        cdBox.style.background='rgba(16,185,129,0.03)';cdBox.style.borderColor='rgba(16,185,129,0.08)';
+    }
+
+    // Alert Sound + Notification
+    if(t.alert_level==='RED'){
+        document.getElementById('countdownBox').style.animation='none';
+        setTimeout(()=>{document.getElementById('countdownBox').style.animation='redPulse 1s ease-in-out 3'},10);
+        playAlertSound(cls);
+        sendNotification(cls,t.confidence,t.lead_time_min||30);
+    } else if(t.alert_level==='YELLOW'&&(cls==='M'||cls==='X')){
+        playAlertSound(cls);
+        sendNotification(cls,t.confidence,t.lead_time_min||30);
+    }
+
     // Flux — push to rolling buffer
     lastSol=d.flux_solexs||[];lastHel=d.flux_helios||[];
     const nowIST=new Date(Date.now()+5.5*3600000);
@@ -979,7 +1227,8 @@ function ui(d){
 
 /* FETCH */
 async function go(){
-    try{const r=await fetch('/api/predict');if(r.ok)return ui(await r.json())}catch(e){}
+    if(paused)return;
+    try{const r=await fetch('/api/predict');if(r.ok){updateConnBars(true);return ui(await r.json())}}catch(e){updateConnBars(false)}
     const cn=['None','B','C','M','X'],pick=Math.random(),al=pick<0.3?'GREEN':pick<0.7?'YELLOW':'RED';
     const cls=al==='GREEN'?'None':cn[1+Math.floor(Math.random()*4)];
     const conf=al==='GREEN'?0.2+Math.random()*0.2:0.45+Math.random()*0.45;
@@ -1019,11 +1268,71 @@ async function go(){
         flux_solexs:sol,flux_helios:hel});
 }
 
+/* REAL-TIME SPACE WEATHER */
+async function fetchSpaceWeather(){
+    try{
+        const r=await fetch('/api/space_weather');
+        const sw=await r.json();
+
+        // Kp Index
+        const kpEl=document.getElementById('vKp');
+        if(kpEl){
+            const kp=parseFloat(sw.kp_index)||0;
+            kpEl.textContent=kp.toFixed(0)+(sw.kp_text?' ('+sw.kp_text+')':'');
+            kpEl.style.color=kp>=7?'var(--red)':kp>=5?'var(--orange)':kp>=3?'var(--yellow)':'var(--green)';
+        }
+
+        // Solar Wind
+        const swEl=document.getElementById('vSolarWind');
+        if(swEl){
+            const spd=Math.round(sw.solar_wind_speed||380);
+            swEl.textContent=spd+' km/s';
+            swEl.style.color=spd>=600?'var(--red)':spd>=450?'var(--orange)':'var(--t1)';
+        }
+
+        // Proton Flux
+        const pfEl=document.getElementById('vProton');
+        if(pfEl){
+            const pf=sw.proton_flux||0;
+            pfEl.textContent=pf>=100?pf.toExponential(1):pf.toFixed(1);
+            pfEl.textContent+=' pfu';
+            pfEl.style.color=pf>=100?'var(--red)':pf>=10?'var(--orange)':'var(--t2)';
+        }
+
+        // Electron Flux / Bz
+        const efEl=document.getElementById('vElectron');
+        if(efEl){
+            const bz=sw.bz||0;
+            efEl.textContent='Bz: '+(bz>=0?'+':'')+bz.toFixed(1)+' nT';
+            efEl.style.color=bz<=-10?'var(--red)':bz<=-5?'var(--orange)':bz<0?'var(--yellow)':'var(--green)';
+        }
+
+        // R/S/G Scales (real NOAA)
+        const scaleMap={0:'tb-s0',1:'tb-s1',2:'tb-s2',3:'tb-s3'};
+        const setScale=(id,prefix,val)=>{
+            const el=document.getElementById(id);
+            if(el){el.childNodes[0].textContent=prefix+val;
+                el.className='tb-scale '+(scaleMap[Math.min(3,val)]||'tb-s0')}
+        };
+        setScale('scR','R',sw.r_scale||0);
+        setScale('scS','S',sw.s_scale||0);
+        setScale('scG','G',sw.g_scale||0);
+
+        clog('Space weather updated (NOAA live): Kp='+(sw.kp_index||'?')+' Wind='+(sw.solar_wind_speed||'?')+'km/s','ok');
+    }catch(e){
+        clog('Space weather fetch failed: '+e.message,'warn');
+    }
+}
+
 /* LOADER */
 let loaderDone=false;
-async function init(){await go();if(!loaderDone){loaderDone=true;
-    const el=document.getElementById('loaderOverlay');if(el){el.classList.add('hidden');setTimeout(()=>el.remove(),700)}}}
-init();setInterval(go,15000);
+async function init(){
+    await go();
+    fetchSpaceWeather();
+    if(!loaderDone){loaderDone=true;
+        const el=document.getElementById('loaderOverlay');if(el){el.classList.add('hidden');setTimeout(()=>el.remove(),700)}}
+}
+init();setInterval(go,15000);setInterval(fetchSpaceWeather,60000);
 </script>
 </body>
 </html>

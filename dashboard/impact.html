@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JWALASHMI | Geomagnetic Impact Map</title>
+<meta name="description" content="Real-time geomagnetic impact assessment — ISRO Aditya-L1 Solar Flare Early Warning System">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+    --bg:#020408;--panel:#0a0e17;--panel2:#0d1220;--border:rgba(255,255,255,0.06);
+    --t0:#e8ecf4;--t1:#c4cce0;--t2:#7e8ba4;--t3:#4a5572;
+    --cyan:#22d3ee;--blue:#3b82f6;--green:#10b981;--yellow:#eab308;
+    --orange:#f97316;--red:#ef4444;--purple:#a855f7;
+}
+html,body{height:100%;overflow-y:auto;overflow-x:hidden}
+body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0);
+    -webkit-font-smoothing:antialiased}
+
+/* STARFIELD */
+#starfield{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.3}
+
+/* HEADER */
+.header{position:relative;z-index:1;display:flex;align-items:center;height:44px;padding:0 20px;
+    background:linear-gradient(180deg,#0c1120,#080c18);border-bottom:1px solid var(--border);gap:12px}
+.back-btn{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--cyan);text-decoration:none;
+    padding:3px 10px;border:1px solid rgba(34,211,238,0.12);border-radius:3px;transition:all 0.3s;
+    font-family:'JetBrains Mono',monospace;font-weight:600}
+.back-btn:hover{background:rgba(34,211,238,0.06);border-color:rgba(34,211,238,0.25)}
+.hdr-badge{display:flex;align-items:center;gap:6px;padding:2px 8px 2px 4px;
+    background:linear-gradient(135deg,rgba(249,115,22,0.08),rgba(34,211,238,0.05));
+    border:1px solid rgba(249,115,22,0.15);border-radius:4px}
+.hdr-sun{width:18px;height:18px;border-radius:50%;background:radial-gradient(circle,#f97316 30%,#ef4444 70%,transparent 72%);
+    box-shadow:0 0 8px rgba(249,115,22,0.3);animation:sunGlow 3s ease-in-out infinite}
+@keyframes sunGlow{0%,100%{box-shadow:0 0 8px rgba(249,115,22,0.3)}50%{box-shadow:0 0 14px rgba(249,115,22,0.5)}}
+.hdr-isro{font-size:7px;font-weight:700;color:var(--orange);letter-spacing:1px}
+.hdr-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--cyan);letter-spacing:1px}
+.hdr-sub{font-size:10px;color:var(--t2)}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.hdr-kp{font-size:20px;font-weight:700;font-family:'Space Grotesk',sans-serif;transition:color 0.4s}
+.hdr-kp-label{font-size:8px;color:var(--t3)}
+
+/* MAIN */
+.content{position:relative;z-index:1;padding:12px 16px;display:flex;flex-direction:column;gap:12px}
+
+/* MAP */
+.map-container{background:var(--panel);border:1px solid var(--border);border-radius:6px;overflow:hidden;position:relative}
+.map-header{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;
+    border-bottom:1px solid var(--border)}
+.map-title{font-size:11px;font-weight:700;color:var(--t0)}
+.map-legend{display:flex;gap:12px;font-size:8px;color:var(--t2)}
+.legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle}
+#geoCanvas{width:100%;height:320px;display:block}
+
+/* GRID */
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* PANEL */
+.pnl{background:var(--panel);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.pnl-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;
+    border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--t1)}
+.pnl-icon{margin-right:6px;font-size:13px}
+.pnl-body{padding:8px 12px}
+.pnl-badge{font-size:8px;padding:1px 6px;border-radius:2px;font-weight:600}
+
+/* ASSET ROW */
+.asset{display:flex;align-items:center;justify-content:space-between;padding:5px 0;
+    border-bottom:1px solid rgba(255,255,255,0.02);font-size:10px;transition:background 0.3s}
+.asset:last-child{border-bottom:none}
+.asset:hover{background:rgba(255,255,255,0.01)}
+.asset-name{color:var(--t1);font-weight:600;display:flex;align-items:center;gap:6px}
+.asset-flag{font-size:12px}
+.asset-detail{font-size:8px;color:var(--t3)}
+.asset-status{font-weight:700;font-size:9px;padding:2px 8px;border-radius:3px;letter-spacing:0.3px}
+.s-safe{color:var(--green);background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12)}
+.s-warn{color:var(--yellow);background:rgba(234,179,8,0.06);border:1px solid rgba(234,179,8,0.12)}
+.s-alert{color:var(--orange);background:rgba(249,115,22,0.06);border:1px solid rgba(249,115,22,0.12)}
+.s-danger{color:var(--red);background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.12)}
+
+/* TIMELINE */
+.timeline{display:flex;align-items:center;gap:0;padding:10px 14px;position:relative}
+.tl-node{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;z-index:1}
+.tl-dot{width:14px;height:14px;border-radius:50%;border:2px solid;margin-bottom:6px;position:relative}
+.tl-dot.active::after{content:'';position:absolute;inset:2px;border-radius:50%;background:currentColor;animation:tlPulse 2s infinite}
+@keyframes tlPulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.tl-label{font-size:9px;font-weight:700;text-align:center}
+.tl-time{font-size:8px;color:var(--t3);margin-top:2px}
+.tl-line{position:absolute;top:19px;left:50%;right:-50%;height:2px;z-index:0}
+
+/* CONDITIONS */
+.cond-val{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;transition:color 0.4s}
+.cond-unit{font-size:9px;color:var(--t3)}
+.cond-row{display:flex;align-items:baseline;gap:6px;margin-bottom:6px}
+.cond-label{font-size:9px;color:var(--t2);flex:1}
+
+/* FOOTER */
+.footer{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:16px;
+    padding:10px;border-top:1px solid var(--border)}
+.footer a{font-size:9px;color:var(--t2);text-decoration:none;padding:4px 12px;border:1px solid var(--border);
+    border-radius:3px;transition:all 0.3s;font-family:'JetBrains Mono',monospace}
+.footer a:hover{color:var(--cyan);border-color:rgba(34,211,238,0.2)}
+
+/* RESPONSIVE */
+@media(max-width:900px){.grid4{grid-template-columns:1fr 1fr}.grid3{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}}
+@media(max-width:600px){.grid4{grid-template-columns:1fr}#geoCanvas{height:220px}}
+</style>
+</head>
+<body>
+<canvas id="starfield"></canvas>
+
+<!-- HEADER -->
+<div class="header">
+    <a href="/" class="back-btn">&#9664; Mission Control</a>
+    <div class="hdr-badge"><div class="hdr-sun"></div><span class="hdr-isro">ISRO</span></div>
+    <span class="hdr-title">GEOMAGNETIC IMPACT MAP</span>
+    <span class="hdr-sub">Real-time Assessment</span>
+    <div class="hdr-right">
+        <div style="text-align:right">
+            <div class="hdr-kp" id="kpVal">--</div>
+            <div class="hdr-kp-label">Kp INDEX (LIVE)</div>
+        </div>
+        <div style="text-align:right">
+            <div class="hdr-kp" id="stormLvl" style="font-size:14px">--</div>
+            <div class="hdr-kp-label">STORM LEVEL</div>
+        </div>
+    </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+<!-- WORLD MAP -->
+<div class="map-container">
+    <div class="map-header">
+        <span class="map-title">Geomagnetic Impact Zones &mdash; Equirectangular Projection</span>
+        <div class="map-legend">
+            <span><span class="legend-dot" style="background:var(--red)"></span>Extreme</span>
+            <span><span class="legend-dot" style="background:var(--orange)"></span>High</span>
+            <span><span class="legend-dot" style="background:var(--yellow)"></span>Moderate</span>
+            <span><span class="legend-dot" style="background:var(--green)"></span>Safe</span>
+            <span><span class="legend-dot" style="background:var(--cyan)"></span>Satellite</span>
+            <span><span class="legend-dot" style="background:var(--purple)"></span>Aurora</span>
+        </div>
+    </div>
+    <canvas id="geoCanvas"></canvas>
+</div>
+
+<!-- 4-PANEL GRID -->
+<div class="grid4">
+    <!-- ISRO Space Assets -->
+    <div class="pnl">
+        <div class="pnl-hdr"><span><span class="pnl-icon">&#128752;</span>ISRO Space Assets</span>
+            <span class="pnl-badge s-safe" id="spaceStatus">NOMINAL</span></div>
+        <div class="pnl-body" id="spaceAssets">
+            <div class="asset"><span class="asset-name">&#127470;&#127475; Aditya-L1</span><span class="asset-detail">L1 Halo &bull; 1.5M km</span><span class="asset-status s-safe" id="satAditya">SAFE</span></div>
+            <div class="asset"><span class="asset-name">&#127470;&#127475; Chandrayaan-3</span><span class="asset-detail">Lunar orbit</span><span class="asset-status s-safe" id="satChandr">SAFE</span></div>
+            <div class="asset"><span class="asset-name">&#127470;&#127475; INSAT-3DR</span><span class="asset-detail">GEO &bull; 74&deg;E</span><span class="asset-status s-safe" id="satINSAT">SAFE</span></div>
+            <div class="asset"><span class="asset-name">&#127470;&#127475; GSAT-30</span><span class="asset-detail">GEO &bull; 83&deg;E</span><span class="asset-status s-safe" id="satGSAT">SAFE</span></div>
+            <div class="asset"><span class="asset-name">&#127470;&#127475; NavIC (IRNSS)</span><span class="asset-detail">GEO+GSO &bull; 7 sats</span><span class="asset-status s-safe" id="satNavIC">SAFE</span></div>
+            <div class="asset"><span class="asset-name">&#127470;&#127475; Oceansat-3</span><span class="asset-detail">LEO &bull; 720 km</span><span class="asset-status s-safe" id="satOcean">SAFE</span></div>
+            <div class="asset"><span class="asset-name">&#127470;&#127475; RISAT-2B</span><span class="asset-detail">LEO &bull; 556 km</span><span class="asset-status s-safe" id="satRISAT">SAFE</span></div>
+        </div>
+    </div>
+
+    <!-- International Assets -->
+    <div class="pnl">
+        <div class="pnl-hdr"><span><span class="pnl-icon">&#128640;</span>International Assets</span></div>
+        <div class="pnl-body" id="intlAssets">
+            <div class="asset"><span class="asset-name"><span class="asset-flag">&#127468;&#127463;</span>ISS</span><span class="asset-detail">LEO &bull; 408 km</span><span class="asset-status s-safe" id="satISS">SAFE</span></div>
+            <div class="asset"><span class="asset-name"><span class="asset-flag">&#127482;&#127480;</span>GPS-III</span><span class="asset-detail">MEO &bull; 20,200 km</span><span class="asset-status s-safe" id="satGPS">SAFE</span></div>
+            <div class="asset"><span class="asset-name"><span class="asset-flag">&#127466;&#127482;</span>Galileo</span><span class="asset-detail">MEO &bull; 23,222 km</span><span class="asset-status s-safe" id="satGalileo">SAFE</span></div>
+            <div class="asset"><span class="asset-name"><span class="asset-flag">&#127482;&#127480;</span>Starlink</span><span class="asset-detail">LEO &bull; 550 km &bull; 6000+</span><span class="asset-status s-safe" id="satStarlink">SAFE</span></div>
+            <div class="asset"><span class="asset-name"><span class="asset-flag">&#127464;&#127475;</span>Tiangong</span><span class="asset-detail">LEO &bull; 390 km</span><span class="asset-status s-safe" id="satTiangong">SAFE</span></div>
+            <div class="asset"><span class="asset-name"><span class="asset-flag">&#127482;&#127480;</span>GOES-18</span><span class="asset-detail">GEO &bull; 137&deg;W</span><span class="asset-status s-safe" id="satGOES">SAFE</span></div>
+            <div class="asset"><span class="asset-name"><span class="asset-flag">&#127466;&#127482;</span>SOHO</span><span class="asset-detail">L1 &bull; 1.5M km</span><span class="asset-status s-safe" id="satSOHO">SAFE</span></div>
+        </div>
+    </div>
+
+    <!-- Communications -->
+    <div class="pnl">
+        <div class="pnl-hdr"><span><span class="pnl-icon">&#128225;</span>Communications &amp; Navigation</span></div>
+        <div class="pnl-body" id="commsPanel">
+            <div class="asset"><span class="asset-name">HF Radio (3-30 MHz)</span><span class="asset-status s-safe" id="comHF">NORMAL</span></div>
+            <div class="asset"><span class="asset-name">GPS Positioning</span><span class="asset-status s-safe" id="comGPS">NORMAL</span></div>
+            <div class="asset"><span class="asset-name">NavIC (L5/S-band)</span><span class="asset-status s-safe" id="comNavIC">NORMAL</span></div>
+            <div class="asset"><span class="asset-name">SATCOM (Ku/Ka)</span><span class="asset-status s-safe" id="comSATCOM">NORMAL</span></div>
+            <div class="asset"><span class="asset-name">ADS-B (Aviation)</span><span class="asset-status s-safe" id="comADSB">NORMAL</span></div>
+            <div class="asset"><span class="asset-name">VHF/UHF</span><span class="asset-status s-safe" id="comVHF">NORMAL</span></div>
+            <div class="asset"><span class="asset-name">Submarine Cables</span><span class="asset-status s-safe" id="comCable">NORMAL</span></div>
+        </div>
+    </div>
+
+    <!-- Ground Infrastructure -->
+    <div class="pnl">
+        <div class="pnl-hdr"><span><span class="pnl-icon">&#9889;</span>Ground Infrastructure</span></div>
+        <div class="pnl-body" id="groundPanel">
+            <div class="asset"><span class="asset-name">Power Grids (High-lat)</span><span class="asset-status s-safe" id="grPower">STABLE</span></div>
+            <div class="asset"><span class="asset-name">Oil/Gas Pipelines</span><span class="asset-status s-safe" id="grPipe">SAFE</span></div>
+            <div class="asset"><span class="asset-name">Rail Signaling</span><span class="asset-status s-safe" id="grRail">NORMAL</span></div>
+            <div class="asset"><span class="asset-name">Transformers</span><span class="asset-status s-safe" id="grTransform">NORMAL</span></div>
+            <div class="asset"><span class="asset-name">Survey/Drilling</span><span class="asset-status s-safe" id="grSurvey">NORMAL</span></div>
+            <div class="asset"><span class="asset-name">Indian Grid (PGCIL)</span><span class="asset-status s-safe" id="grIndia">STABLE</span></div>
+            <div class="asset"><span class="asset-name">ISRO Ground Stations</span><span class="asset-status s-safe" id="grISTRAC">NOMINAL</span></div>
+        </div>
+    </div>
+</div>
+
+<!-- IMPACT TIMELINE -->
+<div class="pnl">
+    <div class="pnl-hdr"><span><span class="pnl-icon">&#9200;</span>Flare Impact Timeline</span>
+        <span class="pnl-badge" id="tlBadge" style="color:var(--green);background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12)">QUIET</span></div>
+    <div class="timeline" id="timeline">
+        <div class="tl-node">
+            <div class="tl-dot" id="tl0" style="border-color:var(--cyan);color:var(--cyan)"></div>
+            <div class="tl-label" style="color:var(--cyan)">Solar Flare</div>
+            <div class="tl-time">T+0</div>
+            <div class="tl-line" style="background:linear-gradient(90deg,var(--cyan),var(--yellow))"></div>
+        </div>
+        <div class="tl-node">
+            <div class="tl-dot" id="tl1" style="border-color:var(--yellow);color:var(--yellow)"></div>
+            <div class="tl-label" style="color:var(--yellow)">Radio Blackout</div>
+            <div class="tl-time">T+8 min</div>
+            <div class="tl-line" style="background:linear-gradient(90deg,var(--yellow),var(--orange))"></div>
+        </div>
+        <div class="tl-node">
+            <div class="tl-dot" id="tl2" style="border-color:var(--orange);color:var(--orange)"></div>
+            <div class="tl-label" style="color:var(--orange)">Proton Storm</div>
+            <div class="tl-time">T+15-60 min</div>
+            <div class="tl-line" style="background:linear-gradient(90deg,var(--orange),var(--red))"></div>
+        </div>
+        <div class="tl-node">
+            <div class="tl-dot" id="tl3" style="border-color:var(--red);color:var(--red)"></div>
+            <div class="tl-label" style="color:var(--red)">CME Impact</div>
+            <div class="tl-time">T+18-36 hr</div>
+            <div class="tl-line" style="background:linear-gradient(90deg,var(--red),var(--purple))"></div>
+        </div>
+        <div class="tl-node">
+            <div class="tl-dot" id="tl4" style="border-color:var(--purple);color:var(--purple)"></div>
+            <div class="tl-label" style="color:var(--purple)">Geomagnetic Storm</div>
+            <div class="tl-time">T+24-48 hr</div>
+        </div>
+    </div>
+</div>
+
+<!-- BOTTOM GRID -->
+<div class="grid3">
+    <!-- Regions at Risk -->
+    <div class="pnl">
+        <div class="pnl-hdr"><span><span class="pnl-icon">&#127758;</span>Regions at Risk</span></div>
+        <div class="pnl-body" id="regionsPanel">
+            <div class="asset"><span class="asset-name"><span class="asset-flag">&#127464;&#127462;</span>Canada</span><span class="asset-detail">55-83&deg;N</span><span class="asset-status s-safe" id="regCanada">SAFE</span></div>
+            <div class="asset"><span class="asset-name"><span class="asset-flag">&#127475;&#127476;</span>Scandinavia</span><span class="asset-detail">58-71&deg;N</span><span class="asset-status s-safe" id="regScandinavia">SAFE</span></div>
+            <div class="asset"><span class="asset-name"><span class="asset-flag">&#127479;&#127482;</span>N. Russia</span><span class="asset-detail">55-77&deg;N</span><span class="asset-status s-safe" id="regRussia">SAFE</span></div>
+            <div class="asset"><span class="asset-name"><span class="asset-flag">&#127482;&#127480;</span>N. America</span><span class="asset-detail">25-49&deg;N</span><span class="asset-status s-safe" id="regUSA">SAFE</span></div>
+            <div class="asset"><span class="asset-name"><span class="asset-flag">&#127466;&#127482;</span>Europe</span><span class="asset-detail">35-60&deg;N</span><span class="asset-status s-safe" id="regEurope">SAFE</span></div>
+            <div class="asset"><span class="asset-name"><span class="asset-flag">&#127470;&#127475;</span>India</span><span class="asset-detail">8-35&deg;N</span><span class="asset-status s-safe" id="regIndia">SAFE</span></div>
+            <div class="asset"><span class="asset-name"><span class="asset-flag">&#127462;&#127482;</span>Australia</span><span class="asset-detail">12-44&deg;S</span><span class="asset-status s-safe" id="regAustralia">SAFE</span></div>
+        </div>
+    </div>
+
+    <!-- Polar Flight Routes -->
+    <div class="pnl">
+        <div class="pnl-hdr"><span><span class="pnl-icon">&#9992;&#65039;</span>Polar Flight Routes</span></div>
+        <div class="pnl-body" id="flightsPanel">
+            <div class="asset"><span class="asset-name">DEL &rarr; SFO</span><span class="asset-detail">AI-173 &bull; Polar</span><span class="asset-status s-safe" id="fltDELSFO">CLEAR</span></div>
+            <div class="asset"><span class="asset-name">BOM &rarr; EWR</span><span class="asset-detail">AI-191 &bull; N.Atlantic</span><span class="asset-status s-safe" id="fltBOMEWR">CLEAR</span></div>
+            <div class="asset"><span class="asset-name">DEL &rarr; YYZ</span><span class="asset-detail">AI-187 &bull; Polar</span><span class="asset-status s-safe" id="fltDELYYZ">CLEAR</span></div>
+            <div class="asset"><span class="asset-name">LHR &rarr; NRT</span><span class="asset-detail">BA-5 &bull; Siberian</span><span class="asset-status s-safe" id="fltLHRNRT">CLEAR</span></div>
+            <div class="asset"><span class="asset-name">FRA &rarr; ICN</span><span class="asset-detail">LH-712 &bull; Polar</span><span class="asset-status s-safe" id="fltFRAICN">CLEAR</span></div>
+            <div class="asset"><span class="asset-name">CDG &rarr; HND</span><span class="asset-detail">AF-276 &bull; Siberian</span><span class="asset-status s-safe" id="fltCDGHND">CLEAR</span></div>
+        </div>
+    </div>
+
+    <!-- Current Conditions -->
+    <div class="pnl">
+        <div class="pnl-hdr"><span><span class="pnl-icon">&#128200;</span>Real-time Conditions (NOAA)</span>
+            <span class="pnl-badge" style="color:var(--green);background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12)">LIVE</span></div>
+        <div class="pnl-body">
+            <div class="cond-row"><span class="cond-label">Kp Index</span><span class="cond-val" id="cKp">--</span></div>
+            <div class="cond-row"><span class="cond-label">Solar Wind</span><span class="cond-val" id="cWind">--</span><span class="cond-unit">km/s</span></div>
+            <div class="cond-row"><span class="cond-label">IMF Bz</span><span class="cond-val" id="cBz">--</span><span class="cond-unit">nT</span></div>
+            <div class="cond-row"><span class="cond-label">Proton Flux</span><span class="cond-val" id="cProton">--</span><span class="cond-unit">pfu</span></div>
+            <div class="cond-row"><span class="cond-label">R Scale</span><span class="cond-val" id="cR">R0</span></div>
+            <div class="cond-row"><span class="cond-label">S Scale</span><span class="cond-val" id="cS">S0</span></div>
+            <div class="cond-row"><span class="cond-label">G Scale</span><span class="cond-val" id="cG">G0</span></div>
+            <div style="margin-top:8px;font-size:8px;color:var(--t3)" id="cUpdate">Last update: --</div>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+    <a href="/">&#9664; Mission Control</a>
+    <a href="/analytics.html">&#128202; Model Analytics</a>
+    <a href="https://www.swpc.noaa.gov/" target="_blank">NOAA SWPC &#8599;</a>
+    <a href="https://www.isro.gov.in/Aditya_L1.html" target="_blank">ISRO Aditya-L1 &#8599;</a>
+</div>
+
+<script>
+/* STARFIELD */
+(function(){
+    const c=document.getElementById('starfield'),ctx=c.getContext('2d');
+    let stars=[];const N=150;
+    function resize(){c.width=window.innerWidth;c.height=window.innerHeight;init()}
+    function init(){stars=[];for(let i=0;i<N;i++){
+        stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1+0.2,
+            speed:Math.random()*0.1+0.01,alpha:Math.random()*0.7+0.3,phase:Math.random()*Math.PI*2})}}
+    function draw(){ctx.clearRect(0,0,c.width,c.height);const t=Date.now()*0.001;
+        for(const s of stars){s.y+=s.speed;if(s.y>c.height){s.y=0;s.x=Math.random()*c.width}
+            const a=s.alpha*(0.6+0.4*Math.sin(t+s.phase));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+            ctx.fillStyle='rgba(200,210,230,'+a+')';ctx.fill()}requestAnimationFrame(draw)}
+    resize();draw();window.addEventListener('resize',resize)})();
+
+/* GEO MAP */
+const canvas=document.getElementById('geoCanvas');
+const ctx=canvas.getContext('2d');
+let kpData={kp_index:2,solar_wind_speed:380,bz:-1,proton_flux:0.3,r_scale:0,s_scale:0,g_scale:0};
+
+// Simplified continent paths (lon,lat pairs normalized to 0-1)
+const continents=[
+    // North America
+    [[0.05,0.2],[0.08,0.15],[0.15,0.12],[0.22,0.15],[0.28,0.2],[0.30,0.28],[0.28,0.35],[0.22,0.38],[0.18,0.42],[0.16,0.45],[0.12,0.42],[0.05,0.35]],
+    // South America
+    [[0.20,0.48],[0.25,0.45],[0.28,0.50],[0.30,0.58],[0.28,0.68],[0.25,0.78],[0.22,0.82],[0.18,0.78],[0.17,0.68],[0.18,0.55]],
+    // Europe
+    [[0.47,0.15],[0.50,0.18],[0.52,0.22],[0.55,0.20],[0.53,0.25],[0.50,0.30],[0.47,0.32],[0.45,0.28],[0.44,0.22]],
+    // Africa
+    [[0.45,0.35],[0.50,0.33],[0.55,0.38],[0.57,0.45],[0.55,0.55],[0.52,0.65],[0.50,0.70],[0.47,0.65],[0.44,0.55],[0.43,0.45]],
+    // Asia
+    [[0.55,0.12],[0.62,0.10],[0.70,0.12],[0.78,0.15],[0.82,0.22],[0.80,0.30],[0.75,0.35],[0.70,0.38],[0.65,0.35],[0.60,0.30],[0.55,0.25]],
+    // India (detailed)
+    [[0.65,0.32],[0.68,0.35],[0.70,0.38],[0.69,0.45],[0.67,0.48],[0.65,0.45],[0.63,0.40],[0.64,0.35]],
+    // Australia
+    [[0.78,0.58],[0.85,0.55],[0.90,0.58],[0.90,0.65],[0.85,0.70],[0.78,0.68],[0.76,0.62]]
+];
+
+// Key cities with (lon, lat) in degrees
+const cities=[
+    {name:'Delhi',lon:77,lat:28.6,isro:true},{name:'Bengaluru (ISTRAC)',lon:77.6,lat:13,isro:true},
+    {name:'Sriharikota',lon:80.2,lat:13.7,isro:true},{name:'Ahmedabad (SAC)',lon:72.6,lat:23,isro:true},
+    {name:'London',lon:-0.1,lat:51.5},{name:'New York',lon:-74,lat:40.7},
+    {name:'Tokyo',lon:139.7,lat:35.7},{name:'Sydney',lon:151.2,lat:-33.9},
+    {name:'Moscow',lon:37.6,lat:55.8},{name:'Tromso',lon:19,lat:69.6},
+    {name:'Reykjavik',lon:-22,lat:64},{name:'Ottawa',lon:-75.7,lat:45.4}
+];
+
+// Satellites
+const sats=[
+    {name:'Aditya-L1',type:'isro',x:0.13,y:0.38},{name:'ISS',type:'intl',x:0.45,y:0.42},
+    {name:'NavIC',type:'isro',x:0.68,y:0.40},{name:'INSAT',type:'isro',x:0.65,y:0.36},
+    {name:'GPS-III',type:'intl',x:0.25,y:0.30},{name:'Starlink',type:'intl',x:0.55,y:0.25},
+    {name:'GOES-18',type:'intl',x:0.15,y:0.32},{name:'Chandrayaan',type:'isro',x:0.72,y:0.28}
+];
+
+function lonLatToXY(lon,lat,w,h){
+    const x=((lon+180)/360)*w;
+    const y=((90-lat)/180)*h;
+    return[x,y];
+}
+
+function drawMap(){
+    const dpr=window.devicePixelRatio||1;
+    const rect=canvas.getBoundingClientRect();
+    canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;
+    ctx.scale(dpr,dpr);
+    const W=rect.width,H=rect.height;
+    const kp=kpData.kp_index||2;
+
+    // Background
+    ctx.fillStyle='#020408';ctx.fillRect(0,0,W,H);
+
+    // Grid lines
+    ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=0.5;
+    for(let lat=-60;lat<=60;lat+=30){const y=((90-lat)/180)*H;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+    for(let lon=-150;lon<=180;lon+=30){const x=((lon+180)/360)*W;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+
+    // Equator
+    ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=1;
+    const eqY=H*0.5;ctx.beginPath();ctx.moveTo(0,eqY);ctx.lineTo(W,eqY);ctx.stroke();
+
+    // Aurora ovals (expands with Kp)
+    const auroraLat=67-kp*2.5; // Lower latitude with higher Kp
+    const auroraWidth=5+kp*2;
+    const t=Date.now()*0.001;
+
+    // Northern aurora
+    for(let lon=-180;lon<=180;lon+=2){
+        const aLat=auroraLat+Math.sin(lon*0.05+t)*3;
+        const[x,y]=lonLatToXY(lon,aLat,W,H);
+        const alpha=0.15+0.1*Math.sin(t*2+lon*0.1);
+        const grad=ctx.createRadialGradient(x,y,0,x,y,auroraWidth*H/180*2);
+        grad.addColorStop(0,'rgba(168,85,247,'+alpha+')');
+        grad.addColorStop(0.5,'rgba(34,211,238,'+(alpha*0.5)+')');
+        grad.addColorStop(1,'transparent');
+        ctx.fillStyle=grad;ctx.fillRect(x-30,y-30,60,60);
+    }
+    // Southern aurora
+    for(let lon=-180;lon<=180;lon+=2){
+        const aLat=-(auroraLat+Math.sin(lon*0.05+t)*3);
+        const[x,y]=lonLatToXY(lon,aLat,W,H);
+        const alpha=0.12+0.08*Math.sin(t*2+lon*0.1);
+        const grad=ctx.createRadialGradient(x,y,0,x,y,auroraWidth*H/180*2);
+        grad.addColorStop(0,'rgba(168,85,247,'+alpha+')');
+        grad.addColorStop(0.5,'rgba(34,211,238,'+(alpha*0.5)+')');
+        grad.addColorStop(1,'transparent');
+        ctx.fillStyle=grad;ctx.fillRect(x-30,y-30,60,60);
+    }
+
+    // Impact zone bands
+    const dangerLat=90-kp*5; // Higher Kp = danger extends to lower latitudes
+    // North danger zone
+    const dY=((90-dangerLat)/180)*H;
+    const dangerGrad=ctx.createLinearGradient(0,0,0,dY);
+    dangerGrad.addColorStop(0,'rgba(239,68,68,'+(kp>=5?0.12:0.04)+')');
+    dangerGrad.addColorStop(1,'transparent');
+    ctx.fillStyle=dangerGrad;ctx.fillRect(0,0,W,dY);
+    // South
+    const sdY=((90+dangerLat)/180)*H;
+    const sDangerGrad=ctx.createLinearGradient(0,H,0,sdY);
+    sDangerGrad.addColorStop(0,'rgba(239,68,68,'+(kp>=5?0.12:0.04)+')');
+    sDangerGrad.addColorStop(1,'transparent');
+    ctx.fillStyle=sDangerGrad;ctx.fillRect(0,sdY,W,H-sdY);
+
+    // Continents
+    ctx.strokeStyle='rgba(200,210,230,0.15)';ctx.lineWidth=1.2;
+    ctx.fillStyle='rgba(200,210,230,0.03)';
+    continents.forEach(pts=>{
+        ctx.beginPath();pts.forEach((p,i)=>{const x=p[0]*W,y=p[1]*H;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});
+        ctx.closePath();ctx.fill();ctx.stroke()});
+
+    // India highlight
+    ctx.strokeStyle='rgba(249,115,22,0.4)';ctx.lineWidth=1.8;
+    const india=continents[5];
+    ctx.beginPath();india.forEach((p,i)=>{const x=p[0]*W,y=p[1]*H;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});
+    ctx.closePath();ctx.fillStyle='rgba(249,115,22,0.06)';ctx.fill();ctx.stroke();
+
+    // Cities
+    cities.forEach(c=>{
+        const[x,y]=lonLatToXY(c.lon,c.lat,W,H);
+        const inDanger=Math.abs(c.lat)>dangerLat;
+        ctx.beginPath();ctx.arc(x,y,c.isro?3.5:2.5,0,Math.PI*2);
+        ctx.fillStyle=c.isro?'#f97316':inDanger?'#ef4444':'#22d3ee';ctx.fill();
+        if(c.isro){ctx.strokeStyle='rgba(249,115,22,0.4)';ctx.lineWidth=1;ctx.stroke();
+            // Glow
+            ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);
+            ctx.fillStyle='rgba(249,115,22,0.08)';ctx.fill()}
+        ctx.fillStyle=c.isro?'#f97316':'rgba(200,210,230,0.5)';
+        ctx.font=(c.isro?'bold ':'')+' 8px JetBrains Mono';
+        ctx.fillText(c.name,x+6,y+3);
+    });
+
+    // Satellites (orbiting dots)
+    sats.forEach((s,i)=>{
+        const ox=Math.sin(t*0.3+i*1.5)*W*0.02;
+        const oy=Math.cos(t*0.4+i*1.2)*H*0.015;
+        const x=s.x*W+ox,y=s.y*H+oy;
+        ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);
+        ctx.fillStyle=s.type==='isro'?'#f97316':'#22d3ee';ctx.fill();
+        // Orbit ring
+        ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);
+        ctx.strokeStyle=s.type==='isro'?'rgba(249,115,22,0.2)':'rgba(34,211,238,0.15)';ctx.lineWidth=0.5;ctx.stroke();
+        ctx.fillStyle=s.type==='isro'?'rgba(249,115,22,0.6)':'rgba(34,211,238,0.4)';
+        ctx.font='7px JetBrains Mono';ctx.fillText(s.name,x+8,y+2);
+    });
+
+    // Polar flight routes (if Kp high)
+    if(kp>=4){
+        ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(239,68,68,0.3)';ctx.lineWidth=1;
+        // DEL to SFO great circle (simplified)
+        ctx.beginPath();const p1=lonLatToXY(77,28,W,H),p2=lonLatToXY(-122,37,W,H);
+        ctx.moveTo(p1[0],p1[1]);ctx.quadraticCurveTo(W*0.3,H*0.05,p2[0],p2[1]);ctx.stroke();
+        ctx.setLineDash([]);}
+
+    // Lat labels
+    ctx.fillStyle='rgba(200,210,230,0.2)';ctx.font='8px JetBrains Mono';
+    [-60,-30,0,30,60].forEach(lat=>{const y=((90-lat)/180)*H;ctx.fillText(lat+'°',4,y-2)});
+
+    requestAnimationFrame(drawMap);
+}
+drawMap();
+
+/* STATUS UPDATER */
+function getStatus(kp,threshold){
+    if(kp>=threshold+4)return['DANGER','s-danger'];
+    if(kp>=threshold+2)return['ALERT','s-alert'];
+    if(kp>=threshold)return['WARNING','s-warn'];
+    return['SAFE','s-safe'];
+}
+
+function setStatus(id,text,cls){
+    const el=document.getElementById(id);
+    if(el){el.textContent=text;el.className='asset-status '+cls}
+}
+
+function updateAll(sw){
+    kpData=sw;
+    const kp=parseFloat(sw.kp_index)||0;
+    const wind=sw.solar_wind_speed||380;
+    const bz=sw.bz||0;
+
+    // Header
+    document.getElementById('kpVal').textContent=kp.toFixed(0);
+    document.getElementById('kpVal').style.color=kp>=7?'var(--red)':kp>=5?'var(--orange)':kp>=3?'var(--yellow)':'var(--green)';
+    const storms=['Quiet','Quiet','Quiet','Unsettled','Active','G1 Minor','G2 Moderate','G3 Strong','G4 Severe','G5 Extreme'];
+    document.getElementById('stormLvl').textContent=storms[Math.min(9,Math.floor(kp))]||'--';
+    document.getElementById('stormLvl').style.color=kp>=7?'var(--red)':kp>=5?'var(--orange)':kp>=3?'var(--yellow)':'var(--green)';
+
+    // ISRO Satellites
+    setStatus('satAditya',...getStatus(kp,7)); // L1 - very resilient
+    setStatus('satChandr',...getStatus(kp,6));
+    setStatus('satINSAT',...getStatus(kp,5));
+    setStatus('satGSAT',...getStatus(kp,5));
+    setStatus('satNavIC',...getStatus(kp,5));
+    setStatus('satOcean',...getStatus(kp,3)); // LEO - more vulnerable
+    setStatus('satRISAT',...getStatus(kp,3));
+
+    // International
+    setStatus('satISS',...getStatus(kp,3));
+    setStatus('satGPS',...getStatus(kp,4));
+    setStatus('satGalileo',...getStatus(kp,4));
+    setStatus('satStarlink',...getStatus(kp,2)); // Very LEO, vulnerable to drag
+    setStatus('satTiangong',...getStatus(kp,3));
+    setStatus('satGOES',...getStatus(kp,6));
+    setStatus('satSOHO',...getStatus(kp,7));
+
+    // Comms
+    const r=sw.r_scale||0;
+    setStatus('comHF',...(r>=3?['BLACKOUT','s-danger']:r>=2?['DEGRADED','s-alert']:r>=1?['DISTURBED','s-warn']:['NORMAL','s-safe']));
+    setStatus('comGPS',...getStatus(kp,4));
+    setStatus('comNavIC',...getStatus(kp,5)); // Indian system, lower lat
+    setStatus('comSATCOM',...getStatus(kp,5));
+    setStatus('comADSB',...(kp>=5?['REROUTE','s-alert']:['NORMAL','s-safe']));
+    setStatus('comVHF',...getStatus(kp,6));
+    setStatus('comCable',...(kp>=7?['GIC RISK','s-danger']:kp>=5?['MONITOR','s-warn']:['NORMAL','s-safe']));
+
+    // Ground
+    setStatus('grPower',...(kp>=7?['GIC ALERT','s-danger']:kp>=5?['GIC POSSIBLE','s-alert']:kp>=4?['MONITOR','s-warn']:['STABLE','s-safe']));
+    setStatus('grPipe',...(kp>=6?['CORROSION RISK','s-alert']:['SAFE','s-safe']));
+    setStatus('grRail',...(kp>=7?['SIGNAL ERROR','s-danger']:['NORMAL','s-safe']));
+    setStatus('grTransform',...(kp>=6?['STRESS','s-alert']:['NORMAL','s-safe']));
+    setStatus('grSurvey',...(kp>=4?['INACCURATE','s-warn']:['NORMAL','s-safe']));
+    setStatus('grIndia',...(kp>=7?['ALERT','s-alert']:['STABLE','s-safe'])); // Low lat, safer
+    setStatus('grISTRAC',...(kp>=5?['MONITOR','s-warn']:['NOMINAL','s-safe']));
+
+    // Regions
+    setStatus('regCanada',...(kp>=3?kp>=5?['STORM','s-danger']:['AURORA','s-alert']:['SAFE','s-safe']));
+    setStatus('regScandinavia',...(kp>=3?kp>=5?['STORM','s-danger']:['AURORA','s-alert']:['SAFE','s-safe']));
+    setStatus('regRussia',...(kp>=3?kp>=5?['STORM','s-danger']:['AURORA','s-alert']:['SAFE','s-safe']));
+    setStatus('regUSA',...(kp>=5?kp>=7?['STORM','s-danger']:['DISTURBED','s-warn']:['SAFE','s-safe']));
+    setStatus('regEurope',...(kp>=5?kp>=7?['STORM','s-alert']:['DISTURBED','s-warn']:['SAFE','s-safe']));
+    setStatus('regIndia',...(kp>=8?['DISTURBED','s-warn']:['SAFE','s-safe'])); // Very low lat
+    setStatus('regAustralia',...(kp>=6?['AURORA','s-warn']:['SAFE','s-safe']));
+
+    // Flights
+    setStatus('fltDELSFO',...(kp>=5?['REROUTE','s-alert']:kp>=4?['MONITOR','s-warn']:['CLEAR','s-safe']));
+    setStatus('fltBOMEWR',...(kp>=5?['REROUTE','s-alert']:kp>=4?['MONITOR','s-warn']:['CLEAR','s-safe']));
+    setStatus('fltDELYYZ',...(kp>=5?['REROUTE','s-alert']:kp>=4?['MONITOR','s-warn']:['CLEAR','s-safe']));
+    setStatus('fltLHRNRT',...(kp>=4?kp>=6?['GROUND','s-danger']:['REROUTE','s-alert']:['CLEAR','s-safe']));
+    setStatus('fltFRAICN',...(kp>=4?kp>=6?['GROUND','s-danger']:['REROUTE','s-alert']:['CLEAR','s-safe']));
+    setStatus('fltCDGHND',...(kp>=4?kp>=6?['GROUND','s-danger']:['REROUTE','s-alert']:['CLEAR','s-safe']));
+
+    // ISRO space status badge
+    const isroWorst=kp>=5?'ALERT':kp>=3?'MONITOR':'NOMINAL';
+    const isroCls=kp>=5?'s-danger':kp>=3?'s-warn':'s-safe';
+    setStatus('spaceStatus',isroWorst,isroCls);
+
+    // Timeline
+    const tlBadge=document.getElementById('tlBadge');
+    if(kp>=7){tlBadge.textContent='STORM';tlBadge.style.color='var(--red)';tlBadge.style.borderColor='rgba(239,68,68,0.2)'}
+    else if(kp>=5){tlBadge.textContent='ACTIVE';tlBadge.style.color='var(--orange)'}
+    else if(kp>=3){tlBadge.textContent='UNSETTLED';tlBadge.style.color='var(--yellow)'}
+    else{tlBadge.textContent='QUIET';tlBadge.style.color='var(--green)'}
+
+    // Timeline active nodes
+    ['tl0','tl1','tl2','tl3','tl4'].forEach((id,i)=>{
+        const el=document.getElementById(id);
+        const active=(kp>=3&&i<=1)||(kp>=5&&i<=2)||(kp>=7&&i<=4);
+        el.classList.toggle('active',active);
+    });
+
+    // Conditions panel
+    document.getElementById('cKp').textContent=kp.toFixed(0);
+    document.getElementById('cKp').style.color=kp>=7?'var(--red)':kp>=5?'var(--orange)':'var(--green)';
+    document.getElementById('cWind').textContent=Math.round(wind);
+    document.getElementById('cWind').style.color=wind>=600?'var(--red)':wind>=450?'var(--orange)':'var(--green)';
+    document.getElementById('cBz').textContent=(bz>=0?'+':'')+bz.toFixed(1);
+    document.getElementById('cBz').style.color=bz<=-10?'var(--red)':bz<=-5?'var(--orange)':'var(--green)';
+    const pf=sw.proton_flux||0;
+    document.getElementById('cProton').textContent=pf>=100?pf.toExponential(1):pf.toFixed(1);
+    document.getElementById('cR').textContent='R'+(sw.r_scale||0);
+    document.getElementById('cR').style.color=sw.r_scale>=3?'var(--red)':sw.r_scale>=1?'var(--orange)':'var(--green)';
+    document.getElementById('cS').textContent='S'+(sw.s_scale||0);
+    document.getElementById('cS').style.color=sw.s_scale>=3?'var(--red)':sw.s_scale>=1?'var(--orange)':'var(--green)';
+    document.getElementById('cG').textContent='G'+(sw.g_scale||0);
+    document.getElementById('cG').style.color=sw.g_scale>=3?'var(--red)':sw.g_scale>=1?'var(--orange)':'var(--green)';
+    document.getElementById('cUpdate').textContent='Last update: '+new Date().toLocaleTimeString();
+}
+
+/* FETCH */
+async function fetchData(){
+    try{
+        const r=await fetch('/api/space_weather');
+        if(r.ok)updateAll(await r.json());
+    }catch(e){console.warn('Fetch failed:',e)}
+}
+fetchData();setInterval(fetchData,30000);
+</script>
+</body>
+</html>
