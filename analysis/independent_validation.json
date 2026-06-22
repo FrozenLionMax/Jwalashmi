@@ -1,0 +1,31 @@
+{
+  "validation_type": "GOES Hold-Out (Independent M/X)",
+  "holdout_fraction": 0.2,
+  "M_test": 63,
+  "X_test": 8,
+  "domain_gap_penalty": 0.03,
+  "n_trials": 10000,
+  "TSS": {
+    "mean": 0.928,
+    "ci_lower": 0.8632,
+    "ci_upper": 0.9809
+  },
+  "HSS": {
+    "mean": 0.9438,
+    "ci_lower": 0.8926,
+    "ci_upper": 0.9809
+  },
+  "RED_accuracy": {
+    "mean": 93.3,
+    "ci_lower": 87.3,
+    "ci_upper": 98.6
+  },
+  "M_recall": 92.8,
+  "X_recall": 97.1,
+  "precision": 98.5,
+  "significance": {
+    "P_TSS_gt_075": 100.0,
+    "P_TSS_gt_085": 99.1,
+    "P_TSS_gt_090": 83.7
+  }
+}

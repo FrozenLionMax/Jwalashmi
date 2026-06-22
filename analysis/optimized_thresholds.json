@@ -1,0 +1,14 @@
+{
+  "red_threshold": 0.3,
+  "class_thresholds": {
+    "None": 0.3,
+    "B": 0.25,
+    "C": 0.25,
+    "M": 0.2,
+    "X": 0.15
+  },
+  "optimized_balanced_accuracy": 77.6,
+  "optimized_red_accuracy": 97.3,
+  "optimized_tss": 0.9542,
+  "inference_target": "8ms (ONNX INT8)"
+}
