@@ -268,17 +268,17 @@ if __name__ == '__main__':
     print("  JWALASHMI - 5-FOLD TEMPORAL CROSS-VALIDATION")
     print("=" * 60)
 
-    # --- CONFIGURE PATHS ---
-    X_PATH = 'data/processed/X_features.npy'  # (N, 3600, 12)
-    Y_PATH = 'data/processed/y_labels.npy'    # (N,)
-    DATES_FILE = 'data/processed/dates.csv'   # Optional: date per sample
+    # --- CONFIGURE PATHS ---\n    # These paths match the repo structure after: git clone ... && cd Jwalashmi
+    X_PATH = 'data/processed/X_tactical.npy'   # (2380, 3600, 12)
+    Y_PATH = 'data/processed/y_tactical.npy'   # (2380,) labels [0-4]
+    DATES_FILE = 'data/processed/dates.csv'    # Optional: date per sample
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"  Device: {device}")
 
     if not os.path.exists(X_PATH):
         print(f"\n  ERROR: Data not found: {X_PATH}")
-        print(f"  Upload X_features.npy and y_labels.npy to Colab.")
+        print(f"  Upload X_tactical.npy and y_tactical.npy to Colab.")
         print(f"  Or run the data pipeline first: python run_pipeline.py --step extract,features,window")
         exit(1)
 

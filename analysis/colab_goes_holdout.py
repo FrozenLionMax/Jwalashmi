@@ -210,10 +210,10 @@ if __name__ == '__main__':
     print("=" * 60)
 
     # --- CONFIGURE PATHS ---
-    # Update these paths for your Colab environment
-    MODEL_DIR = 'models/v6_1_ensemble'      # Directory with model_0.pt ... model_9.pt
-    GOES_X_PATH = 'data/goes/X_goes.npy'    # GOES feature windows
-    GOES_Y_PATH = 'data/goes/y_goes.npy'    # GOES labels
+    # These paths match the repo structure after: git clone ... && cd Jwalashmi
+    MODEL_DIR = 'models/v6_1_ensemble'              # model_0.pt ... model_9.pt
+    GOES_X_PATH = 'data/goes/X_goes_pretrain.npy'   # (2271, 3600, 9) GOES windows
+    GOES_Y_PATH = 'data/goes/y_goes_pretrain.npy'   # (2271,) labels [0-4]
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"\n  Device: {device}")
