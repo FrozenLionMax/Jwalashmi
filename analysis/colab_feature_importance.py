@@ -181,6 +181,22 @@ if __name__ == '__main__':
     print(f"  Data: {X.shape} ({n_features} features)")
     print(f"  Labels: {dict(zip(*np.unique(y, return_counts=True)))}")
 
+    # Detect model input channels from first checkpoint
+    sample_path = os.path.join(MODEL_DIR, 'model_0.pt')
+    sample_state = torch.load(sample_path, map_location=device)
+    if isinstance(sample_state, dict) and 'model_state_dict' in sample_state:
+        sample_state = sample_state['model_state_dict']
+    # First conv weight shape: (out_channels, in_channels, kernel_size)
+    first_conv_key = [k for k in sample_state.keys() if 'conv.weight' in k][0]
+    model_n_features = sample_state[first_conv_key].shape[1]
+    print(f"  Models trained with {model_n_features} features, data has {n_features}")
+
+    # Trim data to match model input
+    if n_features > model_n_features:
+        print(f"  Trimming data from {n_features} to {model_n_features} features")
+        X = X[:, :, :model_n_features]
+        n_features = model_n_features
+
     # Load models
     print(f"\n--- Loading Models ---")
     models = []
