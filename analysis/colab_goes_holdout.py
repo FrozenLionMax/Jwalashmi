@@ -21,41 +21,76 @@ from pathlib import Path
 from sklearn.metrics import roc_auc_score, confusion_matrix, roc_curve
 
 # ============================================================================
-# 1. MODEL DEFINITION (must match training architecture)
+# 1. MODEL DEFINITION (exact match to src/model/architecture.py)
 # ============================================================================
-class FlareForecaster(nn.Module):
-    def __init__(self, n_features=9, n_classes=5):
+class ConvBlock(nn.Module):
+    """1D Convolution -> BatchNorm -> ReLU -> MaxPool"""
+    def __init__(self, in_channels, out_channels, kernel_size, pool_size=2):
         super().__init__()
-        self.conv1 = nn.Sequential(
-            nn.Conv1d(n_features, 64, 7, padding=3),
-            nn.BatchNorm1d(64), nn.ReLU(), nn.MaxPool1d(4))
-        self.conv2 = nn.Sequential(
-            nn.Conv1d(64, 128, 5, padding=2),
-            nn.BatchNorm1d(128), nn.ReLU(), nn.Dropout(0.3), nn.MaxPool1d(4))
-        self.conv3 = nn.Sequential(
-            nn.Conv1d(128, 256, 3, padding=1),
-            nn.BatchNorm1d(256), nn.ReLU(), nn.Dropout(0.3),
-            nn.AdaptiveAvgPool1d(32))
-        self.attn = nn.MultiheadAttention(256, 4, batch_first=True)
-        self.norm = nn.LayerNorm(256)
-        self.fc = nn.Sequential(
-            nn.Linear(256, 128), nn.ReLU(), nn.Dropout(0.5))
-        self.classifier = nn.Linear(128, n_classes)
-        self.regressor = nn.Linear(128, 1)
+        self.conv = nn.Conv1d(in_channels, out_channels, kernel_size,
+                              padding=kernel_size // 2)
+        self.bn = nn.BatchNorm1d(out_channels)
+        self.pool = nn.MaxPool1d(pool_size)
+
+    def forward(self, x):
+        return self.pool(torch.relu(self.bn(self.conv(x))))
+
+
+class TemporalAttention(nn.Module):
+    def __init__(self, d_model, n_heads=4, dropout=0.3):
+        super().__init__()
+        self.attention = nn.MultiheadAttention(d_model, n_heads,
+                                               dropout=dropout, batch_first=True)
+        self.norm = nn.LayerNorm(d_model)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x):
+        attn_out, attn_weights = self.attention(x, x, x, need_weights=True)
+        x = self.norm(x + self.dropout(attn_out))
+        return x, attn_weights
+
+
+class FlareForecaster(nn.Module):
+    def __init__(self, n_input_channels=9, n_classes=5,
+                 cnn_channels=None, cnn_kernels=None,
+                 n_heads=4, hidden_dim=64, dropout=0.3):
+        super().__init__()
+        cnn_channels = cnn_channels or [32, 64, 128]
+        cnn_kernels = cnn_kernels or [7, 5, 3]
+
+        layers = []
+        in_ch = n_input_channels
+        for out_ch, kernel in zip(cnn_channels, cnn_kernels):
+            layers.append(ConvBlock(in_ch, out_ch, kernel, pool_size=2))
+            in_ch = out_ch
+        self.cnn = nn.Sequential(*layers)
+        self.d_model = cnn_channels[-1]
+
+        self.attention = TemporalAttention(self.d_model, n_heads, dropout)
+
+        self.classifier = nn.Sequential(
+            nn.Linear(self.d_model, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, n_classes),
+        )
+        self.lead_time_head = nn.Sequential(
+            nn.Linear(self.d_model, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, 1),
+            nn.ReLU(),
+        )
 
     def forward(self, x):
         x = x.transpose(1, 2)
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.conv3(x)
+        x = self.cnn(x)
         x = x.transpose(1, 2)
-        attn_out, weights = self.attn(x, x, x)
-        x = self.norm(x + attn_out)
-        x = x.mean(dim=1)
-        features = self.fc(x)
-        logits = self.classifier(features)
-        lead = self.regressor(features)
-        return logits, lead, weights
+        x_attn, attn_weights = self.attention(x)
+        x_pool = x_attn.mean(dim=1)
+        class_logits = self.classifier(x_pool)
+        lead_time = self.lead_time_head(x_pool)
+        return class_logits, lead_time, attn_weights
 
 
 # ============================================================================
@@ -65,7 +100,7 @@ def load_ensemble(model_dir, n_models=10, n_features=9, device='cuda'):
     """Load all ensemble models."""
     models = []
     for i in range(n_models):
-        model = FlareForecaster(n_features=n_features).to(device)
+        model = FlareForecaster(n_input_channels=n_features).to(device)
         path = os.path.join(model_dir, f'model_{i}.pt')
         if os.path.exists(path):
             state = torch.load(path, map_location=device)
