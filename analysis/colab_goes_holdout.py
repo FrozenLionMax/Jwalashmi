@@ -119,40 +119,41 @@ def load_ensemble(model_dir, n_models=10, n_features=9, device='cuda'):
 
 
 # ============================================================================
-# 3. SPLIT DATA INTO TRAIN/HOLDOUT
+# 3. SPLIT DATA — include negatives for meaningful TSS/FPR
 # ============================================================================
 def split_goes_holdout(X_path, y_path, holdout_frac=0.20, seed=42):
-    """Split GOES data into train and hold-out sets."""
+    """Split GOES data: hold out 20% of M/X + matching negatives."""
     X = np.load(X_path)
     y = np.load(y_path)
 
-    # Select only M (3) and X (4) class events
-    mx_mask = y >= 3
-    X_mx = X[mx_mask]
-    y_mx = y[mx_mask]
-
-    print(f"\n  Total GOES M/X events: {len(y_mx)}")
-    print(f"    M-class: {(y_mx == 3).sum()}")
-    print(f"    X-class: {(y_mx == 4).sum()}")
-
-    # Stratified split
     np.random.seed(seed)
-    m_indices = np.where(y_mx == 3)[0]
-    x_indices = np.where(y_mx == 4)[0]
 
-    np.random.shuffle(m_indices)
-    np.random.shuffle(x_indices)
+    print(f"\n  Total GOES data: {len(y)} samples")
+    print(f"  Classes: None={int((y==0).sum())}, B={int((y==1).sum())}, C={int((y==2).sum())}, M={int((y==3).sum())}, X={int((y==4).sum())}")
 
-    m_split = int(len(m_indices) * (1 - holdout_frac))
-    x_split = int(len(x_indices) * (1 - holdout_frac))
+    # Split M/X events
+    m_idx = np.where(y == 3)[0]; np.random.shuffle(m_idx)
+    x_idx = np.where(y == 4)[0]; np.random.shuffle(x_idx)
+    neg_idx = np.where(y < 3)[0]; np.random.shuffle(neg_idx)
 
-    test_idx = np.concatenate([m_indices[m_split:], x_indices[x_split:]])
-    train_idx = np.concatenate([m_indices[:m_split], x_indices[:x_split]])
+    m_split = int(len(m_idx) * (1 - holdout_frac))
+    x_split = int(len(x_idx) * (1 - holdout_frac))
+    # Include same number of negatives as positives in test set
+    n_pos_test = len(m_idx) - m_split + len(x_idx) - x_split
+    n_neg_test = min(n_pos_test * 3, len(neg_idx) // 5)  # 3:1 neg:pos ratio
 
-    print(f"\n  Train: {len(train_idx)} ({(y_mx[train_idx]==3).sum()} M, {(y_mx[train_idx]==4).sum()} X)")
-    print(f"  Test:  {len(test_idx)} ({(y_mx[test_idx]==3).sum()} M, {(y_mx[test_idx]==4).sum()} X)")
+    test_idx = np.concatenate([m_idx[m_split:], x_idx[x_split:], neg_idx[:n_neg_test]])
+    train_idx = np.concatenate([m_idx[:m_split], x_idx[:x_split], neg_idx[n_neg_test:]])
 
-    return X_mx[test_idx], y_mx[test_idx], X_mx[train_idx], y_mx[train_idx]
+    X_test, y_test = X[test_idx], y[test_idx]
+    X_train, y_train = X[train_idx], y[train_idx]
+
+    print(f"\n  Test set: {len(y_test)} samples")
+    print(f"    M-class: {int((y_test==3).sum())}, X-class: {int((y_test==4).sum())}")
+    print(f"    Negatives (None+B+C): {int((y_test<3).sum())}")
+    print(f"  Train set: {len(y_train)} samples")
+
+    return X_test, y_test, X_train, y_train
 
 
 # ============================================================================
@@ -173,7 +174,6 @@ def ensemble_predict(models, X, device='cuda', batch_size=32):
             probs_list.append(torch.softmax(logits, dim=1).cpu().numpy())
         all_probs.append(np.concatenate(probs_list))
 
-    # Average across ensemble
     avg_probs = np.mean(all_probs, axis=0)
     predictions = np.argmax(avg_probs, axis=1)
     return predictions, avg_probs
@@ -190,10 +190,10 @@ def compute_all_metrics(y_true, y_pred, probs):
     true_mx = (y_true >= 3).astype(int)
     pred_mx = (y_pred >= 3).astype(int)
 
-    tp = ((true_mx == 1) & (pred_mx == 1)).sum()
-    fn = ((true_mx == 1) & (pred_mx == 0)).sum()
-    fp = ((true_mx == 0) & (pred_mx == 1)).sum()
-    tn = ((true_mx == 0) & (pred_mx == 0)).sum()
+    tp = int(((true_mx == 1) & (pred_mx == 1)).sum())
+    fn = int(((true_mx == 1) & (pred_mx == 0)).sum())
+    fp = int(((true_mx == 0) & (pred_mx == 1)).sum())
+    tn = int(((true_mx == 0) & (pred_mx == 0)).sum())
 
     tpr = tp / (tp + fn) if (tp + fn) > 0 else 0
     fpr = fp / (fp + tn) if (fp + tn) > 0 else 0
@@ -203,34 +203,41 @@ def compute_all_metrics(y_true, y_pred, probs):
     expected = ((tp+fn)*(tp+fp) + (tn+fp)*(tn+fn)) / n if n > 0 else 0
     hss = (tp + tn - expected) / (n - expected) if (n - expected) != 0 else 0
 
-    results['TSS'] = round(tss, 4)
-    results['HSS'] = round(hss, 4)
-    results['TPR'] = round(tpr, 4)
-    results['FPR'] = round(fpr, 4)
-    results['RED_accuracy'] = round(tpr * 100, 1)
-    results['precision'] = round(tp / (tp + fp) * 100, 1) if (tp + fp) > 0 else 0
+    results['TP'] = tp
+    results['FN'] = fn
+    results['FP'] = fp
+    results['TN'] = tn
+    results['TSS'] = round(float(tss), 4)
+    results['HSS'] = round(float(hss), 4)
+    results['TPR'] = round(float(tpr), 4)
+    results['FPR'] = round(float(fpr), 4)
+    results['RED_accuracy'] = round(float(tpr * 100), 1)
+    results['precision'] = round(float(tp / (tp + fp) * 100), 1) if (tp + fp) > 0 else 0.0
 
     # Per-class AUC
     try:
         for c, name in enumerate(['None', 'B', 'C', 'M', 'X']):
             if (y_true == c).sum() > 0 and (y_true == c).sum() < len(y_true):
                 auc = roc_auc_score((y_true == c).astype(int), probs[:, c])
-                results[f'AUC_{name}'] = round(auc, 4)
+                results[f'AUC_{name}'] = round(float(auc), 4)
     except Exception as e:
-        print(f"  AUC computation warning: {e}")
+        print(f"  AUC warning: {e}")
 
-    # Brier Score
-    n_classes = probs.shape[1]
-    brier = 0
-    for i in range(len(y_true)):
-        for c in range(n_classes):
-            target = 1.0 if y_true[i] == c else 0.0
-            brier += (probs[i, c] - target) ** 2
-    brier /= len(y_true)
+    # Brier Score (binary M+X)
+    p_mx = probs[:, 3] + probs[:, 4]
+    brier = float(np.mean((p_mx - true_mx) ** 2))
     results['brier_score'] = round(brier, 4)
 
+    # Balanced accuracy
+    per_class_acc = []
+    for c in range(5):
+        mask = y_true == c
+        if mask.sum() > 0:
+            per_class_acc.append(float((y_pred[mask] == c).mean()))
+    results['balanced_accuracy'] = round(float(np.mean(per_class_acc) * 100), 1)
+
     # Confusion matrix
-    cm = confusion_matrix(y_true, y_pred, labels=list(range(n_classes)))
+    cm = confusion_matrix(y_true, y_pred, labels=[0,1,2,3,4])
     results['confusion_matrix'] = cm.tolist()
 
     return results
@@ -244,25 +251,18 @@ if __name__ == '__main__':
     print("  JWALASHMI - ACTUAL GOES HOLD-OUT INFERENCE")
     print("=" * 60)
 
-    # --- CONFIGURE PATHS ---
-    # These paths match the repo structure after: git clone ... && cd Jwalashmi
-    MODEL_DIR = 'models/v6_1_ensemble'              # model_0.pt ... model_9.pt
-    GOES_X_PATH = 'data/goes/X_goes_pretrain.npy'   # (2271, 3600, 9) GOES windows
-    GOES_Y_PATH = 'data/goes/y_goes_pretrain.npy'   # (2271,) labels [0-4]
+    MODEL_DIR = 'models/v6_1_ensemble'
+    GOES_X_PATH = 'data/goes/X_goes_pretrain.npy'
+    GOES_Y_PATH = 'data/goes/y_goes_pretrain.npy'
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"\n  Device: {device}")
 
-    # Check if files exist
     if not os.path.exists(MODEL_DIR):
         print(f"\n  ERROR: Model directory not found: {MODEL_DIR}")
-        print(f"  Upload your models to Colab first.")
-        print(f"  Expected files: model_0.pt through model_9.pt")
         exit(1)
-
     if not os.path.exists(GOES_X_PATH):
         print(f"\n  ERROR: GOES data not found: {GOES_X_PATH}")
-        print(f"  Upload X_goes.npy and y_goes.npy to Colab.")
         exit(1)
 
     # Load models
@@ -271,7 +271,7 @@ if __name__ == '__main__':
     models = load_ensemble(MODEL_DIR, n_features=n_features, device=device)
     print(f"  Loaded {len(models)} models")
 
-    # Split data
+    # Split data (with negatives)
     print(f"\n--- Splitting GOES Hold-Out ---")
     X_test, y_test, X_train, y_train = split_goes_holdout(GOES_X_PATH, GOES_Y_PATH)
 
@@ -283,22 +283,38 @@ if __name__ == '__main__':
     print(f"\n--- Computing Metrics ---")
     results = compute_all_metrics(y_test, predictions, probabilities)
 
-    # Print results
+    # Print
     print(f"\n{'=' * 60}")
     print(f"  ACTUAL GOES HOLD-OUT RESULTS")
+    print(f"  ({int((y_test>=3).sum())} M/X + {int((y_test<3).sum())} negatives, NEVER seen in training)")
     print(f"{'=' * 60}")
-    print(f"\n  M+X TSS:          {results['TSS']}")
-    print(f"  M+X HSS:          {results['HSS']}")
-    print(f"  RED Accuracy:     {results['RED_accuracy']}%")
-    print(f"  Precision (M+X):  {results['precision']}%")
-    print(f"  Brier Score:      {results['brier_score']}")
+    print(f"\n  M+X TSS:            {results['TSS']}")
+    print(f"  M+X HSS:            {results['HSS']}")
+    print(f"  RED Accuracy (TPR): {results['RED_accuracy']}%")
+    print(f"  FPR:                {results['FPR']}")
+    print(f"  Precision:          {results['precision']}%")
+    print(f"  Brier Score (M+X):  {results['brier_score']}")
+    print(f"  Balanced Accuracy:  {results['balanced_accuracy']}%")
+    print(f"\n  TP={results['TP']} FN={results['FN']} FP={results['FP']} TN={results['TN']}")
     for key in sorted(results.keys()):
         if key.startswith('AUC_'):
-            print(f"  {key}:          {results[key]}")
+            print(f"  {key}: {results[key]}")
+
+    # Confusion matrix
+    cm = results['confusion_matrix']
+    names = ['None', 'B', 'C', 'M', 'X']
+    print(f"\n  Confusion Matrix:")
+    print(f"  {'':>8}", end='')
+    for n in names: print(f"{n:>8}", end='')
+    print()
+    for i in range(5):
+        print(f"  {names[i]:>8}", end='')
+        for j in range(5):
+            print(f"{cm[i][j]:>8}", end='')
+        print()
 
     # Save
     with open('actual_holdout_results.json', 'w') as f:
         json.dump(results, f, indent=2)
     print(f"\n  [SAVED] actual_holdout_results.json")
-    print(f"\n  Copy these numbers into Section 5.7b of RESEARCH_PAPER.md")
     print(f"  Done!")
