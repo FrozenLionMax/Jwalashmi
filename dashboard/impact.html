@@ -121,7 +121,76 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .pop-risk{margin-top:6px;padding:4px 8px;border-radius:3px;text-align:center;font-weight:700;font-size:11px}
 
 /* SAT SVG ICONS */
-.sat-svg{filter:drop-shadow(0 0 3px currentColor)}
+.sat-svg{animation:satOrbit 4s ease-in-out infinite}
+@keyframes satOrbit{0%{filter:drop-shadow(0 0 3px currentColor)}50%{filter:drop-shadow(0 0 8px currentColor)}100%{filter:drop-shadow(0 0 3px currentColor)}}
+
+/* ===== MOBILE: Collapsible sections ===== */
+.sb-hdr{cursor:pointer;user-select:none;transition:background 0.2s}
+.sb-hdr:hover{background:rgba(255,255,255,0.03)}
+.sb-hdr::after{content:'\25B2';font-size:6px;color:var(--t3);margin-left:4px;transition:transform 0.3s}
+.sb-sec.collapsed .sb-hdr::after{transform:rotate(180deg)}
+.sb-body{transition:max-height 0.35s ease,opacity 0.25s ease,padding 0.25s ease;overflow:hidden}
+.sb-sec.collapsed .sb-body{max-height:0!important;opacity:0;padding-top:0;padding-bottom:0}
+
+/* ===== RESPONSIVE: 768px (Tablet) ===== */
+@media(max-width:768px){
+    .content{grid-template-columns:1fr;grid-template-rows:50vh 1fr auto}
+    .map-wrap{grid-column:1;grid-row:1;border-right:none;border-bottom:1px solid var(--border)}
+    .sidebar{grid-column:1;grid-row:2;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+    .timeline{grid-column:1;grid-row:3}
+    .map-btn,.map-btn-wrap .map-btn{width:36px;height:36px;font-size:15px}
+    .btn-tip{display:none}
+    .legend-box{flex-wrap:wrap;gap:6px}
+    .stat-box{top:auto;bottom:8px;right:8px;top:unset}
+}
+
+/* ===== RESPONSIVE: 480px (Phone) ===== */
+@media(max-width:480px){
+    .header{height:auto;min-height:36px;padding:4px 10px;flex-wrap:wrap;gap:4px}
+    .hdr-badge{display:none}
+    .hdr-title{font-size:10px;letter-spacing:0.5px}
+    .hdr-kp{font-size:16px}
+    .hdr-label{font-size:6px}
+    .hdr-clock{font-size:8px}
+    .content{grid-template-rows:45vh 1fr auto}
+    .cond-box{padding:4px 8px;min-width:140px}
+    .cond-title{font-size:7px;margin-bottom:2px}
+    .cond-row{font-size:7px;padding:1px 0}
+    .legend-box{font-size:7px;gap:4px;padding:3px 6px}
+    .stat-box{padding:3px 6px}
+    .stat-val{font-size:14px}
+    .sb-hdr{padding:8px 10px;font-size:10px}
+    .asset{padding:5px 0;font-size:9px}
+    .ast{font-size:8px;padding:2px 6px}
+    .asset-det{font-size:7.5px}
+    .map-btn,.map-btn-wrap .map-btn{width:38px;height:38px;font-size:16px}
+    .map-btns{gap:5px}
+    .timeline{padding:6px 8px;flex-wrap:wrap;gap:4px}
+    .tl-nd{flex:1 1 40%}
+    .tl-l{display:none}
+    .tl-t{font-size:7px}
+    .pop-title{font-size:11px}
+    .leaflet-popup-content{margin:8px!important;font-size:9px!important}
+}
+
+/* ===== RESPONSIVE: 360px (Small Phone) ===== */
+@media(max-width:360px){
+    .header{padding:3px 6px}
+    .back-btn{font-size:8px;padding:2px 6px}
+    .hdr-title{font-size:9px}
+    .hdr-right{gap:8px}
+    .hdr-kp{font-size:14px}
+    .content{grid-template-rows:40vh 1fr auto}
+    .cond-box{min-width:120px;font-size:7px}
+    .map-btns{right:4px;top:4px}
+    .sb-hdr{font-size:9px}
+    .asset{font-size:8.5px}
+}
+
+/* ===== Touch & Scroll ===== */
+@media(hover:none){.btn-tip{display:none!important}}
+button,.map-btn,.sb-hdr{touch-action:manipulation}
+html{overflow:hidden;overscroll-behavior:none}
 </style>
 </head>
 <body>
@@ -611,6 +680,28 @@ setInterval(()=>{if(currentKp>=1)drawAurora(currentKp)},3000);
 
 // ESC exits fullscreen
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isFS)toggleFS();if(e.key==='f'||e.key==='F')toggleFS()});
+
+/* ===== Collapsible sidebar sections (mobile) ===== */
+function initCollapsible(){
+    const isMobile=window.innerWidth<=768;
+    document.querySelectorAll('.sb-sec').forEach((sec,i)=>{
+        const hdr=sec.querySelector('.sb-hdr');
+        const body=sec.querySelector('.sb-body');
+        if(!hdr||!body)return;
+        // Set initial max-height for animation
+        body.style.maxHeight=body.scrollHeight+'px';
+        hdr.addEventListener('click',()=>{
+            sec.classList.toggle('collapsed');
+            if(!sec.classList.contains('collapsed'))body.style.maxHeight=body.scrollHeight+'px';
+        });
+        // Collapse non-essential sections on mobile
+        if(isMobile&&i>=2){sec.classList.add('collapsed')}
+    });
+}
+initCollapsible();
+
+// Hide sat labels on small screens by default
+if(window.innerWidth<=480){showLabels=false;updateSats()}
 </script>
 </body>
 </html>
