@@ -17,6 +17,7 @@
 \usepackage{listings}
 \usepackage{url}
 \usepackage{balance}
+\usepackage{adjustbox}
 
 \lstset{basicstyle=\ttfamily\footnotesize, frame=single, breaklines=true}
 
@@ -105,27 +106,28 @@ Solar flare prediction has historically relied on \citet{mcintosh1990} sunspot c
 
 Table~\ref{tab:related} summarizes prior ML-based approaches. All rely on NASA/NOAA data sources; no published work has applied machine learning to ISRO Aditya-L1 observations. JW-Flare \citep{ma2024} represents the current state of the art with TSS=0.95.
 
-\begin{table}[htbp]
+\begin{table*}[htbp]
 \centering
 \caption{Comparison of ML-based solar flare forecasting methods.}
 \label{tab:related}
 \footnotesize
-\begin{tabular}{@{}llll@{}}
+\begin{tabular}{@{}lllrl@{}}
 \toprule
-Study & Data & M-AUC & Method \\
+Study & Data Source & Method & M-class AUC & Notes \\
 \midrule
-\citet{bobra2015} & SDO/HMI & 0.90 & SVM \\
-\citet{bloomfield2012} & GOES & --- & Poisson \\
-\citet{nishizuka2017} & SDO+GOES & 0.88 & DNN \\
-\citet{li2020} & SDO+GOES & 0.93 & LSTM \\
-\citet{angryk2020} & SDO/HMI & 0.89 & SWAN-SF \\
-\citet{park2022} & SDO & 0.91 & ViT \\
-\citet{zheng2023} & GOES XRS & 0.89 & TCN \\
-\citet{ma2024} & SDO+GOES & 0.95 & JW-Flare \\
-\textbf{Ours} & \textbf{Aditya+GOES} & \textbf{0.997} & \textbf{CNN-Attn} \\
+Bobra \& Couvidat (2015) & SDO/HMI & SVM & 0.90 & 25 magnetogram features \\
+Bloomfield et al.\ (2012) & GOES & Poisson/CLV & --- & TSS = 0.53 \\
+Nishizuka et al.\ (2017) & SDO+GOES & Deep Flare Net & 0.88 & Multi-wavelength images \\
+Li et al.\ (2020) & SDO+GOES & LSTM & 0.93 & Time series + images \\
+Angryk et al.\ (2020) & SDO/HMI & SWAN-SF Benchmark & 0.89 & 24 SHARP features \\
+Park et al.\ (2022) & SDO & Vision Transformer & 0.91 & Magnetogram images \\
+Zheng et al.\ (2023) & GOES XRS & TCN & 0.89 & XRS time series \\
+Ma et al.\ (2024) & SDO+GOES & JW-Flare & 0.95 & Multimodal, TSS = 0.95 \\
+\midrule
+\textbf{JWALASHMI (ours)} & \textbf{Aditya-L1 + GOES} & \textbf{CNN-Attn Ensemble} & \textbf{0.997} & \textbf{9 physics features} \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{table*}
 
 \subsection{Transfer Learning in Space Weather}
 
@@ -142,7 +144,7 @@ Level-1 calibrated data products were obtained from ISRO's PRADAN portal for bot
 
 \begin{table}[htbp]
 \centering
-\caption{Aditya-L1 data summary.}
+\caption{Aditya-L1 data summary and balanced dataset composition.}
 \label{tab:data}
 \footnotesize
 \begin{tabular}{@{}llll@{}}
@@ -154,24 +156,15 @@ HEL1OS & 10--150 keV & 1 s & 30 \\
 \textbf{Overlap} & --- & --- & \textbf{25} \\
 \bottomrule
 \end{tabular}
-\end{table}
 
-Additionally, GOES-16/17 XRS data was obtained via NOAA archives for transfer learning pre-training, covering 2,271 labeled flare windows including 315 M-class and 40 X-class events.
+\vspace{6pt}
 
-\subsection{Dataset Composition}
-
-\begin{table}[htbp]
-\centering
-\caption{Final balanced dataset composition.}
-\label{tab:composition}
-\footnotesize
 \begin{tabular}{@{}lrrrrr@{}}
 \toprule
 Source & None & B & C & M & X \\
 \midrule
 Aditya-L1 & 5200 & 1400 & 540 & 48 & 0 \\
 GOES XRS & 800 & 600 & 516 & 315 & 40 \\
-Augmented & --- & --- & --- & --- & +160 \\
 \midrule
 \textbf{Balanced} & \textbf{400} & \textbf{400} & \textbf{400} & \textbf{363} & \textbf{200} \\
 \bottomrule
@@ -192,19 +185,19 @@ From the raw count rates, we compute 9 physics-informed features at each time st
 \caption{Physics-informed feature set.}
 \label{tab:features}
 \footnotesize
-\begin{tabular}{@{}clll@{}}
+\begin{tabular}{@{}clp{1.6cm}l@{}}
 \toprule
 \# & Feature & Source & Physics \\
 \midrule
 1 & derivative & SoLEXS & Energy release rate \\
-2 & rolling\_max\_ratio & SoLEXS & Relative intensity \\
+2 & roll\_max\_ratio & SoLEXS & Relative intensity \\
 3 & bg\_slope & SoLEXS & Pre-flare trend \\
 4 & energy\_integral & SoLEXS & Cumulative energy \\
 5 & norm\_flux & SoLEXS & Anomaly detection \\
 6 & acceleration & SoLEXS & Impulsive onset \\
 7 & hard\_soft\_ratio & HEL1OS & Thermal balance \\
 8 & neupert & HEL1OS & Neupert effect \\
-9 & spectral\_hardness & HEL1OS & Spectral index \\
+9 & spec\_hardness & HEL1OS & Spectral index \\
 \bottomrule
 \end{tabular}
 \end{table}
