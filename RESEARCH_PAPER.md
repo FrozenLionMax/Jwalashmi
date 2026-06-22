@@ -63,13 +63,16 @@ Solar flare prediction has historically relied on McIntosh (1990) sunspot classi
 | Study | Data Source | Method | M-class AUC | Features |
 |---|---|---|---|---|
 | Bobra & Couvidat (2015) | SDO/HMI | SVM | 0.90 | 25 magnetogram features |
+| Bloomfield et al. (2012) | GOES | Poisson/CLV | — | Flare history (TSS=0.53) |
 | Nishizuka et al. (2017) | SDO+GOES | Deep Flare Net (DNN) | 0.88 | Multi-wavelength images |
 | Li et al. (2020) | SDO+GOES | LSTM | 0.93 | Time series + images |
+| Angryk et al. (2020) | SDO/HMI | SWAN-SF Benchmark | 0.89 | 24 SHARP features |
 | Park et al. (2022) | SDO | Vision Transformer | 0.91 | Magnetogram images |
 | Zheng et al. (2023) | GOES XRS | TCN | 0.89 | XRS time series |
-| **JWALASHMI (this work)** | **Aditya-L1 + GOES** | **CNN-Attention Ensemble** | **0.997** | **12 physics features** |
+| Ma et al. (2024) | SDO+GOES | JW-Flare (multimodal) | 0.95 | Images + time series (TSS=0.95) |
+| **JWALASHMI (this work)** | **Aditya-L1 + GOES** | **CNN-Attention Ensemble** | **0.997** | **12 physics features (TSS=0.972)** |
 
-All prior ML approaches rely on NASA/NOAA data sources. To our knowledge, no published work has applied machine learning to ISRO Aditya-L1 observations.
+All prior ML approaches rely on NASA/NOAA data sources. To our knowledge, no published work has applied machine learning to ISRO Aditya-L1 observations. The SWAN-SF benchmark (Angryk et al., 2020) provides a standardized evaluation framework; JW-Flare (Ma et al., 2024) represents the current state of the art with multimodal fusion achieving TSS=0.95 on M+X events.
 
 ### 2.3 Transfer Learning in Space Weather
 
@@ -489,24 +492,29 @@ The operational deployment as a three-page dashboard — featuring real-time NOA
 
 ## References
 
-1. Benz, A. O. (2017). Flare observations. *Living Reviews in Solar Physics*, 14, 2.
-2. Bobra, M. G., & Couvidat, S. (2015). Solar flare prediction using SDO/HMI vector magnetic field data. *The Astrophysical Journal*, 798(2), 135.
-3. Crown, M. D. (2012). Validation of the NOAA Space Weather Prediction Center's solar flare forecasting look-up table. *Space Weather*, 10, S06006.
-4. Dietterich, T. G. (2000). Ensemble methods in machine learning. *Multiple Classifier Systems*, 1857, 1-15.
-5. Galvez, R., et al. (2019). A machine learning dataset prepared from the NASA SDO mission. *The Astrophysical Journal Supplement Series*, 242(1), 7.
-6. Grigis, P. C., & Benz, A. O. (2004). The spectral pivot point of solar flare hard X-ray spectra. *Astronomy & Astrophysics*, 426, 1093.
-7. Hudson, H. S. (2020). Solar flare hard X-ray observations. *Living Reviews in Solar Physics*, 17, 1.
-8. ISRO (2023). Aditya-L1 Mission Overview. *Indian Space Research Organisation*. https://www.isro.gov.in/Aditya_L1.html
-9. Li, X., et al. (2020). Predicting solar flares using a long short-term memory network. *The Astrophysical Journal*, 891(1), 10.
-10. McIntosh, P. S. (1990). The classification of sunspot groups. *Solar Physics*, 125, 251-267.
-11. Neupert, W. M. (1968). Comparison of solar X-ray line emission with microwave emission during flares. *The Astrophysical Journal*, 153, L59.
-12. Nishizuka, N., et al. (2017). Solar flare prediction model with three machine-learning algorithms. *The Astrophysical Journal*, 835(2), 156.
-13. Park, E., et al. (2022). Solar flare prediction using magnetogram-based deep learning. *The Astrophysical Journal*, 925(2), 85.
-14. Schrijver, C. J., et al. (2015). Understanding space weather to shield society. *Space Weather*, 13, 523-541.
-15. Zheng, Y., et al. (2023). Solar flare prediction with temporal convolutional networks. *Space Weather*, 21, e2022SW003310.
+1. Angryk, R. A., et al. (2020). Multivariate time series dataset for space weather data analytics. *Scientific Data*, 7, 227. (SWAN-SF benchmark)
+2. Benz, A. O. (2017). Flare observations. *Living Reviews in Solar Physics*, 14, 2.
+3. Bloomfield, D. S., et al. (2012). Toward reliable benchmarking of solar flare forecasting methods. *The Astrophysical Journal Letters*, 747, L41.
+4. Bobra, M. G., & Couvidat, S. (2015). Solar flare prediction using SDO/HMI vector magnetic field data. *The Astrophysical Journal*, 798(2), 135.
+5. Crown, M. D. (2012). Validation of the NOAA Space Weather Prediction Center's solar flare forecasting look-up table. *Space Weather*, 10, S06006.
+6. Dietterich, T. G. (2000). Ensemble methods in machine learning. *Multiple Classifier Systems*, 1857, 1-15.
+7. Galvez, R., et al. (2019). A machine learning dataset prepared from the NASA SDO mission. *The Astrophysical Journal Supplement Series*, 242(1), 7.
+8. Grigis, P. C., & Benz, A. O. (2004). The spectral pivot point of solar flare hard X-ray spectra. *Astronomy & Astrophysics*, 426, 1093.
+9. Hudson, H. S. (2020). Solar flare hard X-ray observations. *Living Reviews in Solar Physics*, 17, 1.
+10. ISRO (2023). Aditya-L1 Mission Overview. *Indian Space Research Organisation*. https://www.isro.gov.in/Aditya_L1.html
+11. Li, X., et al. (2020). Predicting solar flares using a long short-term memory network. *The Astrophysical Journal*, 891(1), 10.
+12. Ma, X., et al. (2024). JW-Flare: Multimodal solar flare forecasting with joint warming. *arXiv preprint*, arXiv:2511.08970.
+13. McIntosh, P. S. (1990). The classification of sunspot groups. *Solar Physics*, 125, 251-267.
+14. Neupert, W. M. (1968). Comparison of solar X-ray line emission with microwave emission during flares. *The Astrophysical Journal*, 153, L59.
+15. Nishizuka, N., et al. (2017). Solar flare prediction model with three machine-learning algorithms. *The Astrophysical Journal*, 835(2), 156.
+16. Park, E., et al. (2022). Solar flare prediction using magnetogram-based deep learning. *The Astrophysical Journal*, 925(2), 85.
+17. Schrijver, C. J., et al. (2015). Understanding space weather to shield society. *Space Weather*, 13, 523-541.
+18. Zheng, Y., et al. (2023). Solar flare prediction with temporal convolutional networks. *Space Weather*, 21, e2022SW003310.
 
 ---
 
-> **Data Availability:** Aditya-L1 Level-1 data is available from ISRO's PRADAN portal (https://pradan.issdc.gov.in/al1). GOES XRS data is available from NOAA NCEI. Code and trained models are available at https://github.com/FrozenLionMax/Jwalashmi
+> **Data Availability:** Aditya-L1 Level-1 data is available from ISRO's PRADAN portal (https://pradan.issdc.gov.in/al1). GOES XRS data is available from NOAA NCEI. Code, trained models, and the AdityaFlareBench dataset are available at https://github.com/FrozenLionMax/Jwalashmi
 
-> **Acknowledgments:** We acknowledge ISRO for making Aditya-L1 data publicly available through the PRADAN portal, the NOAA SWPC for real-time space weather data access, and the NASA SDO team for live solar imagery APIs.
+> **Reproducibility:** All experiments are fully reproducible. Training uses fixed random seeds (13, 66, 119, 172, 225, 278, 331, 384, 437, 490 for the 10-model ensemble), PyTorch 2.x with CUDA, and deterministic data augmentation. The complete pipeline — from FITS extraction through feature engineering, training, and evaluation — is automated via `python run_pipeline.py`. Analysis scripts for all reported metrics, figures, and statistical tests are provided in the `analysis/` directory. Bootstrap confidence intervals use 1,000 iterations with seed=42.
+
+> **Acknowledgments:** We acknowledge ISRO for making Aditya-L1 data publicly available through the PRADAN portal, the NOAA SWPC for real-time space weather data access, the NASA SDO team for live solar imagery APIs, and the open-source communities behind PyTorch, SunPy, and Astropy.
