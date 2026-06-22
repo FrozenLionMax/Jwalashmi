@@ -168,28 +168,25 @@ The core model is a temporal convolutional network (TCN) with multi-head attenti
 ```
 Input: (batch, 3600, 12) — 60-minute window at 1s cadence, 12 features
   |
-  +-- Conv1D(12 -> 64, kernel=7, padding=3)
-  +-- BatchNorm1D(64) + ReLU + MaxPool1D(4)
+  +-- Conv1D(12 -> 32, kernel=7, padding=3)
+  +-- BatchNorm1D(32) + ReLU + MaxPool1D(2)
   |
-  +-- Conv1D(64 -> 128, kernel=5, padding=2)
-  +-- BatchNorm1D(128) + ReLU + Dropout(0.3) + MaxPool1D(4)
+  +-- Conv1D(32 -> 64, kernel=5, padding=2)
+  +-- BatchNorm1D(64) + ReLU + MaxPool1D(2)
   |
-  +-- Conv1D(128 -> 256, kernel=3, padding=1)
-  +-- BatchNorm1D(256) + ReLU + Dropout(0.3) + AdaptiveAvgPool1D(32)
+  +-- Conv1D(64 -> 128, kernel=3, padding=1)
+  +-- BatchNorm1D(128) + ReLU + MaxPool1D(2)
   |
-  +-- MultiHeadAttention(embed=256, heads=4) + LayerNorm
-  +-- Global Average Pooling -> (batch, 256)
+  +-- MultiHeadAttention(embed=128, heads=4) + LayerNorm + Residual
+  +-- Global Average Pooling -> (batch, 128)
   |
-  +-- Dense(256 -> 128) + ReLU + Dropout(0.5)
-  |
-  +-- Classification Head: Dense(128 -> 5) -> softmax [None, B, C, M, X]
-  +-- Regression Head: Dense(128 -> 1) -> Lead time (minutes)
-  +-- Output: Attention weights (for interpretability)
+  +-- Classification Head: Dense(128 -> 64) + ReLU + Dropout(0.3) + Dense(64 -> 5)
+  +-- Regression Head: Dense(128 -> 64) + ReLU + Dropout(0.3) + Dense(64 -> 1) + ReLU
 ```
 
-**Parameters**: ~500K per model (lightweight for real-time inference)
+**Parameters**: ~121K per model (lightweight for real-time inference)
 
-The convolutional backbone extracts multi-scale temporal patterns: the 7-kernel captures ~7-second trends (short bursts), the 5-kernel captures ~20-second features (impulsive phase onset), and the 3-kernel captures ~3-minute patterns (flare rise phase) after max-pooling. The attention mechanism then weights which temporal regions are most informative for classification.
+The convolutional backbone extracts multi-scale temporal patterns: the 7-kernel captures ~7-second trends (short bursts), the 5-kernel captures ~20-second features (impulsive phase onset), and the 3-kernel captures ~3-minute patterns (flare rise phase) after pooling. The attention mechanism then weights which temporal regions are most informative for classification.
 
 ### 4.3 Training Protocol
 
@@ -309,7 +306,7 @@ The M+X binary TSS of 0.972 exceeds the Poisson climatological baseline (TSS ~0.
 
 ### 5.5 Feature Importance Analysis
 
-Gradient-weighted input attribution reveals the discriminative contribution of each physics feature:
+First-layer convolutional weight magnitude analysis reveals the relative discriminative contribution of each feature:
 
 | Rank | Feature | Importance | Source | Physics |
 |---|---|---|---|---|
