@@ -6,7 +6,7 @@
 
 ## Abstract
 
-We present JWALASHMI, a deep learning system for solar flare forecasting using multi-instrument X-ray data from ISRO's Aditya-L1 mission. By fusing soft X-ray observations from SoLEXS (1-25 keV) with hard X-ray data from HEL1OS (10-150 keV), we construct 9 physics-informed features including the hard-to-soft X-ray ratio, Neupert effect derivative, and spectral hardness index. A 10-model ensemble of temporal convolutional networks with multi-head attention achieves an M+X True Skill Statistic (TSS) of 0.972 (95% CI: 0.956-0.985), M-class AUC of 0.997, X-class AUC of 0.999, and Brier score of 0.093. Five-fold cross-validation yields a TSS of 0.877 (+/-0.044). A three-tier operational alert system attains 97.3% accuracy for M+X class flares with a false positive rate of 0.17%. Independent GOES hold-out inference on 284 samples (71 M/X + 213 negatives) withheld from training achieves a **TSS of 0.995 with 100% recall and 98.6% precision**. This is, to our knowledge, the first application of machine learning to Aditya-L1 SoLEXS and HEL1OS observations for flare prediction. The system includes a real-time dashboard with NOAA data integration, geomagnetic impact mapping, and satellite tracking.
+We present JWALASHMI, a deep learning system for solar flare forecasting using multi-instrument X-ray data from ISRO's Aditya-L1 mission. By fusing soft X-ray observations from SoLEXS (1-25 keV) with hard X-ray data from HEL1OS (10-150 keV), we construct 9 physics-informed features including the hard-to-soft X-ray ratio, Neupert effect derivative, and spectral hardness index. A 10-model ensemble of temporal convolutional networks with multi-head attention achieves a cross-validated M+X True Skill Statistic (TSS) of 0.877 (+/-0.044) over 5 stratified folds, with per-class AUC of 0.997 (M) and 0.999 (X). A three-tier operational alert system (GREEN/YELLOW/RED) attains 97.3% accuracy for dangerous M+X class flares. Independent validation on 284 GOES samples withheld from training yields a binary M+X TSS of 0.995 with 100% recall and 98.6% precision, confirming generalization to unseen flare events. To our knowledge, this is the first application of machine learning to Aditya-L1 SoLEXS and HEL1OS observations for flare prediction. The system is deployed as a real-time dashboard with NOAA data integration, geomagnetic impact mapping, and satellite tracking.
 
 
 ## 1. Introduction
@@ -241,7 +241,7 @@ Predictions are mapped to operational alerts following NOAA/NASA conventions:
 
 ### 5.1 Classification Performance (Tactical V6.1)
 
-Evaluated on the balanced test set (1,763 samples):
+The following metrics are computed on a held-out evaluation set (1,763 samples, stratified by class). Note that this evaluation set was used to select the final ensemble; the unbiased cross-validated results appear in Section 5.6.
 
 | Class | Precision | Recall | F1-Score | Support | AUC |
 |---|---|---|---|---|---|
@@ -265,7 +265,7 @@ Evaluated on the balanced test set (1,763 samples):
 | Binary flare detection TPR | 97.3% | — |
 | False positive rate (M+X) | 0.17% | — |
 
-Confidence intervals computed via bootstrap resampling (n=1,000).
+Confidence intervals computed via bootstrap resampling (n=1,000). The TSS of 0.972 reflects evaluation-set performance; the cross-validated TSS of 0.877 (Section 5.6) provides an unbiased generalization estimate.
 
 ### 5.2 Confusion Matrix
 
@@ -522,7 +522,7 @@ The geomagnetic impact assessment provides intelligence for the ISRO satellite f
 
 ## 8. Conclusion
 
-We have presented JWALASHMI, a machine learning system that combines SoLEXS and HEL1OS observations from ISRO's Aditya-L1 mission for solar flare forecasting. By engineering 9 physics-informed features capturing the Neupert effect, spectral hardness evolution, and multi-band X-ray dynamics, a 10-model ensemble achieves M-class AUC of 0.997 and X-class AUC of 0.999, with 97.3% accuracy for detecting M+X class flares. Five-fold cross-validation (TSS = 0.877) and independent GOES hold-out inference (TSS = 0.995, 100% recall on 71 unseen M/X events) provide corroborating evidence of generalization.
+We have presented JWALASHMI, to our knowledge the first machine learning system to apply Aditya-L1 SoLEXS and HEL1OS observations to solar flare forecasting. Nine physics-informed features capturing the Neupert effect, spectral hardness evolution, and multi-band X-ray dynamics are used by a 10-model ensemble that achieves a cross-validated M+X TSS of 0.877 (+/-0.044), with per-class AUC of 0.997 (M) and 0.999 (X). Independent validation on 284 GOES samples withheld from training confirms generalization, with 100% recall and 98.6% precision on 71 unseen M/X events.
 
 The system is deployed as a real-time dashboard with NOAA integration, satellite tracking, and geomagnetic impact assessment. As Aditya-L1 accumulates additional data through Solar Cycle 25, particularly during periods of elevated M/X-class activity, further temporal validation will strengthen the generalization claims presented here.
 
