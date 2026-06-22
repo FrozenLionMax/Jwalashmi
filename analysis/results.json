@@ -1,0 +1,128 @@
+{
+  "MX_binary": {
+    "TSS": 0.9717,
+    "HSS": 0.9777,
+    "TPR": 0.9734,
+    "FPR": 0.0017
+  },
+  "None_class": {
+    "TSS": 0.7724,
+    "HSS": 0.708,
+    "AUC": 0.9512
+  },
+  "B_class": {
+    "TSS": 0.4426,
+    "HSS": 0.449,
+    "AUC": 0.8779
+  },
+  "C_class": {
+    "TSS": 0.5466,
+    "HSS": 0.5848,
+    "AUC": 0.9469
+  },
+  "M_class": {
+    "TSS": 0.926,
+    "HSS": 0.9385,
+    "AUC": 0.9965
+  },
+  "X_class": {
+    "TSS": 0.9436,
+    "HSS": 0.9436,
+    "AUC": 0.999
+  },
+  "three_tier": {
+    "accuracy": 85.9,
+    "confusion_matrix": [
+      [
+        723,
+        75,
+        2
+      ],
+      [
+        157,
+        243,
+        0
+      ],
+      [
+        7,
+        8,
+        548
+      ]
+    ]
+  },
+  "brier_score": 0.0671,
+  "bootstrap_cv": {
+    "n_iterations": 1000,
+    "balanced_accuracy": {
+      "mean": 78.7,
+      "ci_lower": 76.9,
+      "ci_upper": 80.3
+    },
+    "MX_TSS": {
+      "mean": 0.9716,
+      "ci_lower": 0.9558,
+      "ci_upper": 0.9853
+    },
+    "MX_HSS": {
+      "mean": 0.9777,
+      "ci_lower": 0.9656,
+      "ci_upper": 0.9881
+    },
+    "RED_accuracy": {
+      "mean": 97.3,
+      "ci_lower": 95.8,
+      "ci_upper": 98.7
+    }
+  },
+  "feature_importance": {
+    "derivative": {
+      "importance": 0.187,
+      "rank": 1
+    },
+    "rolling_max_ratio": {
+      "importance": 0.156,
+      "rank": 2
+    },
+    "norm_flux": {
+      "importance": 0.134,
+      "rank": 3
+    },
+    "acceleration": {
+      "importance": 0.112,
+      "rank": 4
+    },
+    "energy_integral": {
+      "importance": 0.098,
+      "rank": 5
+    },
+    "hard_soft_ratio": {
+      "importance": 0.082,
+      "rank": 6
+    },
+    "neupert": {
+      "importance": 0.071,
+      "rank": 7
+    },
+    "bg_slope": {
+      "importance": 0.054,
+      "rank": 8
+    },
+    "spectral_hardness": {
+      "importance": 0.042,
+      "rank": 9
+    },
+    "long_slope": {
+      "importance": 0.028,
+      "rank": 10
+    },
+    "qpp_power": {
+      "importance": 0.021,
+      "rank": 11
+    },
+    "long_ratio": {
+      "importance": 0.015,
+      "rank": 12
+    }
+  },
+  "hel1os_contribution": 0.195
+}

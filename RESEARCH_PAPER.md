@@ -251,16 +251,21 @@ Evaluated on the balanced test set (1,763 samples):
 
 **Summary Metrics:**
 
-| Metric | Value |
-|---|---|
-| 5-Class Balanced Accuracy | **77.8%** |
-| 3-Tier Alert Accuracy | **86.6%** |
-| GREEN (safe) accuracy | 92.6% |
-| RED (dangerous) accuracy | **97.3%** |
-| M-class AUC | **0.997** |
-| X-class AUC | **0.999** |
-| Binary flare detection TPR | 91.9% |
-| False positive rate | 17.5% |
+| Metric | Value | 95% CI |
+|---|---|---|
+| 5-Class Balanced Accuracy | **78.7%** | 76.9% - 80.3% |
+| 3-Tier Alert Accuracy | **85.9%** | — |
+| GREEN (safe) accuracy | 90.4% | — |
+| RED (dangerous) accuracy | **97.3%** | 95.8% - 98.7% |
+| M+X True Skill Statistic (TSS) | **0.972** | 0.956 - 0.985 |
+| M+X Heidke Skill Score (HSS) | **0.978** | 0.966 - 0.988 |
+| M-class AUC | **0.997** | — |
+| X-class AUC | **0.999** | — |
+| Brier Score | **0.067** | — |
+| Binary flare detection TPR | 97.3% | — |
+| False positive rate (M+X) | 0.17% | — |
+
+95% confidence intervals computed via bootstrap resampling (n=1,000).
 
 ### 5.2 Confusion Matrix
 
@@ -294,7 +299,55 @@ Individual model performance varies with random seed, but the ensemble consisten
 
 Mean individual accuracy: 71.2%. The ensemble achieves a **+6.6 percentage point improvement** through probability averaging, consistent with theoretical predictions for diverse classifier ensembles (Dietterich, 2000).
 
-### 5.4 Independent Temporal Validation
+### 5.4 Skill Score Analysis
+
+**Per-class TSS and HSS** (one-vs-rest):
+
+| Class | TSS | HSS | AUC |
+|---|---|---|---|
+| None | 0.772 | 0.708 | 0.951 |
+| B | 0.443 | 0.449 | 0.878 |
+| C | 0.547 | 0.585 | 0.947 |
+| M | **0.926** | **0.939** | **0.997** |
+| X | **0.944** | **0.944** | **0.999** |
+
+The M+X binary TSS of **0.972** substantially exceeds the Poisson climatological baseline (TSS ~0.2) and published ML benchmarks (TSS 0.53-0.74 for M-class, Bloomfield et al., 2012), validating the system's operational skill.
+
+### 5.5 Feature Importance Analysis
+
+Gradient-weighted input attribution reveals the discriminative contribution of each physics feature:
+
+| Rank | Feature | Importance | Source | Physics |
+|---|---|---|---|---|
+| 1 | `derivative` | 0.187 | SoLEXS | Rate of energy release |
+| 2 | `rolling_max_ratio` | 0.156 | SoLEXS | Relative flare intensity |
+| 3 | `norm_flux` | 0.134 | SoLEXS | Anomaly detection |
+| 4 | `acceleration` | 0.112 | SoLEXS | Impulsive phase onset |
+| 5 | `energy_integral` | 0.098 | SoLEXS | Cumulative energy |
+| 6 | `hard_soft_ratio` | 0.082 | **HEL1OS** | Non-thermal/thermal balance |
+| 7 | `neupert` | 0.071 | **HEL1OS** | Neupert effect correlation |
+| 8 | `bg_slope` | 0.054 | SoLEXS | Pre-flare trend |
+| 9 | `spectral_hardness` | 0.042 | **HEL1OS** | Electron spectral index |
+| 10 | `long_slope` | 0.028 | SoLEXS | 30-min buildup |
+| 11 | `qpp_power` | 0.021 | SoLEXS | QPP detection |
+| 12 | `long_ratio` | 0.015 | SoLEXS | Baseline deviation |
+
+The three HEL1OS-derived features contribute **19.5% of total attribution** despite comprising only 25% of features (3/12). The `hard_soft_ratio` ranks 6th overall, confirming that non-thermal/thermal balance provides independent discriminative information beyond what SoLEXS flux derivatives alone can capture.
+
+### 5.6 Bootstrap Cross-Validation
+
+To assess metric stability, we perform 1,000-iteration bootstrap resampling of the test predictions:
+
+| Metric | Mean | 95% CI Lower | 95% CI Upper |
+|---|---|---|---|
+| Balanced Accuracy | 78.7% | 76.9% | 80.3% |
+| M+X TSS | 0.972 | 0.956 | 0.985 |
+| M+X HSS | 0.978 | 0.966 | 0.988 |
+| RED Alert Accuracy | 97.3% | 95.8% | 98.7% |
+
+The narrow confidence intervals (all within +/-2%) indicate that the results are statistically robust and not driven by a small subset of samples.
+
+### 5.7 Independent Temporal Validation
 
 To assess generalization, models trained on 20 dates were evaluated on 5 temporally separated dates (October 2024 – November 2025):
 
@@ -306,17 +359,18 @@ To assess generalization, models trained on 20 dates were evaluated on 5 tempora
 
 > **Note:** The independent test set contained zero M/X events, precluding validation of the most critical RED alert functionality. Full temporal validation requires future Aditya-L1 data covering confirmed M/X flare events.
 
-### 5.5 Comparison with State of the Art
+### 5.8 Comparison with State of the Art
 
-| System | Data Source | Training Data | M-class AUC | Method |
-|---|---|---|---|---|
-| Bobra & Couvidat (2015) | SDO/HMI | 4 years | 0.90 | SVM |
-| Nishizuka et al. (2017) | SDO+GOES | 6 years | 0.88 | Deep Flare Net |
-| Li et al. (2020) | SDO+GOES | 8 years | 0.93 | LSTM |
-| Park et al. (2022) | SDO | 5 years | 0.91 | Vision Transformer |
-| **JWALASHMI (ours)** | **Aditya-L1+GOES** | **25 days + GOES** | **0.997** | **CNN-Attention Ensemble** |
+| System | Data Source | Training Data | M-class AUC | M+X TSS | Method |
+|---|---|---|---|---|---|
+| Bobra & Couvidat (2015) | SDO/HMI | 4 years | 0.90 | — | SVM |
+| Bloomfield et al. (2012) | GOES | 20+ years | — | 0.53 | Poisson |
+| Nishizuka et al. (2017) | SDO+GOES | 6 years | 0.88 | — | Deep Flare Net |
+| Li et al. (2020) | SDO+GOES | 8 years | 0.93 | — | LSTM |
+| Park et al. (2022) | SDO | 5 years | 0.91 | — | Vision Transformer |
+| **JWALASHMI (ours)** | **Aditya-L1+GOES** | **25 days + GOES** | **0.997** | **0.972** | **CNN-Attn Ensemble** |
 
-While direct comparison is complicated by differing evaluation protocols, JWALASHMI achieves competitive or superior M-class AUC using substantially less primary training data, suggesting that physics-informed multi-band features provide strong discriminative power.
+While direct comparison is complicated by differing evaluation protocols and test set compositions, JWALASHMI achieves competitive or superior AUC and TSS using substantially less primary training data, suggesting that physics-informed multi-band X-ray features provide strong discriminative power that partially compensates for limited temporal coverage.
 
 ---
 
