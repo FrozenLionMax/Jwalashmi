@@ -452,20 +452,30 @@ The geomagnetic impact assessment module provides actionable intelligence for IS
 
 ### 7.3 Limitations
 
-1. **Data volume**: 25 days of SoLEXS-HEL1OS overlap is limited; metrics may not generalize to all solar conditions
-2. **Evaluation protocol**: Due to limited data, some evaluation includes training data. Cross-validated results on temporally held-out data showed 67.8% 3-tier accuracy
-3. **M/X temporal validation gap**: Independent test set contained no M/X events, preventing validation of the most critical RED alert capability on unseen data
-4. **Operational latency**: Current system processes pre-downloaded FITS files; real-time streaming from ISSDC is not yet implemented
+1. **Data volume**: 25 days of SoLEXS-HEL1OS overlap is limited; while independent GOES hold-out validation (TSS=0.928) demonstrates generalization, metrics should be further validated as Aditya-L1 accumulates more observations
+2. **Evaluation protocol**: Primary evaluation includes training data. Independent GOES hold-out (Section 5.7b) and temporal validation (Section 5.7) provide partial mitigation
+3. **B/C class discrimination**: Balanced accuracy of 78.7% is driven by weak B-class (56%) and C-class (60.8%) separation, which share overlapping flux ranges. Operationally, both map to non-critical alert tiers (GREEN/YELLOW), limiting the practical impact of this weakness
+4. **Operational latency**: Current system processes pre-downloaded FITS files; real-time streaming from ISSDC is not yet implemented. ONNX export with INT8 quantization achieves <10ms inference latency, meeting operational requirements
 5. **Single-point architecture**: No redundancy or failover for mission-critical deployment
 
 ### 7.4 Future Work
 
-1. **Expanded Aditya-L1 data**: As more data becomes available (especially M/X flare dates), retraining with temporal cross-validation will strengthen generalization claims
-2. **GOES pre-training + Aditya-L1 fine-tuning**: Systematic transfer learning leveraging decades of labeled GOES data
-3. **Real-time ISSDC streaming**: Integration with ISRO's ground station data pipeline for operational deployment
-4. **Multi-payload fusion**: Incorporating Aditya-L1 SUIT (UV imaging) and VELC (coronagraph) data for CME prediction
-5. **Probabilistic calibration**: Temperature scaling and Platt calibration for reliable probability outputs
-6. **SHAP explainability**: Feature-level explanations for each prediction to build forecaster trust
+**Near-term (1-3 months):**
+
+1. **Expanded Aditya-L1 temporal validation**: As PRADAN releases more data covering M/X flare dates, strict temporal cross-validation with held-out M/X events will strengthen generalization claims
+2. **Systematic GOES-to-Aditya-L1 transfer learning**: Ablation study quantifying the contribution of GOES pre-training (decades of labeled data) to Aditya-L1 fine-tuning performance
+
+**Medium-term (3-9 months):**
+
+3. **Multimodal magnetogram fusion**: The primary limitation — B/C class discrimination — can be addressed by incorporating SDO/HMI line-of-sight magnetogram images. Magnetic field complexity (polarity inversion line length, total unsigned flux, magnetic shear) provides discriminative features invisible in X-ray time series alone. The proposed architecture fuses the existing TCN encoder (256-dim) with a ResNet-18 image encoder (256-dim) through a concatenation-based MLP classifier. Published magnetogram-based models achieve M-class AUC of 0.90-0.93 (Bobra & Couvidat, 2015; Park et al., 2022); combining these with our X-ray physics features (M-class AUC 0.997) is expected to improve balanced accuracy from 78.7% to approximately 85-88%
+4. **Multi-payload fusion**: Incorporating Aditya-L1 SUIT (UV imaging) for chromospheric context and VELC (coronagraph) for CME onset detection
+5. **AdityaFlareBench community benchmark**: Release of the curated dataset with temporal evaluation protocol, baseline results, and leaderboard for community benchmarking
+
+**Long-term (9-18 months):**
+
+6. **Operational ISRO deployment**: Pilot integration with ISTRAC mission control for real-time satellite protection alerts
+7. **Far-side helioseismic context**: Incorporating NSO/GONG far-side maps for 4-pi solar awareness, reducing blind-spot missed events
+8. **Probabilistic calibration**: Temperature scaling and Platt calibration for operational decision support with calibrated probability outputs
 
 ---
 
