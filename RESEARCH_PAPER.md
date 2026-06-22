@@ -6,7 +6,7 @@
 
 ## Abstract
 
-We present JWALASHMI, a deep learning system for solar flare forecasting using multi-instrument X-ray data from ISRO's Aditya-L1 mission. By fusing soft X-ray observations from SoLEXS (1-25 keV) with hard X-ray data from HEL1OS (10-150 keV), we construct 12 physics-informed features including the hard-to-soft X-ray ratio, Neupert effect derivative, and spectral hardness index. A 10-model ensemble of temporal convolutional networks with multi-head attention achieves an M+X True Skill Statistic (TSS) of 0.972 (95% CI: 0.956-0.985), M-class AUC of 0.997, X-class AUC of 0.999, and Brier score of 0.067. Five-fold cross-validation yields a TSS of 0.877 (+/-0.044). A three-tier operational alert system attains 97.3% accuracy for M+X class flares with a false positive rate of 0.17%. Independent GOES hold-out inference on 284 samples (71 M/X + 213 negatives) withheld from training achieves a **TSS of 0.995 with 100% recall and 98.6% precision**. This is, to our knowledge, the first application of machine learning to Aditya-L1 SoLEXS and HEL1OS observations for flare prediction. The system includes a real-time dashboard with NOAA data integration, geomagnetic impact mapping, and satellite tracking.
+We present JWALASHMI, a deep learning system for solar flare forecasting using multi-instrument X-ray data from ISRO's Aditya-L1 mission. By fusing soft X-ray observations from SoLEXS (1-25 keV) with hard X-ray data from HEL1OS (10-150 keV), we construct 9 physics-informed features including the hard-to-soft X-ray ratio, Neupert effect derivative, and spectral hardness index. A 10-model ensemble of temporal convolutional networks with multi-head attention achieves an M+X True Skill Statistic (TSS) of 0.972 (95% CI: 0.956-0.985), M-class AUC of 0.997, X-class AUC of 0.999, and Brier score of 0.093. Five-fold cross-validation yields a TSS of 0.877 (+/-0.044). A three-tier operational alert system attains 97.3% accuracy for M+X class flares with a false positive rate of 0.17%. Independent GOES hold-out inference on 284 samples (71 M/X + 213 negatives) withheld from training achieves a **TSS of 0.995 with 100% recall and 98.6% precision**. This is, to our knowledge, the first application of machine learning to Aditya-L1 SoLEXS and HEL1OS observations for flare prediction. The system includes a real-time dashboard with NOAA data integration, geomagnetic impact mapping, and satellite tracking.
 
 
 ## 1. Introduction
@@ -137,9 +137,9 @@ Class balancing achieved through stratified subsampling (majority classes) and S
 
 ### 4.1 Feature Engineering
 
-From the raw count rates, we compute 12 physics-informed features at each time step:
+From the raw count rates, we compute 9 physics-informed features at each time step:
 
-**SoLEXS-derived (9 features):**
+**SoLEXS-derived (6 features):**
 
 | # | Feature | Formula | Physical Basis |
 |---|---|---|---|
@@ -147,28 +147,25 @@ From the raw count rates, we compute 12 physics-informed features at each time s
 | 2 | `rolling_max_ratio` | F(t) / max(F, 300s) | Relative flare intensity |
 | 3 | `bg_slope` | Linear fit slope (300s window) | Pre-flare activity level |
 | 4 | `energy_integral` | Cumulative integral F dt | Total energy deposition |
-| 5 | `qpp_power` | FFT power in 30–300s band | Quasi-periodic pulsation detection |
-| 6 | `norm_flux` | (F - mean) / std | Anomaly detection |
-| 7 | `long_slope` | Linear fit slope (1800s window) | Long-term buildup trend |
-| 8 | `acceleration` | d^2F/dt^2 | Impulsive phase onset |
-| 9 | `long_ratio` | F / mean(F, 1800s) | Deviation from baseline |
+| 5 | `norm_flux` | (F - mean) / std | Anomaly detection |
+| 6 | `acceleration` | d^2F/dt^2 | Impulsive phase onset |
 
 **HEL1OS-derived (3 features):**
 
 | # | Feature | Formula | Physical Basis |
 |---|---|---|---|
-| 10 | `hard_soft_ratio` | HEL1OS(5–20 keV) / SoLEXS | Non-thermal vs thermal balance |
-| 11 | `neupert` | corr(dSXR/dt, HXR) over 60s | Neupert effect quantification |
-| 12 | `spectral_hardness` | HEL1OS(30–40 keV) / HEL1OS(20–30 keV) | Electron spectral index |
+| 7 | `hard_soft_ratio` | HEL1OS(5-20 keV) / SoLEXS | Non-thermal vs thermal balance |
+| 8 | `neupert` | corr(dSXR/dt, HXR) over 60s | Neupert effect quantification |
+| 9 | `spectral_hardness` | HEL1OS(30-40 keV) / HEL1OS(20-30 keV) | Electron spectral index |
 
 ### 4.2 Model Architecture: FlareForecaster
 
 The core model is a temporal convolutional network (TCN) with multi-head attention:
 
 ```
-Input: (batch, 3600, 12) — 60-minute window at 1s cadence, 12 features
+Input: (batch, 3600, 9) — 60-minute window at 1s cadence, 9 features
   |
-  +-- Conv1D(12 -> 32, kernel=7, padding=3)
+  +-- Conv1D(9 -> 32, kernel=7, padding=3)
   +-- BatchNorm1D(32) + ReLU + MaxPool1D(2)
   |
   +-- Conv1D(32 -> 64, kernel=5, padding=2)
@@ -252,7 +249,7 @@ Evaluated on the balanced test set (1,763 samples):
 | M+X HSS | 0.978 | 0.966 - 0.988 |
 | M-class AUC | 0.997 | — |
 | X-class AUC | 0.999 | — |
-| Brier Score | 0.067 | — |
+| Brier Score (M+X) | 0.093 | — |
 | Binary flare detection TPR | 97.3% | — |
 | False positive rate (M+X) | 0.17% | — |
 
@@ -324,24 +321,21 @@ The M+X binary TSS of 0.972 exceeds the Poisson climatological baseline (TSS ~0.
 
 ### 5.5 Feature Importance Analysis
 
-First-layer convolutional weight magnitude analysis reveals the relative discriminative contribution of each feature:
+Gradient-weighted input attribution (mean |gradient x input| across 500 samples and 10 ensemble models) reveals the discriminative contribution of each feature:
 
-| Rank | Feature | Importance | Source | Physics |
+| Rank | Feature | Attribution | Source | Physics |
 |---|---|---|---|---|
-| 1 | `derivative` | 0.187 | SoLEXS | Rate of energy release |
-| 2 | `rolling_max_ratio` | 0.156 | SoLEXS | Relative flare intensity |
-| 3 | `norm_flux` | 0.134 | SoLEXS | Anomaly detection |
-| 4 | `acceleration` | 0.112 | SoLEXS | Impulsive phase onset |
-| 5 | `energy_integral` | 0.098 | SoLEXS | Cumulative energy |
-| 6 | `hard_soft_ratio` | 0.082 | **HEL1OS** | Non-thermal/thermal balance |
-| 7 | `neupert` | 0.071 | **HEL1OS** | Neupert effect correlation |
-| 8 | `bg_slope` | 0.054 | SoLEXS | Pre-flare trend |
-| 9 | `spectral_hardness` | 0.042 | **HEL1OS** | Electron spectral index |
-| 10 | `long_slope` | 0.028 | SoLEXS | 30-min buildup |
-| 11 | `qpp_power` | 0.021 | SoLEXS | QPP detection |
-| 12 | `long_ratio` | 0.015 | SoLEXS | Baseline deviation |
+| 1 | `energy_integral` | 0.224 | SoLEXS | Cumulative energy deposition |
+| 2 | `acceleration` | 0.210 | SoLEXS | Impulsive phase onset |
+| 3 | `hard_soft_ratio` | 0.158 | HEL1OS | Non-thermal/thermal balance |
+| 4 | `rolling_max_ratio` | 0.109 | SoLEXS | Relative flare intensity |
+| 5 | `spectral_hardness` | 0.105 | HEL1OS | Electron spectral index |
+| 6 | `derivative` | 0.071 | SoLEXS | Rate of energy release |
+| 7 | `neupert` | 0.047 | HEL1OS | Neupert effect correlation |
+| 8 | `bg_slope` | 0.045 | SoLEXS | Pre-flare background trend |
+| 9 | `norm_flux` | 0.031 | SoLEXS | Anomaly detection |
 
-The three HEL1OS-derived features contribute 19.5% of total attribution despite comprising only 25% of features (3/12). The `hard_soft_ratio` ranks 6th overall, indicating that non-thermal/thermal balance provides independent discriminative information beyond what SoLEXS flux derivatives alone can capture.
+The three HEL1OS-derived features contribute 31.0% of total attribution despite comprising only one-third of features (3/9). Notably, `hard_soft_ratio` ranks 3rd overall, indicating that non-thermal/thermal balance is among the strongest discriminative signals available to the model. This empirically validates the physics motivation for multi-instrument fusion (Section 1.3).
 
 ### 5.6 5-Fold Stratified Cross-Validation
 
@@ -394,7 +388,7 @@ As a further validation step, we run model inference on a held-out portion of th
 | RED Alert Recall (TPR) | 97.3% | 100.0% (71/71) |
 | False Positive Rate | 0.17% | 0.47% (1/213) |
 | Precision (M+X) | — | 98.6% (71/72) |
-| Brier Score (M+X) | 0.067 | 0.061 |
+| Brier Score (M+X) | 0.093 | 0.061 |
 
 Confusion matrix (284 hold-out samples):
 
