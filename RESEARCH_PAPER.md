@@ -4,13 +4,10 @@
 > **Date:** June 2026
 > **Keywords:** Solar flare prediction, Aditya-L1, SoLEXS, HEL1OS, deep learning, space weather, multi-instrument fusion, CNN-Attention, ensemble learning
 
----
-
 ## Abstract
 
-We present **JWALASHMI** (Sanskrit: *Jwala* — flame, *Rashmi* — ray of light), a deep learning system for solar flare forecasting using multi-instrument X-ray data from ISRO's Aditya-L1 mission. By fusing soft X-ray observations from SoLEXS (1–25 keV) with hard X-ray data from HEL1OS (10–150 keV), we construct 12 physics-informed features including the hard-to-soft X-ray ratio, Neupert effect derivative, and spectral hardness index. Our system employs a 10-model ensemble of temporal convolutional networks with multi-head attention, achieving **M+X True Skill Statistic (TSS) of 0.972** (95% CI: 0.956–0.985), **M-class AUC of 0.997**, **X-class AUC of 0.999**, and a **Brier score of 0.067**. Five-fold cross-validation confirms TSS = 0.877 (+/-0.044). The three-tier operational alert system attains **97.3% accuracy for dangerous M+X class flares** (RED alerts) with a false positive rate of only 0.17%. Independent GOES hold-out inference on 284 samples (71 M/X + 213 negatives) never seen during training achieves **TSS = 0.995 with 100% recall and 98.6% precision** for M+X detection. To our knowledge, this is the **first machine learning model to utilize Aditya-L1 SoLEXS and HEL1OS observations** for solar flare prediction, establishing India's capacity for indigenous, operational space weather forecasting. The system is deployed as a real-time mission control dashboard with live NOAA integration, geomagnetic impact mapping, and 30-satellite tracking.
+We present JWALASHMI, a deep learning system for solar flare forecasting using multi-instrument X-ray data from ISRO's Aditya-L1 mission. By fusing soft X-ray observations from SoLEXS (1-25 keV) with hard X-ray data from HEL1OS (10-150 keV), we construct 12 physics-informed features including the hard-to-soft X-ray ratio, Neupert effect derivative, and spectral hardness index. A 10-model ensemble of temporal convolutional networks with multi-head attention achieves an M+X True Skill Statistic (TSS) of 0.972 (95% CI: 0.956-0.985), M-class AUC of 0.997, X-class AUC of 0.999, and Brier score of 0.067. Five-fold cross-validation yields a TSS of 0.877 (+/-0.044). A three-tier operational alert system attains 97.3% accuracy for M+X class flares with a false positive rate of 0.17%. Independent GOES hold-out inference on 284 samples (71 M/X + 213 negatives) withheld from training achieves a **TSS of 0.995 with 100% recall and 98.6% precision**. This is, to our knowledge, the first application of machine learning to Aditya-L1 SoLEXS and HEL1OS observations for flare prediction. The system includes a real-time dashboard with NOAA data integration, geomagnetic impact mapping, and satellite tracking.
 
----
 
 ## 1. Introduction
 
@@ -42,15 +39,14 @@ The relationship between hard X-ray (HXR) and soft X-ray (SXR) emissions during 
 
 ### 1.4 Contributions
 
-This work makes the following novel contributions:
+This work makes the following contributions:
 
-1. **First ML model using Aditya-L1 data** — No published work has utilized SoLEXS or HEL1OS observations for automated flare prediction
-2. **Physics-informed multi-instrument feature engineering** — 12 features incorporating the Neupert effect, spectral hardness, and hard-to-soft X-ray ratio
-3. **Two-tier ensemble forecasting** — 10-model tactical (30 min) and 5-model strategic (12 hr) ensembles achieving 0.997 M-class AUC
-4. **Three-tier operational alert system** — GREEN/YELLOW/RED alerts with 97.3% dangerous flare detection accuracy
-5. **Complete operational platform** — Real-time dashboard with live NOAA integration, geomagnetic impact assessment, and 30-satellite tracking
+1. First application of machine learning to Aditya-L1 SoLEXS and HEL1OS observations for automated flare prediction
+2. A set of 12 physics-informed features incorporating the Neupert effect, spectral hardness, and hard-to-soft X-ray ratio from dual-band X-ray data
+3. Two-tier ensemble forecasting with 10-model tactical (30 min) and 5-model strategic (12 hr) ensembles
+4. A three-tier operational alert system (GREEN/YELLOW/RED) with 97.3% M+X detection accuracy
+5. A deployed operational dashboard with real-time NOAA integration, geomagnetic impact assessment, and satellite tracking
 
----
 
 ## 2. Related Work
 
@@ -70,15 +66,14 @@ Solar flare prediction has historically relied on McIntosh (1990) sunspot classi
 | Park et al. (2022) | SDO | Vision Transformer | 0.91 | Magnetogram images |
 | Zheng et al. (2023) | GOES XRS | TCN | 0.89 | XRS time series |
 | Ma et al. (2024) | SDO+GOES | JW-Flare (multimodal) | 0.95 | Images + time series (TSS=0.95) |
-| **JWALASHMI (this work)** | **Aditya-L1 + GOES** | **CNN-Attention Ensemble** | **0.997** | **12 physics features (TSS=0.972)** |
+| JWALASHMI (this work) | Aditya-L1 + GOES | CNN-Attention Ensemble | 0.997 | 12 physics features |
 
-All prior ML approaches rely on NASA/NOAA data sources. To our knowledge, no published work has applied machine learning to ISRO Aditya-L1 observations. The SWAN-SF benchmark (Angryk et al., 2020) provides a standardized evaluation framework; JW-Flare (Ma et al., 2024) represents the current state of the art with multimodal fusion achieving TSS=0.95 on M+X events.
+All prior ML approaches rely on NASA/NOAA data sources; no published work has applied machine learning to ISRO Aditya-L1 observations. The SWAN-SF benchmark (Angryk et al., 2020) provides a standardized evaluation framework, while JW-Flare (Ma et al., 2024) represents the current state of the art with multimodal fusion achieving TSS=0.95 on M+X events.
 
 ### 2.3 Transfer Learning in Space Weather
 
 Cross-mission transfer learning has been explored for SDO to SOHO domain adaptation (Galvez et al., 2019), but GOES-to-Aditya-L1 transfer learning — exploiting the spectral overlap between GOES XRS and SoLEXS — has not been previously attempted.
 
----
 
 ## 3. Data
 
@@ -137,7 +132,6 @@ The data pipeline consists of five stages:
 
 Class balancing achieved through stratified subsampling (majority classes) and SMOTE-style oversampling (minority M/X classes).
 
----
 
 ## 4. Methodology
 
@@ -236,7 +230,6 @@ Predictions are mapped to operational alerts following NOAA/NASA conventions:
 | YELLOW | C | > 60% | Monitor closely, prepare contingency |
 | RED | M, X | > 60% | Protect satellites, alert ground stations |
 
----
 
 ## 5. Results
 
@@ -249,26 +242,24 @@ Evaluated on the balanced test set (1,763 samples):
 | None | 0.703 | 0.882 | 0.783 | 400 | 0.951 |
 | B | 0.583 | 0.560 | 0.571 | 400 | 0.878 |
 | C | 0.606 | 0.608 | 0.607 | 400 | 0.947 |
-| M | 0.934 | **0.934** | 0.934 | 363 | **0.997** |
-| X | 0.950 | **0.950** | 0.950 | 200 | **0.999** |
-
-**Summary Metrics:**
+| M | 0.934 | 0.934 | 0.934 | 363 | 0.997 |
+| X | 0.950 | 0.950 | 0.950 | 200 | 0.999 |
 
 | Metric | Value | 95% CI |
 |---|---|---|
-| 5-Class Balanced Accuracy | **78.7%** | 76.9% - 80.3% |
-| 3-Tier Alert Accuracy | **85.9%** | — |
+| 5-Class Balanced Accuracy | 78.7% | 76.9% - 80.3% |
+| 3-Tier Alert Accuracy | 85.9% | — |
 | GREEN (safe) accuracy | 90.4% | — |
-| RED (dangerous) accuracy | **97.3%** | 95.8% - 98.7% |
-| M+X True Skill Statistic (TSS) | **0.972** | 0.956 - 0.985 |
-| M+X Heidke Skill Score (HSS) | **0.978** | 0.966 - 0.988 |
-| M-class AUC | **0.997** | — |
-| X-class AUC | **0.999** | — |
-| Brier Score | **0.067** | — |
+| RED (dangerous) accuracy | 97.3% | 95.8% - 98.7% |
+| M+X TSS | 0.972 | 0.956 - 0.985 |
+| M+X HSS | 0.978 | 0.966 - 0.988 |
+| M-class AUC | 0.997 | — |
+| X-class AUC | 0.999 | — |
+| Brier Score | 0.067 | — |
 | Binary flare detection TPR | 97.3% | — |
 | False positive rate (M+X) | 0.17% | — |
 
-95% confidence intervals computed via bootstrap resampling (n=1,000).
+Confidence intervals computed via bootstrap resampling (n=1,000).
 
 ### 5.2 Confusion Matrix
 
@@ -298,9 +289,9 @@ Individual model performance varies with random seed, but the ensemble consisten
 | Model 8 | 384 | 72.7% |
 | Model 9 | 437 | 72.5% |
 | Model 10 | 490 | 73.0% |
-| **Ensemble (avg)** | — | **77.8%** |
+| Ensemble (avg) | — | 77.8% |
 
-Mean individual accuracy: 71.2%. The ensemble achieves a **+6.6 percentage point improvement** through probability averaging, consistent with theoretical predictions for diverse classifier ensembles (Dietterich, 2000).
+Mean individual accuracy is 71.2%; the ensemble achieves a +6.6 percentage point improvement through probability averaging, consistent with theoretical predictions for diverse classifier ensembles (Dietterich, 2000).
 
 ### 5.4 Skill Score Analysis
 
@@ -311,10 +302,10 @@ Mean individual accuracy: 71.2%. The ensemble achieves a **+6.6 percentage point
 | None | 0.772 | 0.708 | 0.951 |
 | B | 0.443 | 0.449 | 0.878 |
 | C | 0.547 | 0.585 | 0.947 |
-| M | **0.926** | **0.939** | **0.997** |
-| X | **0.944** | **0.944** | **0.999** |
+| M | 0.926 | 0.939 | 0.997 |
+| X | 0.944 | 0.944 | 0.999 |
 
-The M+X binary TSS of **0.972** substantially exceeds the Poisson climatological baseline (TSS ~0.2) and published ML benchmarks (TSS 0.53-0.74 for M-class, Bloomfield et al., 2012), validating the system's operational skill.
+The M+X binary TSS of 0.972 exceeds the Poisson climatological baseline (TSS ~0.2) and published ML benchmarks (TSS 0.53-0.74 for M-class, Bloomfield et al., 2012).
 
 ### 5.5 Feature Importance Analysis
 
@@ -335,7 +326,7 @@ Gradient-weighted input attribution reveals the discriminative contribution of e
 | 11 | `qpp_power` | 0.021 | SoLEXS | QPP detection |
 | 12 | `long_ratio` | 0.015 | SoLEXS | Baseline deviation |
 
-The three HEL1OS-derived features contribute **19.5% of total attribution** despite comprising only 25% of features (3/12). The `hard_soft_ratio` ranks 6th overall, confirming that non-thermal/thermal balance provides independent discriminative information beyond what SoLEXS flux derivatives alone can capture.
+The three HEL1OS-derived features contribute 19.5% of total attribution despite comprising only 25% of features (3/12). The `hard_soft_ratio` ranks 6th overall, indicating that non-thermal/thermal balance provides independent discriminative information beyond what SoLEXS flux derivatives alone can capture.
 
 ### 5.6 5-Fold Stratified Cross-Validation
 
@@ -350,11 +341,11 @@ To provide unbiased performance estimates, we perform 5-fold stratified cross-va
 | 5 | 80.2% | 0.917 | 92.1% |
 | **Mean +/- Std** | **77.9% +/- 1.8%** | **0.877 +/- 0.044** | **88.0%** |
 
-The cross-validated M+X TSS of 0.877 exceeds the Poisson climatological baseline (TSS = 0.53, Bloomfield et al., 2012) by 65%. The narrow standard deviation (+/-0.044) indicates stable performance across folds. Balanced accuracy of 77.9% is consistent with the full-ensemble result (78.7%), confirming that the V6.1 ensemble metrics are not inflated.
+The cross-validated M+X TSS of 0.877 exceeds the Poisson climatological baseline (TSS = 0.53, Bloomfield et al., 2012). The narrow standard deviation (+/-0.044) indicates stable performance across folds, and balanced accuracy of 77.9% is consistent with the full-ensemble result (78.7%).
 
-### 5.6b Bootstrap Confidence Intervals
+### 5.7 Bootstrap Confidence Intervals
 
-To further assess metric stability, we perform 1,000-iteration bootstrap resampling of the full V6.1 ensemble predictions:
+We further assess metric stability through 1,000-iteration bootstrap resampling of the V6.1 ensemble predictions:
 
 | Metric | Mean | 95% CI Lower | 95% CI Upper |
 |---|---|---|---|
@@ -363,11 +354,11 @@ To further assess metric stability, we perform 1,000-iteration bootstrap resampl
 | M+X HSS | 0.978 | 0.966 | 0.988 |
 | RED Alert Accuracy | 97.3% | 95.8% | 98.7% |
 
-The narrow confidence intervals (all within +/-2%) indicate that the results are statistically robust and not driven by a small subset of samples.
+All confidence intervals fall within +/-2%, indicating that the results are not driven by a small subset of samples.
 
-### 5.7 Independent Temporal Validation
+### 5.8 Independent Temporal Validation
 
-To assess generalization, models trained on 20 dates were evaluated on 5 temporally separated dates (October 2024 – November 2025):
+Models trained on 20 dates were evaluated on 5 temporally separated dates (October 2024 - November 2025):
 
 | Metric | Value | Note |
 |---|---|---|
@@ -375,36 +366,36 @@ To assess generalization, models trained on 20 dates were evaluated on 5 tempora
 | C-class AUC | 0.812 | Independently validated |
 | GREEN accuracy | 67.5% | No M/X events in test period |
 
-> **Note:** The independent test set contained zero M/X events, precluding validation of the most critical RED alert functionality. Full temporal validation requires future Aditya-L1 data covering confirmed M/X flare events.
+The independent test set contained zero M/X events, precluding validation of RED alert functionality. Full temporal validation requires future Aditya-L1 data covering confirmed M/X flare events.
 
-### 5.7b Independent M/X Validation (GOES Hold-Out — Actual Inference)
+### 5.9 Independent M/X Validation (GOES Hold-Out)
 
-To provide the strongest possible validation, we run **actual model inference** on a held-out portion of the GOES dataset. Of the 2,271 GOES samples, 284 are held out for testing (63 M-class + 8 X-class + 213 negative samples), with the remaining 1,987 used for training. The 10-model V6.1 ensemble is evaluated on these 284 samples it has **never seen**:
+As a further validation step, we run model inference on a held-out portion of the GOES dataset. Of the 2,271 GOES samples, 284 are held out for testing (63 M-class + 8 X-class + 213 negative samples), with the remaining 1,987 used for training. The 10-model V6.1 ensemble is evaluated on these 284 samples, none of which were used during training:
 
-| Metric | Training (V6.1) | Independent Hold-Out | 
+| Metric | Training (V6.1) | Hold-Out |
 |---|---|---|
-| M+X TSS | 0.972 | **0.9953** |
-| M+X HSS | 0.978 | **0.9907** |
-| RED Alert Recall (TPR) | 97.3% | **100.0%** (71/71) |
-| False Positive Rate | 0.17% | **0.47%** (1/213) |
-| Precision (M+X) | — | **98.6%** (71/72) |
-| Brier Score (M+X) | 0.067 | **0.0607** |
+| M+X TSS | 0.972 | 0.995 |
+| M+X HSS | 0.978 | 0.991 |
+| RED Alert Recall (TPR) | 97.3% | 100.0% (71/71) |
+| False Positive Rate | 0.17% | 0.47% (1/213) |
+| Precision (M+X) | — | 98.6% (71/72) |
+| Brier Score (M+X) | 0.067 | 0.061 |
 
-**Confusion matrix** (actual inference, 284 hold-out samples):
+Confusion matrix (284 hold-out samples):
 
 | | Pred None | Pred B | Pred C | Pred M | Pred X |
 |---|---|---|---|---|---|
-| **True None** | 0 | 19 | 0 | 0 | 0 |
-| **True B** | 0 | 168 | 0 | 0 | 1 |
-| **True C** | 0 | 25 | 0 | 0 | 0 |
-| **True M** | 0 | 0 | 0 | 0 | 63 |
-| **True X** | 0 | 0 | 0 | 0 | 8 |
+| True None | 0 | 19 | 0 | 0 | 0 |
+| True B | 0 | 168 | 0 | 0 | 1 |
+| True C | 0 | 25 | 0 | 0 | 0 |
+| True M | 0 | 0 | 0 | 0 | 63 |
+| True X | 0 | 0 | 0 | 0 | 8 |
 
-The model achieves effectively **binary discrimination**: safe events (None/B/C) are classified as B-class (GREEN alert), while dangerous events (M/X) are classified as X-class (RED alert). This yields TP=71, TN=212, FP=1, FN=0 for the operational binary detection task. The single false positive (one B-class event predicted as X) represents a 0.47% false alarm rate — operationally negligible.
+On GOES data, the model achieves effective binary discrimination: safe events (None/B/C) are classified as B-class, while dangerous events (M/X) are classified as X-class. This yields TP=71, TN=212, FP=1, FN=0 for the binary detection task. The single false positive (one B-class event predicted as X) corresponds to a 0.47% false alarm rate.
 
-> **Key finding:** On 71 M/X events never seen during training, the model achieves **100% recall with 98.6% precision**, confirming that the operational RED alert system generalizes to unseen flare events. The 5-class balanced accuracy (39.9%) reflects expected cross-instrument domain shift (GOES vs. Aditya-L1 feature space), but the safety-critical binary detection is near-perfect.
+The 5-class balanced accuracy on GOES data (39.9%) reflects cross-instrument domain shift, as GOES provides only 9 of the 12 features available from Aditya-L1. However, the safety-critical binary detection — 100% recall with 98.6% precision on 71 unseen M/X events — confirms that the model generalizes for operational use.
 
-### 5.8 Comparison with State of the Art
+### 5.10 Comparison with State of the Art
 
 | System | Data Source | Training Data | M-class AUC | M+X TSS | Method |
 |---|---|---|---|---|---|
@@ -413,11 +404,10 @@ The model achieves effectively **binary discrimination**: safe events (None/B/C)
 | Nishizuka et al. (2017) | SDO+GOES | 6 years | 0.88 | — | Deep Flare Net |
 | Li et al. (2020) | SDO+GOES | 8 years | 0.93 | — | LSTM |
 | Park et al. (2022) | SDO | 5 years | 0.91 | — | Vision Transformer |
-| **JWALASHMI (ours)** | **Aditya-L1+GOES** | **25 days + GOES** | **0.997** | **0.972** | **CNN-Attn Ensemble** |
+| JWALASHMI (ours) | Aditya-L1+GOES | 25 days + GOES | 0.997 | 0.972 | CNN-Attn Ensemble |
 
-While direct comparison is complicated by differing evaluation protocols and test set compositions, JWALASHMI achieves competitive or superior AUC and TSS using substantially less primary training data, suggesting that physics-informed multi-band X-ray features provide strong discriminative power that partially compensates for limited temporal coverage.
+Direct comparison is complicated by differing evaluation protocols, prediction horizons (JWALASHMI targets 30-minute tactical nowcasting versus 24-hour strategic forecasting in most prior work), and test set compositions. Nevertheless, JWALASHMI achieves competitive or superior AUC and TSS using substantially less primary training data, suggesting that physics-informed multi-band X-ray features provide discriminative power that partially compensates for limited temporal coverage.
 
----
 
 ## 6. Operational System
 
@@ -463,27 +453,27 @@ The system supports three operational modes:
 2. **GOES Live**: Ingests real-time GOES XRS data from NOAA SWPC APIs
 3. **Simulation**: Generates realistic synthetic flux profiles for testing
 
----
 
 ## 7. Discussion
 
 ### 7.1 Significance for Indian Space Weather
 
-This work demonstrates that **India's Aditya-L1 mission data can support operational ML-based space weather forecasting**, reducing dependence on foreign data sources. The multi-instrument fusion approach exploits physics accessible only through simultaneous soft and hard X-ray observations — a capability unique to Aditya-L1 among current L1 solar observatories.
+### 7.1 Significance for Space Weather
+These results indicate that Aditya-L1 data can support automated solar flare forecasting. The multi-instrument fusion exploits physics available through simultaneous soft and hard X-ray observations, a capability unique to the mission.
 
 ### 7.2 Operational Impact
 
 The three-tier alert system is designed for practical deployment:
-- **97.3% RED alert accuracy** means ISRO mission control would receive reliable warnings for satellite-threatening flares
-- **92.6% GREEN accuracy** minimizes unnecessary alert fatigue
-- **< 50ms inference latency** enables real-time operation on standard hardware
+- 97.3% RED alert accuracy provides reliable warnings for satellite-threatening flares.
+- 92.6% GREEN accuracy minimizes unnecessary alert fatigue.
+- Sub-50ms inference latency enables real-time operation on standard hardware.
 
-The geomagnetic impact assessment module provides actionable intelligence for ISRO's satellite fleet (INSAT, GSAT, NavIC, Oceansat, EOS, RISAT), ISTRAC ground network, and Indian aviation (Air India polar routes).
+The geomagnetic impact assessment provides intelligence for the ISRO satellite fleet, ground networks, and aviation routes.
 
 ### 7.3 Limitations
 
-1. **Data volume**: 25 days of SoLEXS-HEL1OS overlap is limited; while independent GOES hold-out validation (TSS=0.928) demonstrates generalization, metrics should be further validated as Aditya-L1 accumulates more observations
-2. **Evaluation protocol**: Primary evaluation includes training data. Independent GOES hold-out (Section 5.7b) and temporal validation (Section 5.7) provide partial mitigation
+1. **Data volume**: 25 days of SoLEXS-HEL1OS overlap is limited; while independent GOES hold-out validation (TSS=0.995, Section 5.9) demonstrates generalization, metrics should be further validated as Aditya-L1 accumulates more observations
+2. **Evaluation protocol**: Primary evaluation includes training data. Independent GOES hold-out (Section 5.9) and temporal validation (Section 5.8) provide partial mitigation
 3. **B/C class discrimination**: Balanced accuracy of 78.7% is driven by weak B-class (56%) and C-class (60.8%) separation, which share overlapping flux ranges. Operationally, both map to non-critical alert tiers (GREEN/YELLOW), limiting the practical impact of this weakness
 4. **Operational latency**: Current system processes pre-downloaded FITS files; real-time streaming from ISSDC is not yet implemented. ONNX export with INT8 quantization achieves <10ms inference latency, meeting operational requirements
 5. **Single-point architecture**: No redundancy or failover for mission-critical deployment
@@ -507,15 +497,12 @@ The geomagnetic impact assessment module provides actionable intelligence for IS
 7. **Far-side helioseismic context**: Incorporating NSO/GONG far-side maps for 4-pi solar awareness, reducing blind-spot missed events
 8. **Probabilistic calibration**: Temperature scaling and Platt calibration for operational decision support with calibrated probability outputs
 
----
 
 ## 8. Conclusion
 
-We have presented JWALASHMI, the first machine learning system to combine SoLEXS and HEL1OS observations from ISRO's Aditya-L1 mission for solar flare forecasting. By engineering 12 physics-informed features that capture the Neupert effect, spectral hardness evolution, and multi-band X-ray dynamics, our 10-model ensemble achieves M-class AUC of 0.997 and X-class AUC of 0.999, with 97.3% accuracy for detecting dangerous M+X class flares.
+We have presented JWALASHMI, a machine learning system that combines SoLEXS and HEL1OS observations from ISRO's Aditya-L1 mission for solar flare forecasting. By engineering 12 physics-informed features capturing the Neupert effect, spectral hardness evolution, and multi-band X-ray dynamics, a 10-model ensemble achieves M-class AUC of 0.997 and X-class AUC of 0.999, with 97.3% accuracy for detecting M+X class flares. Five-fold cross-validation (TSS = 0.877) and independent GOES hold-out inference (TSS = 0.995, 100% recall on 71 unseen M/X events) provide corroborating evidence of generalization.
 
-The operational deployment as a three-page dashboard — featuring real-time NOAA integration, 30-satellite tracking with orbital mechanics, and geomagnetic impact assessment — demonstrates a path from research to operational space weather capability for India. As Aditya-L1 continues to accumulate data through Solar Cycle 25, JWALASHMI's performance is expected to improve, establishing a foundation for indigenous, ML-driven space weather prediction.
-
----
+The system is deployed as a real-time dashboard with NOAA integration, satellite tracking, and geomagnetic impact assessment. As Aditya-L1 accumulates additional data through Solar Cycle 25, particularly during periods of elevated M/X-class activity, further temporal validation will strengthen the generalization claims presented here.
 
 ## References
 
