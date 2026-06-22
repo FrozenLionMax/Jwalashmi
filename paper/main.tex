@@ -1,9 +1,9 @@
-\documentclass[twocolumn,11pt]{article}
+\documentclass[twocolumn,10pt]{article}
 
 % ============================================================================
 % PACKAGES
 % ============================================================================
-\usepackage[letterpaper,margin=1in]{geometry}
+\usepackage[letterpaper,left=0.75in,right=0.75in,top=0.85in,bottom=0.85in]{geometry}
 \usepackage{booktabs}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
@@ -16,15 +16,26 @@
 \usepackage{enumitem}
 \usepackage{listings}
 \usepackage{url}
+\usepackage{balance}
 
-\lstset{basicstyle=\ttfamily\small, frame=single, breaklines=true}
+\lstset{basicstyle=\ttfamily\footnotesize, frame=single, breaklines=true}
+
+% Float spacing
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{6pt plus 2pt minus 2pt}
+\setlength{\dbltextfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\dblfloatsep}{8pt plus 2pt minus 2pt}
+
+% Compact captions
+\captionsetup{font=small, labelfont=bf, skip=4pt}
 
 % ============================================================================
 % TITLE
 % ============================================================================
 \title{\textbf{JWALASHMI: Multi-Instrument Solar Flare Forecasting Using Aditya-L1 SoLEXS and HEL1OS with Physics-Informed Deep Learning}}
 
-\author{Team JWALASHMI}
+\author{}
 
 \date{June 2026}
 
@@ -94,11 +105,11 @@ Solar flare prediction has historically relied on \citet{mcintosh1990} sunspot c
 
 Table~\ref{tab:related} summarizes prior ML-based approaches. All rely on NASA/NOAA data sources; no published work has applied machine learning to ISRO Aditya-L1 observations. JW-Flare \citep{ma2024} represents the current state of the art with TSS=0.95.
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{Comparison of ML-based solar flare forecasting methods.}
 \label{tab:related}
-\small
+\footnotesize
 \begin{tabular}{@{}llll@{}}
 \toprule
 Study & Data & M-AUC & Method \\
@@ -129,11 +140,11 @@ Cross-mission transfer learning has been explored for SDO to SOHO domain adaptat
 
 Level-1 calibrated data products were obtained from ISRO's PRADAN portal for both instruments (Table~\ref{tab:data}).
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{Aditya-L1 data summary.}
 \label{tab:data}
-\small
+\footnotesize
 \begin{tabular}{@{}llll@{}}
 \toprule
 Instrument & Energy Range & Cadence & Days \\
@@ -149,11 +160,11 @@ Additionally, GOES-16/17 XRS data was obtained via NOAA archives for transfer le
 
 \subsection{Dataset Composition}
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{Final balanced dataset composition.}
 \label{tab:composition}
-\small
+\footnotesize
 \begin{tabular}{@{}lrrrrr@{}}
 \toprule
 Source & None & B & C & M & X \\
@@ -176,11 +187,11 @@ Augmented & --- & --- & --- & --- & +160 \\
 
 From the raw count rates, we compute 9 physics-informed features at each time step, shown in Table~\ref{tab:features}.
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{Physics-informed feature set.}
 \label{tab:features}
-\small
+\footnotesize
 \begin{tabular}{@{}clll@{}}
 \toprule
 \# & Feature & Source & Physics \\
@@ -217,11 +228,11 @@ Input: (batch, 3600, 9)
 
 \subsection{Training Protocol}\label{sec:training}
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{Training hyperparameters.}
 \label{tab:training}
-\small
+\footnotesize
 \begin{tabular}{@{}ll@{}}
 \toprule
 Parameter & Value \\
@@ -251,11 +262,11 @@ Data augmentation is applied online (3$\times$ per epoch): Gaussian noise ($\sig
 
 \subsection{Three-Tier Alert System}\label{sec:alerts}
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{Operational alert mapping.}
 \label{tab:alerts}
-\small
+\footnotesize
 \begin{tabular}{@{}lll@{}}
 \toprule
 Alert & Classes & Action \\
@@ -276,11 +287,11 @@ RED & M, X & Protect satellites \\
 
 The following metrics are computed on a held-out evaluation set (1,763 samples, stratified by class). The unbiased cross-validated results appear in Section~\ref{sec:cv}.
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{Per-class classification performance (V6.1 ensemble).}
 \label{tab:perclass}
-\small
+\footnotesize
 \begin{tabular}{@{}lrrrrr@{}}
 \toprule
 Class & Prec. & Recall & F1 & Support & AUC \\
@@ -294,11 +305,11 @@ X & 0.950 & 0.950 & 0.950 & 200 & 0.999 \\
 \end{tabular}
 \end{table}
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{Aggregate performance metrics.}
 \label{tab:aggregate}
-\small
+\footnotesize
 \begin{tabular}{@{}lll@{}}
 \toprule
 Metric & Value & 95\% CI \\
@@ -335,11 +346,11 @@ Probabilistic calibration is assessed via the Brier Score:
 
 Gradient-weighted input attribution (mean $|\nabla \mathbf{x} \odot \mathbf{x}|$ across 500 samples and 10 ensemble models) reveals the discriminative contribution of each feature (Table~\ref{tab:importance}).
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{Feature importance via gradient $\times$ input attribution.}
 \label{tab:importance}
-\small
+\footnotesize
 \begin{tabular}{@{}clrl@{}}
 \toprule
 Rank & Feature & Attribution & Source \\
@@ -363,11 +374,11 @@ The three HEL1OS-derived features contribute 31.0\% of total attribution despite
 
 To provide unbiased performance estimates, we perform 5-fold stratified cross-validation with 3-model ensembles per fold (15 models total, 50 epochs each). Results are shown in Table~\ref{tab:cv}.
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{5-fold stratified cross-validation results.}
 \label{tab:cv}
-\small
+\footnotesize
 \begin{tabular}{@{}lrrr@{}}
 \toprule
 Fold & Bal. Acc. & M+X TSS & RED Acc. \\
@@ -389,11 +400,11 @@ The cross-validated M+X TSS of 0.877 exceeds the Poisson climatological baseline
 
 Since the Aditya-L1 temporal validation contained no M/X events, we assess the model's ability to detect dangerous flares on an independent instrument. Of the 2,271 GOES XRS samples, 284 are withheld from training (63~M + 8~X + 213~negative) and used exclusively for inference.
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{GOES hold-out safety validation.}
 \label{tab:goes}
-\small
+\footnotesize
 \begin{tabular}{@{}lrr@{}}
 \toprule
 Metric & Eval. Set & GOES Hold-Out \\
@@ -455,6 +466,7 @@ We acknowledge ISRO for making Aditya-L1 data publicly available through the PRA
 % ====================================================================
 % REFERENCES
 % ====================================================================
+\balance
 \bibliographystyle{plainnat}
 \bibliography{references}
 
