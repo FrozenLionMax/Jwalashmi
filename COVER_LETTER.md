@@ -17,19 +17,24 @@ American Geophysical Union
 
 Dear Editor,
 
-We are pleased to submit our manuscript for consideration in *Space Weather*. This work presents **JWALASHMI**, the first machine learning system to utilize observations from ISRO's Aditya-L1 mission for solar flare prediction.
+We submit JWALASHMI, the **first machine learning model to utilize ISRO's Aditya-L1 SoLEXS and HEL1OS observations** for solar flare prediction. Our system achieves:
+
+- **M+X TSS = 0.972** (95% CI: 0.956–0.985) — substantially exceeds the Poisson climatological baseline (TSS = 0.53, Bloomfield et al., 2012) and published ML benchmarks
+- **97.3% RED alert accuracy** for dangerous M+X flares with only 0.17% false positive rate
+- **Independent GOES hold-out TSS = 0.928** on 71 M/X events never seen during training — validates generalization
+- **Brier score = 0.067** — demonstrates calibrated, operationally reliable probabilities
 
 ### Why This Paper Matters
 
-1. **Historic first**: No published work has applied machine learning to Aditya-L1 SoLEXS or HEL1OS data. This establishes a new data source for operational space weather forecasting.
+1. **Historic first**: No published work has applied machine learning to Aditya-L1 data. This establishes India's first indigenous ML-based space weather forecasting capability, reducing dependence on NOAA/GOES.
 
-2. **Novel physics-informed features**: By fusing soft X-ray (SoLEXS, 1-25 keV) and hard X-ray (HEL1OS, 10-150 keV) observations, we construct 12 features encoding the Neupert effect, spectral hardness evolution, and hard-to-soft X-ray ratio — physics previously unexploited in ML-based flare prediction.
+2. **Physics-informed multi-instrument fusion**: By fusing soft X-ray (SoLEXS, 1–25 keV) and hard X-ray (HEL1OS, 10–150 keV), we exploit the Neupert effect, spectral hardness evolution, and hard-to-soft X-ray ratio — cross-band physics previously unused in ML flare prediction.
 
-3. **Strong performance**: Our 10-model ensemble achieves M+X TSS of 0.972 (95% CI: 0.956-0.985), M-class AUC of 0.997, and X-class AUC of 0.999, with 97.3% accuracy for detecting dangerous M+X class flares.
+3. **Operational deployment**: The system includes a real-time mission control dashboard with live NOAA integration, geomagnetic impact mapping, aurora visualization, and 30-satellite tracking — demonstrating a path from research to operational capability for ISRO.
 
-4. **Operational deployment**: The system includes a real-time mission control dashboard with live NOAA integration, geomagnetic impact mapping, and 30-satellite tracking — demonstrating a path from research to operational capability.
+4. **Community benchmark**: We release **AdityaFlareBench**, a curated dataset with temporal evaluation protocol and baseline results, to serve as a community benchmark for Solar Cycle 25.
 
-5. **Timely**: Solar Cycle 25 is near its peak, making robust flare prediction critical. Aditya-L1's unique L1 vantage provides uninterrupted multi-band X-ray coverage unavailable from any other mission.
+5. **Timely**: Solar Cycle 25 is near its peak. Aditya-L1's unique L1 vantage provides uninterrupted multi-band X-ray coverage unavailable from any other current mission.
 
 ### Why Space Weather
 
