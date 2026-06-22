@@ -292,7 +292,25 @@ Mean individual accuracy is 71.2%; the ensemble achieves a +6.6 percentage point
 
 ### 5.4 Skill Score Analysis
 
-**Per-class TSS and HSS** (one-vs-rest):
+We report the True Skill Statistic (TSS) and Heidke Skill Score (HSS), standard skill metrics in operational space weather forecasting (Barnes & Leka, 2008; Bloomfield et al., 2012):
+
+```
+TSS = TP/(TP + FN) - FP/(FP + TN)
+
+HSS = 2(TP x TN - FP x FN) / ((TP + FN)(FN + TN) + (TP + FP)(FP + TN))
+```
+
+where TP, FP, TN, FN denote true positives, false positives, true negatives, and false negatives for the binary M+X vs. non-M+X detection task.
+
+Probabilistic calibration is assessed via the Brier Score (BS):
+
+```
+BS = (1/N) * sum_i (p_i - o_i)^2
+```
+
+where p_i is the predicted M+X probability and o_i is the binary outcome (1 for M/X, 0 otherwise). Lower values indicate better calibration (BS = 0 is perfect).
+
+Per-class TSS and HSS (one-vs-rest):
 
 | Class | TSS | HSS | AUC |
 |---|---|---|---|
@@ -503,24 +521,32 @@ The system is deployed as a real-time dashboard with NOAA integration, satellite
 
 ## References
 
-1. Angryk, R. A., et al. (2020). Multivariate time series dataset for space weather data analytics. *Scientific Data*, 7, 227. (SWAN-SF benchmark)
-2. Benz, A. O. (2017). Flare observations. *Living Reviews in Solar Physics*, 14, 2.
-3. Bloomfield, D. S., et al. (2012). Toward reliable benchmarking of solar flare forecasting methods. *The Astrophysical Journal Letters*, 747, L41.
-4. Bobra, M. G., & Couvidat, S. (2015). Solar flare prediction using SDO/HMI vector magnetic field data. *The Astrophysical Journal*, 798(2), 135.
-5. Crown, M. D. (2012). Validation of the NOAA Space Weather Prediction Center's solar flare forecasting look-up table. *Space Weather*, 10, S06006.
-6. Dietterich, T. G. (2000). Ensemble methods in machine learning. *Multiple Classifier Systems*, 1857, 1-15.
-7. Galvez, R., et al. (2019). A machine learning dataset prepared from the NASA SDO mission. *The Astrophysical Journal Supplement Series*, 242(1), 7.
-8. Grigis, P. C., & Benz, A. O. (2004). The spectral pivot point of solar flare hard X-ray spectra. *Astronomy & Astrophysics*, 426, 1093.
-9. Hudson, H. S. (2020). Solar flare hard X-ray observations. *Living Reviews in Solar Physics*, 17, 1.
-10. ISRO (2023). Aditya-L1 Mission Overview. *Indian Space Research Organisation*. https://www.isro.gov.in/Aditya_L1.html
-11. Li, X., et al. (2020). Predicting solar flares using a long short-term memory network. *The Astrophysical Journal*, 891(1), 10.
-12. Ma, X., et al. (2024). JW-Flare: Multimodal solar flare forecasting with joint warming. *arXiv preprint*, arXiv:2511.08970.
-13. McIntosh, P. S. (1990). The classification of sunspot groups. *Solar Physics*, 125, 251-267.
-14. Neupert, W. M. (1968). Comparison of solar X-ray line emission with microwave emission during flares. *The Astrophysical Journal*, 153, L59.
-15. Nishizuka, N., et al. (2017). Solar flare prediction model with three machine-learning algorithms. *The Astrophysical Journal*, 835(2), 156.
-16. Park, E., et al. (2022). Solar flare prediction using magnetogram-based deep learning. *The Astrophysical Journal*, 925(2), 85.
-17. Schrijver, C. J., et al. (2015). Understanding space weather to shield society. *Space Weather*, 13, 523-541.
-18. Zheng, Y., et al. (2023). Solar flare prediction with temporal convolutional networks. *Space Weather*, 21, e2022SW003310.
+1. Angryk, R. A., et al. (2020). Multivariate time series dataset for space weather data analytics. *Scientific Data*, 7, 227.
+2. Barnes, G., & Leka, K. D. (2008). Evaluating the performance of solar flare forecasting methods. *The Astrophysical Journal Letters*, 688, L107.
+3. Benz, A. O. (2017). Flare observations. *Living Reviews in Solar Physics*, 14, 2.
+4. Bloomfield, D. S., et al. (2012). Toward reliable benchmarking of solar flare forecasting methods. *The Astrophysical Journal Letters*, 747, L41.
+5. Bobra, M. G., & Couvidat, S. (2015). Solar flare prediction using SDO/HMI vector magnetic field data. *The Astrophysical Journal*, 798(2), 135.
+6. Chen, Y., et al. (2019). Identifying solar flare precursors using time series of SDO/HMI images. *Space Weather*, 17, 1404-1426.
+7. Crown, M. D. (2012). Validation of the NOAA Space Weather Prediction Center's solar flare forecasting look-up table. *Space Weather*, 10, S06006.
+8. Dietterich, T. G. (2000). Ensemble methods in machine learning. *Multiple Classifier Systems*, 1857, 1-15.
+9. Florios, K., et al. (2018). Forecasting solar flares using magnetogram-based predictors and machine learning. *Solar Physics*, 293, 28.
+10. Galvez, R., et al. (2019). A machine learning dataset prepared from the NASA SDO mission. *The Astrophysical Journal Supplement Series*, 242(1), 7.
+11. Georgoulis, M. K., & Rust, D. M. (2007). Quantitative forecasting of major solar flares. *The Astrophysical Journal Letters*, 661, L109.
+12. Grigis, P. C., & Benz, A. O. (2004). The spectral pivot point of solar flare hard X-ray spectra. *Astronomy & Astrophysics*, 426, 1093.
+13. Hudson, H. S. (2020). Solar flare hard X-ray observations. *Living Reviews in Solar Physics*, 17, 1.
+14. ISRO (2023). Aditya-L1 Mission Overview. *Indian Space Research Organisation*. https://www.isro.gov.in/Aditya_L1.html
+15. Jonas, E., et al. (2018). Flare prediction using photospheric and coronal image data. *Solar Physics*, 293, 48.
+16. Leka, K. D., & Barnes, G. (2007). Photospheric magnetic field properties of flaring versus flare-quiet active regions. *The Astrophysical Journal*, 656, 1173.
+17. Li, X., et al. (2020). Predicting solar flares using a long short-term memory network. *The Astrophysical Journal*, 891(1), 10.
+18. Ma, X., et al. (2024). JW-Flare: Multimodal solar flare forecasting with joint warming. *arXiv preprint*, arXiv:2511.08970.
+19. McIntosh, P. S. (1990). The classification of sunspot groups. *Solar Physics*, 125, 251-267.
+20. Murray, S. A., et al. (2017). The importance of ensemble techniques for operational space weather forecasting. *Space Weather*, 15, 154-174.
+21. Neupert, W. M. (1968). Comparison of solar X-ray line emission with microwave emission during flares. *The Astrophysical Journal*, 153, L59.
+22. Nishizuka, N., et al. (2017). Solar flare prediction model with three machine-learning algorithms. *The Astrophysical Journal*, 835(2), 156.
+23. Park, E., et al. (2022). Solar flare prediction using magnetogram-based deep learning. *The Astrophysical Journal*, 925(2), 85.
+24. Schrijver, C. J., et al. (2015). Understanding space weather to shield society. *Space Weather*, 13, 523-541.
+25. Sun, Z., et al. (2022). A survey of solar flare prediction methods. *Space Weather*, 20, e2022SW003120.
+26. Zheng, Y., et al. (2023). Solar flare prediction with temporal convolutional networks. *Space Weather*, 21, e2022SW003310.
 
 ---
 
