@@ -389,11 +389,11 @@ Models trained on 20 dates were evaluated on 5 temporally separated dates (Octob
 
 The independent test set contained zero M/X events, precluding validation of RED alert functionality. Full temporal validation requires future Aditya-L1 data covering confirmed M/X flare events.
 
-### 5.9 Independent M/X Validation (GOES Hold-Out)
+### 5.9 Cross-Instrument Safety Validation (GOES Hold-Out)
 
-As a further validation step, we run model inference on a held-out portion of the GOES dataset. Of the 2,271 GOES samples, 284 are held out for testing (63 M-class + 8 X-class + 213 negative samples), with the remaining 1,987 used for training. The 10-model V6.1 ensemble is evaluated on these 284 samples, none of which were used during training:
+Since the Aditya-L1 temporal validation (Section 5.8) contained no M/X events, we assess the model's ability to detect dangerous flares on an independent instrument. Of the 2,271 GOES XRS samples used for transfer learning, 284 are withheld from training (63 M-class + 8 X-class + 213 negative samples) and used exclusively for inference. This test evaluates a specific operational question: can the model reliably distinguish dangerous (M/X) from safe (None/B/C) flares on data it has never seen?
 
-| Metric | Training (V6.1) | Hold-Out |
+| Metric | Evaluation Set (V6.1) | GOES Hold-Out |
 |---|---|---|
 | M+X TSS | 0.972 | 0.995 |
 | M+X HSS | 0.978 | 0.991 |
@@ -412,11 +412,11 @@ Confusion matrix (284 hold-out samples):
 | True M | 0 | 0 | 0 | 0 | 63 |
 | True X | 0 | 0 | 0 | 0 | 8 |
 
-On GOES data, the model achieves effective binary discrimination: safe events (None/B/C) are classified as B-class, while dangerous events (M/X) are classified as X-class. This yields TP=71, TN=212, FP=1, FN=0 for the binary detection task. The single false positive (one B-class event predicted as X) corresponds to a 0.47% false alarm rate.
+The confusion matrix reveals that the model collapses to effective binary classification on GOES data: all safe events are predicted as B-class and all dangerous events as X-class. This yields TP=71, TN=212, FP=1, FN=0 for binary M+X detection. The single false positive (one B-class event predicted as X) corresponds to a 0.47% false alarm rate.
 
-The 5-class balanced accuracy on GOES data (39.9%) reflects cross-instrument domain shift, as the GOES-derived features lack three HEL1OS-specific channels available in the Aditya-L1 feature set. However, the safety-critical binary detection — 100% recall with 98.6% precision on 71 unseen M/X events — confirms that the model generalizes for operational use.
+**Interpreting the high TSS.** The hold-out binary TSS of 0.995 should not be compared directly with the 5-fold cross-validated TSS of 0.877, as they measure different quantities. The CV TSS evaluates full 5-class discrimination on the primary Aditya-L1 + GOES dataset with balanced accuracy. The hold-out TSS evaluates binary safe/dangerous separation on a separate GOES-only partition. The binary collapsing behavior — while producing a high TSS — reflects cross-instrument domain shift: the model loses fine-grained class resolution when transferred to GOES (5-class balanced accuracy drops to 39.9%), but retains the operationally critical ability to separate safe from dangerous events. This is consistent with the transfer learning design, where GOES pre-training establishes the safe/dangerous boundary and Aditya-L1 fine-tuning refines within-tier discrimination.
 
-The higher TSS on GOES hold-out (0.995) relative to the 5-fold CV TSS (0.877) is attributable to the binary collapsing behavior: the model maps all safe classes to B and all dangerous classes to X, producing near-perfect binary separation even when 5-class discrimination is weak. The 5-fold CV evaluates full 5-class balanced accuracy, which is a stricter metric.
+**Limitations of cross-instrument transfer.** GOES XRS provides only broadband soft X-ray flux (0.5-4 A and 1-8 A), lacking the hard X-ray channels (HEL1OS) that contribute 31% of feature attribution on Aditya-L1 data (Section 5.5). The three missing HEL1OS features (hard_soft_ratio, neupert, spectral_hardness) are set to zero during GOES inference, which explains the loss of within-tier resolution while binary separation is preserved. Full 5-class performance on Aditya-L1 data with all 9 features intact is reported in Section 5.1.
 
 ### 5.10 Comparison with State of the Art
 
