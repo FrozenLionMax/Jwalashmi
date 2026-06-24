@@ -225,10 +225,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .kp-hist-title{font-size:9px;color:var(--t2);letter-spacing:1px;margin-bottom:6px}
 #kpHistCanvas{display:block;width:100%;border-radius:4px;background:rgba(0,0,0,0.2)}
 
-/* SOLAR WIND PARTICLES */
-.sw-particle{position:absolute;border-radius:50%;pointer-events:none;z-index:5;
-    background:radial-gradient(circle,#fde68a 0%,#f97316 50%,transparent 100%);
-    box-shadow:0 0 6px rgba(251,191,36,0.6);will-change:transform,opacity}
+
 </style>
 </head>
 <body>
@@ -258,8 +255,6 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
         <div class="g-btn-wrap"><button class="g-btn" id="btnHex" onclick="toggleHeatmap()">&#9632;</button><span class="g-tip">Impact Heatmap</span></div>
     </div>
 
-    <!-- SOLAR WIND PARTICLES -->
-    <div id="swParticles" style="position:absolute;inset:0;pointer-events:none;z-index:5;overflow:hidden"></div>
 
     <div class="globe-overlay cond-box" id="condBox">
         <div class="cond-title">&#9889; NOAA LIVE</div>
@@ -994,65 +989,7 @@ updateWx = function(d) {
     if (showHeatmap) updateHeatmap();
 };
 
-/* ===== FEATURE 8: SOLAR WIND PARTICLE STREAM ===== */
-const swContainer = document.getElementById('swParticles');
-const particles = [];
-const MAX_PARTICLES = 25;
 
-function getSunScreenAngle() {
-    const now = new Date();
-    const h = now.getUTCHours() + now.getUTCMinutes()/60;
-    return ((h - 12) / 24) * Math.PI * 2;
-}
-
-function spawnParticle() {
-    if (particles.length >= MAX_PARTICLES) return;
-    const el = document.createElement('div');
-    el.className = 'sw-particle';
-    const size = 2 + Math.random() * 3;
-    el.style.width = size + 'px';
-    el.style.height = size + 'px';
-    /* Start from sun-side edge */
-    const angle = getSunScreenAngle();
-    const cw = swContainer.clientWidth || 800;
-    const ch = swContainer.clientHeight || 600;
-    const cx = cw / 2, cy = ch / 2;
-    const edge = Math.max(cw, ch) * 0.55;
-    const spread = (Math.random() - 0.5) * 0.8;
-    const startX = cx + Math.cos(angle + spread) * edge;
-    const startY = cy + Math.sin(angle + spread) * edge * 0.6;
-    el.style.left = startX + 'px';
-    el.style.top = startY + 'px';
-    el.style.opacity = '0';
-    swContainer.appendChild(el);
-    const speed = 0.3 + Math.random() * 0.5;
-    const dx = (cx - startX) * 0.012 * speed;
-    const dy = (cy - startY) * 0.012 * speed;
-    particles.push({ el, x: startX, y: startY, dx, dy, life: 0, maxLife: 80 + Math.random()*60 });
-}
-
-function animateParticles() {
-    for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.life++;
-        p.x += p.dx;
-        p.y += p.dy;
-        const progress = p.life / p.maxLife;
-        const fadeIn = Math.min(1, p.life / 15);
-        const fadeOut = Math.max(0, 1 - (progress - 0.7) / 0.3);
-        p.el.style.transform = 'translate(-50%,-50%)';
-        p.el.style.left = p.x + 'px';
-        p.el.style.top = p.y + 'px';
-        p.el.style.opacity = (fadeIn * fadeOut * 0.7).toFixed(2);
-        if (p.life >= p.maxLife) {
-            p.el.remove();
-            particles.splice(i, 1);
-        }
-    }
-    if (Math.random() < 0.3) spawnParticle();
-    requestAnimationFrame(animateParticles);
-}
-animateParticles();
 </script>
 </body>
 </html>
