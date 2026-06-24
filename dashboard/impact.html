@@ -517,15 +517,6 @@ updateSunPosition();
 setInterval(updateSunPosition, 30000);
 
 
-
-/* ===== CLOCK ===== */
-function updateClock(){
-    const now=new Date();
-    document.getElementById('hdrClock').textContent=now.toUTCString().slice(-12,-4)+' UTC';
-    setTimeout(updateClock,1000);
-}
-updateClock();
-
 /* ===== SIDEBAR TOGGLE ===== */
 document.querySelectorAll('.sb-hdr').forEach(h=>{
     h.addEventListener('click',()=>{
