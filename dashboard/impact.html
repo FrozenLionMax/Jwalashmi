@@ -598,8 +598,9 @@ container.addEventListener('touchend',()=>{
     rotateTimeout=setTimeout(()=>{myGlobe.controls().autoRotate=true},4000);
 });
 
-/* ===== REALISTIC SATELLITE ANIMATION ===== */
-let lastFrame = performance.now();
+/* ===== SATELLITE POSITION UPDATES (every 5 seconds) ===== */
+let lastUpdate = performance.now();
+let simElapsed = 0;
 
 /* Speed slider */
 const speedLevels = [60, 360, 1800, 7200];
@@ -611,12 +612,16 @@ document.getElementById('speedSlider').addEventListener('input', e => {
     document.getElementById('speedLabel').textContent = speedNames[idx];
 });
 
-function animateSats(now) {
-    const dtReal = Math.min((now - lastFrame) / 1000, 0.1);
-    lastFrame = now;
+function computePositions() {
+    const now = performance.now();
+    const dtReal = Math.min((now - lastUpdate) / 1000, 10);
+    lastUpdate = now;
     const dtSim = dtReal * simSpeed;
 
     satellites.forEach(s => {
+        /* ISS uses live API position — skip orbital sim */
+        if (s.name === 'ISS') return;
+
         const omega = (2 * Math.PI) / s.period;
         s._angle += omega * dtSim;
         const inclRad = s.incl * Math.PI / 180;
@@ -632,15 +637,14 @@ function animateSats(now) {
     if (showLabels) {
         myGlobe.htmlElementsData([...satellites]);
     }
-
-    /* Update connection beams */
     if (showBeams) {
         updateBeams();
     }
-
-    requestAnimationFrame(animateSats);
 }
-requestAnimationFrame(animateSats);
+
+/* Update positions every 5 seconds */
+computePositions();
+setInterval(computePositions, 5000);
 
 /* ===== CONTROLS ===== */
 function focusIndia(){myGlobe.pointOfView({lat:22,lng:80,altitude:1.5},1000)}
@@ -757,10 +761,12 @@ async function fetchISS() {
             iss.lat = d.latitude;
             iss.lng = d.longitude;
             iss.fixedLng = d.longitude;
+            /* Refresh display after ISS update */
+            if (showLabels) myGlobe.htmlElementsData([...satellites]);
         }
     } catch(e) { /* ISS API optional */ }
 }
-fetchISS(); setInterval(fetchISS, 15000);
+fetchISS(); setInterval(fetchISS, 5000);
 
 /* ===== CLOCK ===== */
 function updateClock(){
