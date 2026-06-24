@@ -208,7 +208,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
         <div class="g-btn-wrap"><button class="g-btn" onclick="focusGlobal()">&#127758;</button><span class="g-tip">Global View</span></div>
         <div class="g-btn-wrap"><button class="g-btn active" id="btnArcs" onclick="toggleArcs()">&#9992;&#65039;</button><span class="g-tip">Flight Routes</span></div>
         <div class="g-btn-wrap"><button class="g-btn active" id="btnAurora" onclick="toggleAurora()">&#127756;</button><span class="g-tip">Aurora Oval</span></div>
-        <div class="g-btn-wrap"><button class="g-btn active" id="btnClouds" onclick="toggleClouds()">&#9729;&#65039;</button><span class="g-tip">Cloud Layer</span></div>
+
         <div class="g-btn-wrap"><button class="g-btn active" id="btnStations" onclick="toggleStations()">&#128225;</button><span class="g-tip">Ground Stations</span></div>
     </div>
 
@@ -473,42 +473,7 @@ function toggleStations() {
     myGlobe.pointsData(showStations ? groundStations : []);
 }
 
-/* ===== CLOUDS LAYER ===== */
-let showCloudsLayer = true;
-let cloudsMesh = null;
-setTimeout(() => {
-    try {
-        const scene = myGlobe.scene();
-        const globeRadius = 100;
-        const geo = new THREE.SphereGeometry(globeRadius * 1.008, 64, 64);
-        const loader = new THREE.TextureLoader();
-        loader.crossOrigin = '';
-        loader.load('https://unpkg.com/three-globe@2.35.0/example/img/earth-water.png', tex => {
-            const mat = new THREE.MeshPhongMaterial({
-                map: tex, transparent: true, opacity: 0.15,
-                depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending
-            });
-            cloudsMesh = new THREE.Mesh(geo, mat);
-            scene.add(cloudsMesh);
-            console.log('Clouds layer added');
-        });
-    } catch(e) {
-        console.log('Clouds error:', e.message);
-    }
-}, 2000);
 
-function toggleClouds() {
-    showCloudsLayer = !showCloudsLayer;
-    document.getElementById('btnClouds').classList.toggle('active', showCloudsLayer);
-    if (cloudsMesh) cloudsMesh.visible = showCloudsLayer;
-}
-
-/* Rotate clouds slowly */
-function rotateClouds() {
-    if (cloudsMesh && showCloudsLayer) cloudsMesh.rotation.y += 0.00015;
-    requestAnimationFrame(rotateClouds);
-}
-rotateClouds();
 
 /* ===== SUN DIRECTION ===== */
 function updateSunPosition() {
