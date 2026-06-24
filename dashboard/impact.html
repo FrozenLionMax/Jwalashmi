@@ -266,23 +266,55 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 /* ===== STAR FIELD ===== */
 (function(){const sf=document.getElementById('starField');for(let i=0;i<200;i++){const s=document.createElement('div');s.className='star';s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';s.style.opacity=Math.random()*0.6+0.1;s.style.width=s.style.height=(Math.random()*1.5+0.5)+'px';s.style.animation=`twinkle ${2+Math.random()*4}s ease-in-out infinite ${Math.random()*3}s`;sf.appendChild(s)}const st=document.createElement('style');st.textContent='@keyframes twinkle{0%,100%{opacity:0.1}50%{opacity:0.8}}';document.head.appendChild(st)})();
 
-/* ===== SATELLITE DATA (Earth orbit only) ===== */
-const satellites=[
-    /* ISRO - Earth orbit */
-    {name:'INSAT-3DR',type:'isro',orbit:'GEO',alt:'35,786 km',lat:0,lng:74,orbitAlt:0.22,speed:0.04,angle:90,incl:0.1},
-    {name:'GSAT-30',type:'isro',orbit:'GEO',alt:'35,786 km',lat:0,lng:83,orbitAlt:0.22,speed:0.04,angle:120,incl:0.1},
-    {name:'NavIC',type:'isro',orbit:'GSO',alt:'36,000 km',lat:5,lng:55,orbitAlt:0.23,speed:0.04,angle:150,incl:29},
-    {name:'Oceansat-3',type:'isro',orbit:'LEO',alt:'720 km',lat:30,lng:80,orbitAlt:0.05,speed:0.5,angle:200,incl:98},
-    {name:'EOS-06',type:'isro',orbit:'LEO',alt:'817 km',lat:-20,lng:100,orbitAlt:0.06,speed:0.45,angle:250,incl:97},
-    {name:'RISAT-2B',type:'isro',orbit:'LEO',alt:'556 km',lat:10,lng:60,orbitAlt:0.04,speed:0.55,angle:300,incl:37},
-    /* International - Earth orbit */
-    {name:'ISS',type:'intl',orbit:'LEO',alt:'408 km',lat:20,lng:-80,orbitAlt:0.035,speed:0.6,angle:30,incl:51.6},
-    {name:'GPS-III',type:'intl',orbit:'MEO',alt:'20,200 km',lat:35,lng:-120,orbitAlt:0.13,speed:0.1,angle:70,incl:55},
-    {name:'Starlink',type:'intl',orbit:'LEO',alt:'550 km',lat:45,lng:-40,orbitAlt:0.04,speed:0.5,angle:160,incl:53},
-    {name:'GOES-18',type:'intl',orbit:'GEO',alt:'35,786 km',lat:0,lng:-137,orbitAlt:0.22,speed:0.04,angle:180,incl:0.1},
-    {name:'Hubble',type:'intl',orbit:'LEO',alt:'547 km',lat:-10,lng:30,orbitAlt:0.04,speed:0.52,angle:220,incl:28.5},
-    {name:'Galileo',type:'intl',orbit:'MEO',alt:'23,222 km',lat:20,lng:10,orbitAlt:0.15,speed:0.09,angle:280,incl:56}
+/* ===== SATELLITE DATA — Real Orbital Mechanics ===== */
+/*
+  Real orbital periods:
+  LEO (~400-800 km): ~90-100 min  → orbits ~16x/day
+  MEO (~20,000 km):  ~12 hr       → orbits 2x/day
+  GEO (35,786 km):   ~24 hr       → stationary (matches Earth rotation)
+  GSO (36,000 km):   ~24 hr       → traces figure-8 due to inclination
+
+  On screen: 1 real second = ~6 minutes of sim time (360x speedup)
+  So LEO completes one orbit in ~15 seconds, GEO stays put.
+*/
+const SIM_SPEED = 360; /* 1 sec = 6 min real */
+const DEG_PER_SEC_EARTH = 360 / 86400; /* Earth rotates 0.00417 deg/sec */
+
+const satellites = [
+    /* ISRO — Earth orbit */
+    {name:'INSAT-3DR', type:'isro', orbit:'GEO', alt:'35,786 km',
+     fixedLng:74, orbitAlt:0.20, period:86400, incl:0.1, phase:0},
+    {name:'GSAT-30', type:'isro', orbit:'GEO', alt:'35,786 km',
+     fixedLng:83, orbitAlt:0.20, period:86400, incl:0.1, phase:90},
+    {name:'NavIC', type:'isro', orbit:'GSO', alt:'36,000 km',
+     fixedLng:55, orbitAlt:0.21, period:86400, incl:29, phase:0},
+    {name:'Oceansat-3', type:'isro', orbit:'LEO', alt:'720 km',
+     fixedLng:80, orbitAlt:0.04, period:5940, incl:98.3, phase:0},
+    {name:'EOS-06', type:'isro', orbit:'LEO', alt:'817 km',
+     fixedLng:100, orbitAlt:0.045, period:6060, incl:97.4, phase:120},
+    {name:'RISAT-2B', type:'isro', orbit:'LEO', alt:'556 km',
+     fixedLng:60, orbitAlt:0.035, period:5760, incl:37, phase:200},
+    /* International — Earth orbit */
+    {name:'ISS', type:'intl', orbit:'LEO', alt:'408 km',
+     fixedLng:-80, orbitAlt:0.03, period:5520, incl:51.6, phase:45},
+    {name:'GPS-III', type:'intl', orbit:'MEO', alt:'20,200 km',
+     fixedLng:-120, orbitAlt:0.12, period:43080, incl:55, phase:30},
+    {name:'Starlink', type:'intl', orbit:'LEO', alt:'550 km',
+     fixedLng:-40, orbitAlt:0.035, period:5760, incl:53, phase:160},
+    {name:'GOES-18', type:'intl', orbit:'GEO', alt:'35,786 km',
+     fixedLng:-137, orbitAlt:0.20, period:86400, incl:0.1, phase:180},
+    {name:'Hubble', type:'intl', orbit:'LEO', alt:'547 km',
+     fixedLng:30, orbitAlt:0.035, period:5700, incl:28.5, phase:220},
+    {name:'Galileo', type:'intl', orbit:'MEO', alt:'23,222 km',
+     fixedLng:10, orbitAlt:0.14, period:50760, incl:56, phase:280}
 ];
+
+/* Initialize computed positions */
+satellites.forEach(s => {
+    s.lat = 0;
+    s.lng = s.fixedLng;
+    s._angle = s.phase * Math.PI / 180;
+});
 
 /* ===== GROUND STATIONS ===== */
 const groundStations=[
@@ -439,21 +471,36 @@ container.addEventListener('touchend',()=>{
     rotateTimeout=setTimeout(()=>{myGlobe.controls().autoRotate=true},4000);
 });
 
-/* ===== SMOOTH SATELLITE ANIMATION ===== */
-let time=0;
-let lastFrame=performance.now();
-function animateSats(now){
-    const dt=(now-lastFrame)/1000;
-    lastFrame=now;
-    time+=dt*0.3;
-    satellites.forEach(s=>{
-        const a=s.angle*Math.PI/180+time*s.speed*8;
-        const inclRad=s.incl*Math.PI/180;
-        s.lat=Math.sin(a)*inclRad*57.3*(s.orbit==='GEO'||s.orbit==='GSO'?0.4:1);
-        s.lng=(s.lng+s.speed*dt*15)%360;
-        if(s.lng>180)s.lng-=360;
+/* ===== REALISTIC SATELLITE ANIMATION ===== */
+let lastFrame = performance.now();
+
+function animateSats(now) {
+    const dtReal = Math.min((now - lastFrame) / 1000, 0.1); /* cap to avoid jumps */
+    lastFrame = now;
+    const dtSim = dtReal * SIM_SPEED; /* simulated seconds elapsed */
+
+    satellites.forEach(s => {
+        /* Angular velocity: 2*PI / period (rad per sim-second) */
+        const omega = (2 * Math.PI) / s.period;
+        s._angle += omega * dtSim;
+
+        /* Latitude: oscillates between +incl and -incl */
+        const inclRad = s.incl * Math.PI / 180;
+        s.lat = Math.asin(Math.sin(inclRad) * Math.sin(s._angle)) * 180 / Math.PI;
+
+        /* Longitude: difference from Earth rotation determines ground track */
+        /* Earth rotates at DEG_PER_SEC_EARTH deg/sec, sat at (360/period) deg/sec */
+        const satDegPerSec = 360 / s.period;
+        const relativeSpeed = satDegPerSec - DEG_PER_SEC_EARTH; /* deg/sec faster than Earth */
+        s.lng = s.fixedLng + (relativeSpeed * dtSim);
+        s.fixedLng = s.lng; /* update base for next frame */
+
+        /* Wrap longitude to [-180, 180] */
+        while (s.lng > 180) s.lng -= 360;
+        while (s.lng < -180) s.lng += 360;
     });
-    if(showLabels){
+
+    if (showLabels) {
         myGlobe.labelsData([...satellites]);
     }
     requestAnimationFrame(animateSats);
