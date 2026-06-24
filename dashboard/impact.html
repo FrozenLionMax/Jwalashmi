@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jwalashmi | 3D Geomagnetic Impact Globe</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
 <script src="https://unpkg.com/globe.gl@2.35.0"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -51,7 +52,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 
 /* GLOBE CONTAINER */
 .globe-wrap{grid-column:1;grid-row:1;position:relative;border-right:1px solid var(--border);min-height:0;overflow:hidden;background:#000}
-#globeViz{width:100%;height:100%;cursor:grab;background:radial-gradient(ellipse at 50% 50%,#0a1628 0%,#030710 50%,#000 100%)}
+#globeViz{width:100%;height:100%;cursor:grab;background:radial-gradient(ellipse at 50% 50%,#081428 0%,#030812 40%,#000 100%)}
 #globeViz:active{cursor:grabbing}
 
 /* STAR FIELD - behind globe */
@@ -340,53 +341,66 @@ let currentKp=2;
 let showArcs=true,showAurora=true;
 
 function getAuroraData(){
-    const baseRadius=15+currentKp*2;
-    return [
-        {lat:67,lng:0,maxR:baseRadius,propagationSpeed:2,repeatPeriod:3000,color:'rgba(168,85,247,0.3)'},
-        {lat:67,lng:180,maxR:baseRadius,propagationSpeed:2,repeatPeriod:3500,color:'rgba(168,85,247,0.25)'},
-        {lat:-67,lng:0,maxR:baseRadius-2,propagationSpeed:2,repeatPeriod:3200,color:'rgba(16,185,129,0.25)'},
-        {lat:-67,lng:180,maxR:baseRadius-2,propagationSpeed:2,repeatPeriod:3800,color:'rgba(16,185,129,0.2)'}
-    ];
+    const r = 12 + currentKp * 3;
+    const rings = [];
+    /* North pole - multiple overlapping green/purple rings for rich aurora oval */
+    for(let i = 0; i < 8; i++){
+        const lng = i * 45;
+        const lat = 65 + Math.sin(i * 0.8) * 3;
+        rings.push(
+            {lat:lat, lng:lng, maxR:r + i%3*2, propagationSpeed:3, repeatPeriod:2000 + i*300,
+             color: i%2===0 ? 'rgba(52,211,153,0.35)' : 'rgba(139,92,246,0.3)'},
+        );
+    }
+    /* South pole - dimmer green/teal */
+    for(let i = 0; i < 6; i++){
+        const lng = i * 60 + 30;
+        rings.push(
+            {lat:-65 - Math.sin(i)*2, lng:lng, maxR:r-2+i%2*3, propagationSpeed:2.5, repeatPeriod:2500 + i*400,
+             color: i%2===0 ? 'rgba(16,185,129,0.28)' : 'rgba(99,102,241,0.22)'},
+        );
+    }
+    return rings;
 }
 
 /* ===== INIT GLOBE ===== */
 const container=document.getElementById('globeViz');
 const myGlobe=Globe()
-    .globeImageUrl('https://unpkg.com/three-globe@2.35.0/example/img/earth-night.jpg')
+    .globeImageUrl('https://unpkg.com/three-globe@2.35.0/example/img/earth-blue-marble.jpg')
     .bumpImageUrl('https://unpkg.com/three-globe@2.35.0/example/img/earth-topology.png')
     .backgroundImageUrl('')
     .backgroundColor('rgba(0,0,0,0)')
     .showGlobe(true)
     .showAtmosphere(true)
-    .atmosphereColor('lightskyblue')
-    .atmosphereAltitude(0.25)
-    .pointOfView({lat:20,lng:78,altitude:2.2})
-    /* Ground stations - pulsing orange dots */
+    .atmosphereColor('#4fc3f7')
+    .atmosphereAltitude(0.35)
+    .pointOfView({lat:20,lng:78,altitude:2.0})
+    /* Ground stations - glowing orange dots */
     .pointsData(groundStations)
     .pointLat('lat')
     .pointLng('lng')
-    .pointAltitude(0.005)
-    .pointRadius(0.35)
-    .pointColor(()=>'#f97316')
-    .pointResolution(16)
+    .pointAltitude(0.008)
+    .pointRadius(0.5)
+    .pointColor(() => '#f97316')
+    .pointResolution(20)
     .onPointClick(p=>{
         myGlobe.pointOfView({lat:p.lat,lng:p.lng,altitude:0.8},800);
     })
     .onPointHover(p=>{
         container.style.cursor=p?'pointer':'grab';
     })
-    /* Flight arcs - animated */
+    /* Flight arcs */
     .arcsData(flightArcs)
     .arcStartLat('startLat')
     .arcStartLng('startLng')
     .arcEndLat('endLat')
     .arcEndLng('endLng')
     .arcColor('color')
-    .arcAltitude(0.12)
-    .arcStroke(0.6)
-    .arcDashLength(0.4)
-    .arcDashGap(0.15)
-    .arcDashAnimateTime(3000)
+    .arcAltitude(0.15)
+    .arcStroke(0.8)
+    .arcDashLength(0.5)
+    .arcDashGap(0.1)
+    .arcDashAnimateTime(2500)
     /* Aurora rings */
     .ringsData(getAuroraData())
     .ringLat('lat')
@@ -397,16 +411,15 @@ const myGlobe=Globe()
     .ringColor('color')
     (container);
 
-/* ===== TOOLTIP ===== */
 
-
-/* Enhance renderer for smooth visuals */
+/* Enhance renderer */
 setTimeout(()=>{
     try{
         const renderer=myGlobe.renderer();
-        renderer.toneMapping=1;
-        renderer.toneMappingExposure=1.3;
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+        renderer.toneMapping=4; /* ACESFilmic */
+        renderer.toneMappingExposure=1.5;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.outputColorSpace = 'srgb';
     }catch(e){}
 },500);
 
@@ -465,24 +478,24 @@ let showCloudsLayer = true;
 let cloudsMesh = null;
 setTimeout(() => {
     try {
-        const THREE = myGlobe.scene().constructor === undefined ? window.THREE : Object.getPrototypeOf(myGlobe.scene()).constructor;
-        /* Use Three.js from Globe.gl's bundled version */
-        const globeGroup = myGlobe.scene().children.find(c => c.type === 'Group');
-        if (globeGroup) {
-            const globeRadius = 100;
-            const geo = new THREE.SphereGeometry(globeRadius * 1.005, 64, 64);
-            const loader = new THREE.TextureLoader();
-            loader.load('https://unpkg.com/three-globe@2.35.0/example/img/earth-water.png', tex => {
-                const mat = new THREE.MeshPhongMaterial({
-                    map: tex, transparent: true, opacity: 0.12,
-                    depthWrite: false, side: THREE.DoubleSide
-                });
-                cloudsMesh = new THREE.Mesh(geo, mat);
-                globeGroup.add(cloudsMesh);
+        const scene = myGlobe.scene();
+        const globeRadius = 100;
+        const geo = new THREE.SphereGeometry(globeRadius * 1.008, 64, 64);
+        const loader = new THREE.TextureLoader();
+        loader.crossOrigin = '';
+        loader.load('https://unpkg.com/three-globe@2.35.0/example/img/earth-water.png', tex => {
+            const mat = new THREE.MeshPhongMaterial({
+                map: tex, transparent: true, opacity: 0.15,
+                depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending
             });
-        }
-    } catch(e) { /* clouds optional */ }
-}, 1500);
+            cloudsMesh = new THREE.Mesh(geo, mat);
+            scene.add(cloudsMesh);
+            console.log('Clouds layer added');
+        });
+    } catch(e) {
+        console.log('Clouds error:', e.message);
+    }
+}, 2000);
 
 function toggleClouds() {
     showCloudsLayer = !showCloudsLayer;
@@ -492,7 +505,7 @@ function toggleClouds() {
 
 /* Rotate clouds slowly */
 function rotateClouds() {
-    if (cloudsMesh && showCloudsLayer) cloudsMesh.rotation.y += 0.0001;
+    if (cloudsMesh && showCloudsLayer) cloudsMesh.rotation.y += 0.00015;
     requestAnimationFrame(rotateClouds);
 }
 rotateClouds();
