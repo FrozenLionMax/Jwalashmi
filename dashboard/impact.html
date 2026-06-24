@@ -19,99 +19,99 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
 
 /* HEADER */
-.header{display:flex;align-items:center;height:40px;padding:0 14px;
-    background:linear-gradient(180deg,#0c1120,#080c18);border-bottom:1px solid var(--border);flex-shrink:0;gap:8px;z-index:1001}
-.back-btn{font-size:9px;color:var(--cyan);text-decoration:none;padding:3px 8px;border:1px solid rgba(34,211,238,0.12);border-radius:3px;font-family:inherit;font-weight:600}
-.back-btn:hover{background:rgba(34,211,238,0.06)}
-.hdr-badge{display:flex;align-items:center;gap:4px;padding:2px 6px;background:linear-gradient(135deg,rgba(249,115,22,0.08),rgba(34,211,238,0.05));border:1px solid rgba(249,115,22,0.15);border-radius:3px}
-.hdr-sun{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle,#f97316 30%,#ef4444 70%,transparent 72%);box-shadow:0 0 6px rgba(249,115,22,0.3);animation:sg 3s ease-in-out infinite}
-@keyframes sg{0%,100%{box-shadow:0 0 6px rgba(249,115,22,0.3)}50%{box-shadow:0 0 12px rgba(249,115,22,0.5)}}
-.hdr-isro{font-size:7px;font-weight:700;color:var(--orange);letter-spacing:1px}
-.hdr-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:var(--cyan);letter-spacing:1px}
-.hdr-right{margin-left:auto;display:flex;align-items:center;gap:12px}
-.hdr-kp{font-size:20px;font-weight:700;font-family:'Space Grotesk',sans-serif;line-height:1}
-.hdr-label{font-size:7px;color:var(--t3)}
-.hdr-clock{font-size:9px;color:var(--t2)}
+.header{display:flex;align-items:center;height:52px;padding:0 18px;
+    background:linear-gradient(180deg,#0c1120,#080c18);border-bottom:1px solid var(--border);flex-shrink:0;gap:10px;z-index:1001}
+.back-btn{font-size:12px;color:var(--cyan);text-decoration:none;padding:6px 12px;border:1px solid rgba(34,211,238,0.15);border-radius:4px;font-family:inherit;font-weight:600;transition:all 0.2s}
+.back-btn:hover{background:rgba(34,211,238,0.08);border-color:var(--cyan)}
+.hdr-badge{display:flex;align-items:center;gap:6px;padding:4px 10px;background:linear-gradient(135deg,rgba(249,115,22,0.08),rgba(34,211,238,0.05));border:1px solid rgba(249,115,22,0.15);border-radius:4px}
+.hdr-sun{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle,#f97316 30%,#ef4444 70%,transparent 72%);box-shadow:0 0 8px rgba(249,115,22,0.4);animation:sg 3s ease-in-out infinite}
+@keyframes sg{0%,100%{box-shadow:0 0 6px rgba(249,115,22,0.3)}50%{box-shadow:0 0 14px rgba(249,115,22,0.6)}}
+.hdr-isro{font-size:10px;font-weight:700;color:var(--orange);letter-spacing:1.5px}
+.hdr-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:var(--cyan);letter-spacing:1.5px}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:16px}
+.hdr-kp{font-size:24px;font-weight:700;font-family:'Space Grotesk',sans-serif;line-height:1}
+.hdr-label{font-size:9px;color:var(--t2);letter-spacing:0.5px;margin-top:1px}
+.hdr-clock{font-size:12px;color:var(--t1)}
 
 /* MAIN GRID */
-.content{flex:1;display:grid;grid-template-columns:1fr 300px;grid-template-rows:1fr auto;overflow:hidden;gap:0}
+.content{flex:1;display:grid;grid-template-columns:1fr 340px;grid-template-rows:1fr auto;overflow:hidden;gap:0}
 
 /* GLOBE CONTAINER */
-.globe-wrap{grid-column:1;grid-row:1;position:relative;border-right:1px solid var(--border);min-height:0;overflow:hidden;background:radial-gradient(ellipse at center,#0a0e1a 0%,#020408 70%)}
-#globeViz{width:100%;height:100%;cursor:grab}
+.globe-wrap{grid-column:1;grid-row:1;position:relative;border-right:1px solid var(--border);min-height:0;overflow:hidden;background:#000}
+#globeViz{width:100%;height:100%;cursor:grab;background:radial-gradient(ellipse at 50% 50%,#0a1628 0%,#030710 50%,#000 100%)}
 #globeViz:active{cursor:grabbing}
 
-/* STAR FIELD */
-.stars{position:absolute;inset:0;pointer-events:none;z-index:0}
+/* STAR FIELD - behind globe */
+.stars{position:absolute;inset:0;pointer-events:none;z-index:0;opacity:0.4}
 .star{position:absolute;width:1px;height:1px;background:#fff;border-radius:50%}
 
 /* GLOBE OVERLAYS */
 .globe-overlay{position:absolute;z-index:800;background:rgba(10,14,23,0.92);border:1px solid var(--border);
-    border-radius:5px;padding:6px 10px;backdrop-filter:blur(8px);font-size:8px}
-.cond-box{top:8px;left:8px;min-width:170px}
-.cond-title{font-size:8px;font-weight:700;color:var(--cyan);margin-bottom:4px;letter-spacing:0.5px}
-.cond-row{display:flex;justify-content:space-between;padding:1.5px 0}
-.cond-k{color:var(--t2)}.cond-v{font-weight:700;font-family:'Space Grotesk',sans-serif}
+    border-radius:6px;padding:10px 14px;backdrop-filter:blur(10px);font-size:12px}
+.cond-box{top:12px;left:12px;min-width:200px}
+.cond-title{font-size:12px;font-weight:700;color:var(--cyan);margin-bottom:6px;letter-spacing:0.8px}
+.cond-row{display:flex;justify-content:space-between;padding:3px 0}
+.cond-k{color:var(--t2);font-size:11px}.cond-v{font-weight:700;font-family:'Space Grotesk',sans-serif;font-size:12px}
 
-.legend-box{bottom:8px;left:8px;display:flex;gap:10px;padding:5px 10px}
-.lg{display:flex;align-items:center;gap:3px}
+.legend-box{bottom:12px;left:12px;display:flex;gap:14px;padding:8px 14px;font-size:11px}
+.lg{display:flex;align-items:center;gap:5px}
 
-.stat-box{top:8px;right:44px;text-align:center;padding:4px 8px}
-.stat-val{font-size:18px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--cyan)}
-.stat-sub{display:flex;gap:8px;justify-content:center;margin-top:2px}
+.stat-box{top:12px;right:50px;text-align:center;padding:8px 14px}
+.stat-val{font-size:26px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--cyan)}
+.stat-sub{display:flex;gap:10px;justify-content:center;margin-top:4px;font-size:11px}
 .stat-isro{color:var(--orange);font-weight:700}.stat-intl{color:var(--cyan);font-weight:700}
 
 /* GLOBE BUTTONS */
-.globe-btns{position:absolute;top:8px;right:8px;z-index:900;display:flex;flex-direction:column;gap:4px}
+.globe-btns{position:absolute;top:12px;right:12px;z-index:900;display:flex;flex-direction:column;gap:6px}
 .g-btn-wrap{position:relative}
-.g-btn{width:28px;height:28px;border:1px solid var(--border);background:rgba(10,14,23,0.9);color:var(--t1);
-    border-radius:3px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;
+.g-btn{width:36px;height:36px;border:1px solid var(--border);background:rgba(10,14,23,0.9);color:var(--t1);
+    border-radius:5px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;
     transition:all 0.2s;backdrop-filter:blur(6px)}
-.g-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(34,211,238,0.06)}
+.g-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(34,211,238,0.08)}
 .g-btn.active{border-color:var(--orange);color:var(--orange)}
-.g-tip{position:absolute;right:34px;top:50%;transform:translateY(-50%);white-space:nowrap;font-size:8px;
-    color:var(--t0);background:rgba(10,14,23,0.95);border:1px solid var(--border);padding:3px 8px;
-    border-radius:3px;pointer-events:none;opacity:0;transition:opacity 0.2s;backdrop-filter:blur(6px)}
+.g-tip{position:absolute;right:42px;top:50%;transform:translateY(-50%);white-space:nowrap;font-size:11px;
+    color:var(--t0);background:rgba(10,14,23,0.95);border:1px solid var(--border);padding:5px 10px;
+    border-radius:4px;pointer-events:none;opacity:0;transition:opacity 0.2s;backdrop-filter:blur(6px)}
 .g-btn-wrap:hover .g-tip{opacity:1}
 
 /* SAT INFO TOOLTIP */
-.sat-tooltip{position:absolute;z-index:1000;background:rgba(10,14,23,0.95);border:1px solid rgba(34,211,238,0.2);
-    border-radius:6px;padding:8px 12px;backdrop-filter:blur(10px);pointer-events:none;display:none;
-    box-shadow:0 4px 20px rgba(0,0,0,0.5);font-size:9px;min-width:140px}
-.sat-tooltip .tt-name{font-size:11px;font-weight:700;margin-bottom:3px}
-.sat-tooltip .tt-row{display:flex;justify-content:space-between;padding:1px 0}
+.sat-tooltip{position:absolute;z-index:1000;background:rgba(10,14,23,0.95);border:1px solid rgba(34,211,238,0.25);
+    border-radius:8px;padding:12px 16px;backdrop-filter:blur(12px);pointer-events:none;display:none;
+    box-shadow:0 8px 32px rgba(0,0,0,0.6);font-size:12px;min-width:180px}
+.sat-tooltip .tt-name{font-size:14px;font-weight:700;margin-bottom:5px;color:var(--t0)}
+.sat-tooltip .tt-row{display:flex;justify-content:space-between;padding:2px 0;font-size:11px}
 .sat-tooltip .tt-k{color:var(--t2)}.sat-tooltip .tt-v{font-weight:600}
 
 /* SIDEBAR */
 .sidebar{grid-column:2;grid-row:1;overflow-y:auto;display:flex;flex-direction:column}
 .sb-sec{border-bottom:1px solid var(--border)}
-.sb-hdr{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;font-size:9px;font-weight:700;color:var(--t1);background:rgba(255,255,255,0.01);cursor:pointer;user-select:none;transition:background 0.2s}
-.sb-hdr:hover{background:rgba(255,255,255,0.03)}
-.sb-hdr::after{content:'\25B2';font-size:6px;color:var(--t3);margin-left:4px;transition:transform 0.3s}
+.sb-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;font-size:12px;font-weight:700;color:var(--t0);background:rgba(255,255,255,0.015);cursor:pointer;user-select:none;transition:background 0.2s}
+.sb-hdr:hover{background:rgba(255,255,255,0.04)}
+.sb-hdr::after{content:'\25B2';font-size:8px;color:var(--t3);margin-left:6px;transition:transform 0.3s}
 .sb-sec.collapsed .sb-hdr::after{transform:rotate(180deg)}
 .sb-body{transition:max-height 0.35s ease,opacity 0.25s ease,padding 0.25s ease;overflow:hidden}
 .sb-sec.collapsed .sb-body{max-height:0!important;opacity:0;padding-top:0;padding-bottom:0}
-.sb-badge{font-size:7px;padding:1px 5px;border-radius:2px;font-weight:600}
-.sb-body{padding:2px 8px 6px}
+.sb-badge{font-size:10px;padding:3px 8px;border-radius:3px;font-weight:700}
+.sb-body{padding:4px 14px 10px}
 
-.asset{display:flex;align-items:center;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.015);font-size:8.5px}
+.asset{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.025);font-size:12px}
 .asset:last-child{border-bottom:none}
-.asset-name{color:var(--t1);font-weight:600;flex:1;min-width:0;display:flex;align-items:center;gap:3px}
-.asset-det{font-size:7px;color:var(--t3);margin:0 4px}
-.ast{font-weight:700;font-size:7.5px;padding:1px 5px;border-radius:2px;letter-spacing:0.2px;flex-shrink:0}
-.s0{color:var(--green);background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.1)}
-.s1{color:var(--yellow);background:rgba(234,179,8,0.06);border:1px solid rgba(234,179,8,0.1)}
-.s2{color:var(--orange);background:rgba(249,115,22,0.06);border:1px solid rgba(249,115,22,0.1)}
-.s3{color:var(--red);background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.1)}
+.asset-name{color:var(--t0);font-weight:600;flex:1;min-width:0;display:flex;align-items:center;gap:4px}
+.asset-det{font-size:10px;color:var(--t2);margin:0 6px}
+.ast{font-weight:700;font-size:10px;padding:3px 8px;border-radius:3px;letter-spacing:0.3px;flex-shrink:0}
+.s0{color:var(--green);background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.15)}
+.s1{color:var(--yellow);background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.15)}
+.s2{color:var(--orange);background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.15)}
+.s3{color:var(--red);background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15)}
 
 /* TIMELINE */
-.timeline{grid-column:1/-1;display:flex;align-items:center;padding:6px 14px;background:var(--panel);border-top:1px solid var(--border)}
-.tl-nd{display:flex;align-items:center;gap:4px;flex:1}
-.tl-d{width:10px;height:10px;border-radius:50%;border:2px solid;flex-shrink:0}
+.timeline{grid-column:1/-1;display:flex;align-items:center;padding:10px 18px;background:var(--panel);border-top:1px solid var(--border)}
+.tl-nd{display:flex;align-items:center;gap:6px;flex:1}
+.tl-d{width:14px;height:14px;border-radius:50%;border:2px solid;flex-shrink:0}
 .tl-d.on{animation:tp 1.5s infinite}
-@keyframes tp{0%,100%{opacity:1;box-shadow:0 0 0 currentColor}50%{opacity:0.4;box-shadow:0 0 8px currentColor}}
-.tl-t{font-size:8px}.tl-n{font-weight:700}.tl-s{color:var(--t3)}
-.tl-l{flex:1;height:2px;margin:0 2px}
+@keyframes tp{0%,100%{opacity:1;box-shadow:0 0 0 currentColor}50%{opacity:0.4;box-shadow:0 0 10px currentColor}}
+.tl-t{font-size:11px}.tl-n{font-weight:700}.tl-s{color:var(--t2)}
+.tl-l{flex:1;height:3px;margin:0 4px;border-radius:2px}
 
 /* PULSE ANIMATION */
 @keyframes pulse-ring{0%{transform:scale(1);opacity:0.6}100%{transform:scale(3);opacity:0}}
@@ -179,8 +179,8 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 
     <div class="globe-overlay stat-box" id="statBox">
         <div style="font-size:7px;color:var(--t2)">TRACKING</div>
-        <div class="stat-val" id="satCount">14</div>
-        <div class="stat-sub"><span class="stat-isro" id="satISRO">8 ISRO</span><span class="stat-intl" id="satINTL">6 INTL</span></div>
+        <div class="stat-val" id="satCount">12</div>
+        <div class="stat-sub"><span class="stat-isro" id="satISRO">6 ISRO</span><span class="stat-intl" id="satINTL">6 INTL</span></div>
     </div>
 
     <div class="sat-tooltip" id="satTooltip">
@@ -242,13 +242,13 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
         <div class="sb-body" style="flex:1">
             <div style="text-align:center;padding:8px 0">
                 <div style="font-size:7px;color:var(--t3)">PREDICTED AFFECTED AREA</div>
-                <div id="impArea" style="font-size:22px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--green)">0%</div>
-                <div style="font-size:7px;color:var(--t3)">of Earth's surface</div>
+                <div id="impArea" style="font-size:28px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--green)">0%</div>
+                <div style="font-size:10px;color:var(--t2)">of Earth's surface</div>
             </div>
-            <div class="cond-row" style="font-size:8px"><span class="cond-k">Blackout zone</span><span class="cond-v" id="impBlack" style="color:var(--green)">None</span></div>
-            <div class="cond-row" style="font-size:8px"><span class="cond-k">Duration est.</span><span class="cond-v" id="impDur" style="color:var(--green)">--</span></div>
-            <div class="cond-row" style="font-size:8px"><span class="cond-k">Recovery</span><span class="cond-v" id="impRec" style="color:var(--green)">--</span></div>
-            <div class="cond-row" style="font-size:8px"><span class="cond-k">Sats at risk</span><span class="cond-v" id="impSats" style="color:var(--green)">0</span></div>
+            <div class="cond-row" style="font-size:12px"><span class="cond-k">Blackout zone</span><span class="cond-v" id="impBlack" style="color:var(--green)">None</span></div>
+            <div class="cond-row" style="font-size:12px"><span class="cond-k">Duration est.</span><span class="cond-v" id="impDur" style="color:var(--green)">--</span></div>
+            <div class="cond-row" style="font-size:12px"><span class="cond-k">Recovery</span><span class="cond-v" id="impRec" style="color:var(--green)">--</span></div>
+            <div class="cond-row" style="font-size:12px"><span class="cond-k">Sats at risk</span><span class="cond-v" id="impSats" style="color:var(--green)">0</span></div>
         </div></div>
 </div>
 
@@ -266,22 +266,22 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 /* ===== STAR FIELD ===== */
 (function(){const sf=document.getElementById('starField');for(let i=0;i<200;i++){const s=document.createElement('div');s.className='star';s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';s.style.opacity=Math.random()*0.6+0.1;s.style.width=s.style.height=(Math.random()*1.5+0.5)+'px';s.style.animation=`twinkle ${2+Math.random()*4}s ease-in-out infinite ${Math.random()*3}s`;sf.appendChild(s)}const st=document.createElement('style');st.textContent='@keyframes twinkle{0%,100%{opacity:0.1}50%{opacity:0.8}}';document.head.appendChild(st)})();
 
-/* ===== SATELLITE DATA ===== */
+/* ===== SATELLITE DATA (Earth orbit only) ===== */
 const satellites=[
-    {name:'Aditya-L1',type:'isro',orbit:'L1',alt:'1.5M km',lat:0,lng:78,orbitAlt:0.5,speed:0.02,angle:0,incl:0},
-    {name:'Chandrayaan-3',type:'isro',orbit:'Lunar',alt:'384K km',lat:-10,lng:120,orbitAlt:0.6,speed:0.015,angle:45,incl:5},
-    {name:'INSAT-3DR',type:'isro',orbit:'GEO',alt:'35,786 km',lat:0,lng:74,orbitAlt:0.25,speed:0.04,angle:90,incl:0.1},
-    {name:'GSAT-30',type:'isro',orbit:'GEO',alt:'35,786 km',lat:0,lng:83,orbitAlt:0.25,speed:0.04,angle:120,incl:0.1},
-    {name:'NavIC',type:'isro',orbit:'GEO/GSO',alt:'36,000 km',lat:5,lng:55,orbitAlt:0.25,speed:0.04,angle:150,incl:29},
-    {name:'Oceansat-3',type:'isro',orbit:'LEO',alt:'720 km',lat:30,lng:80,orbitAlt:0.06,speed:0.5,angle:200,incl:98},
-    {name:'EOS-06',type:'isro',orbit:'LEO',alt:'817 km',lat:-20,lng:100,orbitAlt:0.07,speed:0.45,angle:250,incl:97},
-    {name:'RISAT-2B',type:'isro',orbit:'LEO',alt:'556 km',lat:10,lng:60,orbitAlt:0.05,speed:0.55,angle:300,incl:37},
-    {name:'ISS',type:'intl',orbit:'LEO',alt:'408 km',lat:20,lng:-80,orbitAlt:0.04,speed:0.6,angle:30,incl:51.6},
-    {name:'GPS-III',type:'intl',orbit:'MEO',alt:'20,200 km',lat:35,lng:-120,orbitAlt:0.15,speed:0.1,angle:70,incl:55},
-    {name:'Starlink',type:'intl',orbit:'LEO',alt:'550 km',lat:45,lng:-40,orbitAlt:0.05,speed:0.5,angle:160,incl:53},
-    {name:'GOES-18',type:'intl',orbit:'GEO',alt:'35,786 km',lat:0,lng:-137,orbitAlt:0.25,speed:0.04,angle:180,incl:0.1},
-    {name:'Hubble',type:'intl',orbit:'LEO',alt:'547 km',lat:-10,lng:30,orbitAlt:0.05,speed:0.52,angle:220,incl:28.5},
-    {name:'Galileo',type:'intl',orbit:'MEO',alt:'23,222 km',lat:20,lng:10,orbitAlt:0.17,speed:0.09,angle:280,incl:56}
+    /* ISRO - Earth orbit */
+    {name:'INSAT-3DR',type:'isro',orbit:'GEO',alt:'35,786 km',lat:0,lng:74,orbitAlt:0.22,speed:0.04,angle:90,incl:0.1},
+    {name:'GSAT-30',type:'isro',orbit:'GEO',alt:'35,786 km',lat:0,lng:83,orbitAlt:0.22,speed:0.04,angle:120,incl:0.1},
+    {name:'NavIC',type:'isro',orbit:'GSO',alt:'36,000 km',lat:5,lng:55,orbitAlt:0.23,speed:0.04,angle:150,incl:29},
+    {name:'Oceansat-3',type:'isro',orbit:'LEO',alt:'720 km',lat:30,lng:80,orbitAlt:0.05,speed:0.5,angle:200,incl:98},
+    {name:'EOS-06',type:'isro',orbit:'LEO',alt:'817 km',lat:-20,lng:100,orbitAlt:0.06,speed:0.45,angle:250,incl:97},
+    {name:'RISAT-2B',type:'isro',orbit:'LEO',alt:'556 km',lat:10,lng:60,orbitAlt:0.04,speed:0.55,angle:300,incl:37},
+    /* International - Earth orbit */
+    {name:'ISS',type:'intl',orbit:'LEO',alt:'408 km',lat:20,lng:-80,orbitAlt:0.035,speed:0.6,angle:30,incl:51.6},
+    {name:'GPS-III',type:'intl',orbit:'MEO',alt:'20,200 km',lat:35,lng:-120,orbitAlt:0.13,speed:0.1,angle:70,incl:55},
+    {name:'Starlink',type:'intl',orbit:'LEO',alt:'550 km',lat:45,lng:-40,orbitAlt:0.04,speed:0.5,angle:160,incl:53},
+    {name:'GOES-18',type:'intl',orbit:'GEO',alt:'35,786 km',lat:0,lng:-137,orbitAlt:0.22,speed:0.04,angle:180,incl:0.1},
+    {name:'Hubble',type:'intl',orbit:'LEO',alt:'547 km',lat:-10,lng:30,orbitAlt:0.04,speed:0.52,angle:220,incl:28.5},
+    {name:'Galileo',type:'intl',orbit:'MEO',alt:'23,222 km',lat:20,lng:10,orbitAlt:0.15,speed:0.09,angle:280,incl:56}
 ];
 
 /* ===== GROUND STATIONS ===== */
@@ -325,31 +325,39 @@ const myGlobe=Globe()
     .globeImageUrl('https://unpkg.com/three-globe@2.35.0/example/img/earth-night.jpg')
     .bumpImageUrl('https://unpkg.com/three-globe@2.35.0/example/img/earth-topology.png')
     .backgroundImageUrl('')
-    .backgroundColor('#00000000')
+    .backgroundColor('rgba(0,0,0,0)')
+    .showGlobe(true)
     .showAtmosphere(true)
-    .atmosphereColor('#3b82f6')
-    .atmosphereAltitude(0.18)
+    .atmosphereColor('lightskyblue')
+    .atmosphereAltitude(0.25)
     .pointOfView({lat:20,lng:78,altitude:2.2})
-    /* Ground stations */
+    /* Ground stations - pulsing orange dots */
     .pointsData(groundStations)
     .pointLat('lat')
     .pointLng('lng')
-    .pointAltitude(0.01)
-    .pointRadius(0.3)
+    .pointAltitude(0.005)
+    .pointRadius(0.35)
     .pointColor(()=>'#f97316')
-    .pointResolution(12)
-    /* Flight arcs */
+    .pointResolution(16)
+    .onPointClick(p=>{
+        myGlobe.pointOfView({lat:p.lat,lng:p.lng,altitude:0.8},800);
+        showTooltip(p.name,'Ground Station',p.lat.toFixed(1)+'N, '+p.lng.toFixed(1)+'E','ACTIVE');
+    })
+    .onPointHover(p=>{
+        container.style.cursor=p?'pointer':'grab';
+    })
+    /* Flight arcs - animated */
     .arcsData(flightArcs)
     .arcStartLat('startLat')
     .arcStartLng('startLng')
     .arcEndLat('endLat')
     .arcEndLng('endLng')
     .arcColor('color')
-    .arcAltitude(0.15)
-    .arcStroke(0.5)
+    .arcAltitude(0.12)
+    .arcStroke(0.6)
     .arcDashLength(0.4)
-    .arcDashGap(0.2)
-    .arcDashAnimateTime(4000)
+    .arcDashGap(0.15)
+    .arcDashAnimateTime(3000)
     /* Aurora rings */
     .ringsData(getAuroraData())
     .ringLat('lat')
@@ -363,53 +371,94 @@ const myGlobe=Globe()
     .labelLat(d=>d.lat)
     .labelLng(d=>d.lng)
     .labelText('name')
-    .labelSize(0.6)
-    .labelDotRadius(0.4)
-    .labelColor(d=>d.type==='isro'?'#f97316':'#22d3ee')
+    .labelSize(0.7)
+    .labelDotRadius(0.5)
+    .labelDotOrientation(()=>'bottom')
+    .labelColor(d=>d.type==='isro'?'rgba(249,115,22,0.9)':'rgba(34,211,238,0.9)')
     .labelAltitude(d=>d.orbitAlt)
-    .labelResolution(2)
+    .labelResolution(3)
+    .onLabelClick(d=>{
+        showTooltip(d.name,d.orbit,d.alt,d.type==='isro'?'ISRO':'INTL');
+    })
+    .onLabelHover(d=>{
+        container.style.cursor=d?'pointer':'grab';
+        if(d) showTooltip(d.name,d.orbit,d.alt,d.type==='isro'?'ISRO':'INTL');
+        else hideTooltip();
+    })
     (container);
+
+/* ===== TOOLTIP ===== */
+function showTooltip(name,orbit,alt,status){
+    const tt=document.getElementById('satTooltip');
+    document.getElementById('ttName').textContent=name;
+    document.getElementById('ttOrbit').textContent=orbit;
+    document.getElementById('ttAlt').textContent=alt;
+    document.getElementById('ttStatus').textContent=status;
+    document.getElementById('ttStatus').style.color=status==='ISRO'?'var(--orange)':status==='INTL'?'var(--cyan)':'var(--green)';
+    tt.style.display='block';
+    tt.style.left='50%';tt.style.top='50%';tt.style.transform='translate(-50%,-50%)';
+    clearTimeout(tt._hideTimer);
+    tt._hideTimer=setTimeout(hideTooltip,3000);
+}
+function hideTooltip(){document.getElementById('satTooltip').style.display='none';}
+
+/* Enhance renderer for smooth visuals */
+setTimeout(()=>{
+    try{
+        const renderer=myGlobe.renderer();
+        renderer.toneMapping=1;
+        renderer.toneMappingExposure=1.3;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+    }catch(e){}
+},500);
 
 /* ===== AUTO ROTATION ===== */
 let autoRotate=true;
 let rotateTimeout;
 myGlobe.controls().autoRotate=true;
-myGlobe.controls().autoRotateSpeed=0.4;
+myGlobe.controls().autoRotateSpeed=0.3;
 myGlobe.controls().enableDamping=true;
-myGlobe.controls().dampingFactor=0.1;
+myGlobe.controls().dampingFactor=0.15;
+myGlobe.controls().rotateSpeed=0.5;
+myGlobe.controls().zoomSpeed=0.8;
+myGlobe.controls().minDistance=120;
+myGlobe.controls().maxDistance=600;
 
 container.addEventListener('mousedown',()=>{
     myGlobe.controls().autoRotate=false;
     clearTimeout(rotateTimeout);
 });
 container.addEventListener('mouseup',()=>{
-    rotateTimeout=setTimeout(()=>{myGlobe.controls().autoRotate=true},3000);
+    rotateTimeout=setTimeout(()=>{myGlobe.controls().autoRotate=true},4000);
 });
 container.addEventListener('touchstart',()=>{
     myGlobe.controls().autoRotate=false;
     clearTimeout(rotateTimeout);
 });
 container.addEventListener('touchend',()=>{
-    rotateTimeout=setTimeout(()=>{myGlobe.controls().autoRotate=true},3000);
+    rotateTimeout=setTimeout(()=>{myGlobe.controls().autoRotate=true},4000);
 });
 
-/* ===== ANIMATE SATELLITES ===== */
+/* ===== SMOOTH SATELLITE ANIMATION ===== */
 let time=0;
-function animateSats(){
-    time+=0.002;
+let lastFrame=performance.now();
+function animateSats(now){
+    const dt=(now-lastFrame)/1000;
+    lastFrame=now;
+    time+=dt*0.3;
     satellites.forEach(s=>{
-        const a=s.angle*Math.PI/180+time*s.speed*10;
+        const a=s.angle*Math.PI/180+time*s.speed*8;
         const inclRad=s.incl*Math.PI/180;
-        s.lat=Math.sin(a)*Math.sin(inclRad)*180/Math.PI*(s.orbit==='GEO'?0.5:1);
-        s.lng=(s.lng+s.speed*0.3)%360;
+        s.lat=Math.sin(a)*inclRad*57.3*(s.orbit==='GEO'||s.orbit==='GSO'?0.4:1);
+        s.lng=(s.lng+s.speed*dt*15)%360;
         if(s.lng>180)s.lng-=360;
     });
     if(showLabels){
-        myGlobe.labelsData(satellites);
+        myGlobe.labelsData([...satellites]);
     }
     requestAnimationFrame(animateSats);
 }
-animateSats();
+requestAnimationFrame(animateSats);
 
 /* ===== CONTROLS ===== */
 function focusIndia(){myGlobe.pointOfView({lat:22,lng:80,altitude:1.5},1000)}

@@ -877,6 +877,16 @@ def get_aditya_replay():
 def index():
     return send_from_directory("dashboard", "index.html")
 
+@app.route("/impact")
+@app.route("/impact.html")
+def impact():
+    return send_from_directory("dashboard", "impact.html")
+
+@app.route("/analytics")
+@app.route("/analytics.html")
+def analytics():
+    return send_from_directory("dashboard", "analytics.html")
+
 
 @app.route("/api/datasource", methods=["GET", "POST"])
 def datasource():
