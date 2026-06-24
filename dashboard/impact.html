@@ -414,6 +414,9 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 </div>
 
 <script>
+/* ===== LOADER DISMISS (first thing, can't be blocked) ===== */
+setTimeout(function(){ var l=document.getElementById('loader'); if(l){l.classList.add('hide');setTimeout(function(){l.remove()},600)} }, 1500);
+
 /* ===== STAR FIELD ===== */
 (function(){const sf=document.getElementById('starField');for(let i=0;i<400;i++){const s=document.createElement('div');s.className='star';s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';const sz=Math.random();s.style.opacity=sz*0.5+0.1;s.style.width=s.style.height=(sz*2+0.5)+'px';if(sz>0.7) s.style.boxShadow='0 0 '+(sz*3)+'px rgba(255,255,255,0.4)';s.style.animation=`twinkle ${3+Math.random()*5}s ease-in-out infinite ${Math.random()*4}s`;sf.appendChild(s)}const st=document.createElement('style');st.textContent='@keyframes twinkle{0%,100%{opacity:0.05}50%{opacity:0.9}}';document.head.appendChild(st)})();
 
@@ -1116,14 +1119,6 @@ updateWx = function(d) {
     updateTimeline(d.kp);
 };
 
-/* ===== LOADER DISMISS ===== */
-setTimeout(() => {
-    const loader = document.getElementById('loader');
-    if (loader) {
-        loader.classList.add('hide');
-        setTimeout(() => loader.remove(), 600);
-    }
-}, 1200);
 </script>
 </body>
 </html>
