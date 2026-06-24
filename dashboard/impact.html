@@ -770,35 +770,72 @@ const classColors = {B:'var(--green)',C:'var(--yellow)',M:'var(--orange)',X:'var
 async function fetchModelPrediction() {
     try {
         const r = await fetch('/api/predict');
+        if (!r.ok) throw new Error('HTTP ' + r.status);
         const d = await r.json();
-        if (d && d.predicted_class) {
-            const cls = d.predicted_class;
-            const prob = Math.round((d.probability || d.confidence || 0) * 100);
-            const lead = d.lead_time_min || d.lead_time || '--';
-            const conf = d.ensemble_agreement ? Math.round(d.ensemble_agreement * 100) + '%' : (d.confidence ? Math.round(d.confidence * 100) + '%' : '--');
-            const color = classColors[cls] || 'var(--green)';
-            document.getElementById('modelClass').textContent = cls;
-            document.getElementById('modelClass').style.color = color;
-            document.getElementById('modelProb').innerHTML = 'Probability: <strong>' + prob + '%</strong>';
-            document.getElementById('modelGauge').style.width = prob + '%';
-            document.getElementById('modelGauge').style.background = color;
-            document.getElementById('modelLead').textContent = lead;
-            document.getElementById('modelConf').textContent = conf;
-            /* Glow border on high predictions */
-            const box = document.getElementById('modelBox');
-            if (cls === 'M' || cls === 'X') {
-                box.style.borderColor = color;
-                box.style.boxShadow = '0 0 20px ' + (cls === 'X' ? 'rgba(239,68,68,0.3)' : 'rgba(249,115,22,0.2)');
-            } else {
-                box.style.borderColor = ''; box.style.boxShadow = '';
+
+        /* Server wraps result in d.tactical */
+        const t = d.tactical || d;
+        if (!t || !t.predicted_class) throw new Error('No prediction data');
+
+        const cls      = t.predicted_class;
+        const conf     = t.confidence || 0;
+        const prob     = Math.round(conf * 100);
+        const lead     = t.lead_time_min != null ? Math.round(t.lead_time_min) : '--';
+        const alert    = t.alert_level || 'GREEN';
+        const uncert   = t.uncertainty != null ? Math.round(t.uncertainty * 100) : null;
+        const infMode  = d.inference_mode || d.data_source || 'live';
+        const color    = classColors[cls] || 'var(--cyan)';
+        const alertColor = alert === 'RED' ? 'var(--red)' : alert === 'YELLOW' ? 'var(--yellow)' : 'var(--green)';
+
+        /* Class display */
+        document.getElementById('modelClass').textContent = cls;
+        document.getElementById('modelClass').style.color = color;
+
+        /* Probability gauge */
+        document.getElementById('modelGauge').style.width = prob + '%';
+        document.getElementById('modelGauge').style.background = color;
+
+        /* Prob text */
+        document.getElementById('modelProb').innerHTML =
+            'Confidence: <strong style="color:' + color + '">' + prob + '%</strong>' +
+            (uncert != null ? ' <span style="color:var(--t3);font-size:9px">±' + uncert + '%</span>' : '') +
+            ' <span style="font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,0.04);color:' + alertColor + '">' + alert + '</span>';
+
+        /* Lead time & mode */
+        document.getElementById('modelLead').textContent = lead !== '--' ? lead : '--';
+        document.getElementById('modelConf').textContent = infMode === 'simulation' ? 'SIM' : infMode === 'goes-live' ? 'GOES' : 'L1';
+
+        /* Glow border on M/X class */
+        const box = document.getElementById('modelBox');
+        if (cls === 'X') {
+            box.style.borderColor = 'rgba(239,68,68,0.6)';
+            box.style.boxShadow = '0 0 24px rgba(239,68,68,0.25)';
+        } else if (cls === 'M') {
+            box.style.borderColor = 'rgba(249,115,22,0.5)';
+            box.style.boxShadow = '0 0 16px rgba(249,115,22,0.2)';
+        } else {
+            box.style.borderColor = '';
+            box.style.boxShadow = '';
+        }
+
+        /* Fire toast on M/X */
+        if ((cls === 'M' || cls === 'X') && conf > 0.5) {
+            const lastCls = fetchModelPrediction._lastCls;
+            if (lastCls !== cls) {
+                showToast(cls === 'X' ? 'red' : 'orange',
+                    'JWALASHMI: ' + cls + '-CLASS PREDICTED',
+                    'Confidence ' + prob + '% | Lead time ~' + lead + ' min');
             }
         }
+        fetchModelPrediction._lastCls = cls;
+
     } catch(e) {
-        /* Model API not available - show placeholder */
         document.getElementById('modelClass').textContent = '--';
         document.getElementById('modelClass').style.color = 'var(--t3)';
+        document.getElementById('modelProb').textContent = 'Server offline';
     }
 }
+fetchModelPrediction._lastCls = null;
 fetchModelPrediction(); setInterval(fetchModelPrediction, 30000);
 
 /* ===== Kp HISTORY BAR CHART ===== */
