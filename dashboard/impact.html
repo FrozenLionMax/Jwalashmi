@@ -18,7 +18,9 @@
 }
 html,body{height:100%;overflow:hidden}
 body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0);
-    display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+    display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+    animation:fadeIn 1s ease-out}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
 /* HEADER */
 .header{display:flex;align-items:center;height:54px;padding:0 20px;
@@ -225,15 +227,6 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .kp-hist-title{font-size:9px;color:var(--t2);letter-spacing:1px;margin-bottom:6px}
 #kpHistCanvas{display:block;width:100%;border-radius:4px;background:rgba(0,0,0,0.2)}
 
-/* LOADING SCREEN */
-.loader-screen{position:fixed;inset:0;z-index:9999;background:#020408;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.6s}
-.loader-screen.hide{opacity:0;pointer-events:none}
-.loader-ring{width:60px;height:60px;border:3px solid rgba(34,211,238,0.1);border-top-color:var(--cyan);
-    border-radius:50%;animation:spin 1s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loader-text{margin-top:16px;font-size:11px;color:var(--t2);letter-spacing:2px;font-weight:600}
-.loader-sub{font-size:9px;color:var(--t3);margin-top:6px}
 
 /* FULLSCREEN MODE */
 .fullscreen .sidebar{display:none}
@@ -252,12 +245,6 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 </head>
 <body>
 
-<!-- LOADING SCREEN -->
-<div class="loader-screen" id="loader">
-    <div class="loader-ring"></div>
-    <div class="loader-text">JWALASHMI</div>
-    <div class="loader-sub">Initializing Impact Globe...</div>
-</div>
 
 <div class="header">
     <a href="index.html" class="back-btn">&#9664; Mission Control</a>
@@ -414,9 +401,6 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 </div>
 
 <script>
-/* ===== LOADER DISMISS (first thing, can't be blocked) ===== */
-setTimeout(function(){ var l=document.getElementById('loader'); if(l){l.classList.add('hide');setTimeout(function(){l.remove()},600)} }, 1500);
-
 /* ===== STAR FIELD ===== */
 (function(){const sf=document.getElementById('starField');for(let i=0;i<400;i++){const s=document.createElement('div');s.className='star';s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';const sz=Math.random();s.style.opacity=sz*0.5+0.1;s.style.width=s.style.height=(sz*2+0.5)+'px';if(sz>0.7) s.style.boxShadow='0 0 '+(sz*3)+'px rgba(255,255,255,0.4)';s.style.animation=`twinkle ${3+Math.random()*5}s ease-in-out infinite ${Math.random()*4}s`;sf.appendChild(s)}const st=document.createElement('style');st.textContent='@keyframes twinkle{0%,100%{opacity:0.05}50%{opacity:0.9}}';document.head.appendChild(st)})();
 
