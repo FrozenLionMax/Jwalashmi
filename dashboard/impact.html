@@ -206,9 +206,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     <div class="globe-btns">
         <div class="g-btn-wrap"><button class="g-btn" onclick="focusIndia()">&#127470;&#127475;</button><span class="g-tip">Focus India</span></div>
         <div class="g-btn-wrap"><button class="g-btn" onclick="focusGlobal()">&#127758;</button><span class="g-tip">Global View</span></div>
-        <div class="g-btn-wrap"><button class="g-btn active" id="btnArcs" onclick="toggleArcs()">&#9992;&#65039;</button><span class="g-tip">Flight Routes</span></div>
         <div class="g-btn-wrap"><button class="g-btn active" id="btnAurora" onclick="toggleAurora()">&#127756;</button><span class="g-tip">Aurora Oval</span></div>
-
         <div class="g-btn-wrap"><button class="g-btn active" id="btnStations" onclick="toggleStations()">&#128225;</button><span class="g-tip">Ground Stations</span></div>
     </div>
 
@@ -224,8 +222,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 
     <div class="globe-overlay legend-box">
         <div class="lg"><svg width="10" height="10"><circle cx="5" cy="5" r="3" fill="none" stroke="#a855f7" stroke-width="2"/></svg>Aurora</div>
-        <div class="lg"><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="#f97316"/></svg>Ground Station</div>
-        <div class="lg"><svg width="14" height="10"><line x1="0" y1="5" x2="14" y2="5" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="3,2"/></svg>Flight Route</div>
+        <div class="lg"><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="#f97316"/></svg>ISTRAC Station</div>
     </div>
 
     <!-- SUN INDICATOR -->
@@ -310,7 +307,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 
 <script>
 /* ===== STAR FIELD ===== */
-(function(){const sf=document.getElementById('starField');for(let i=0;i<200;i++){const s=document.createElement('div');s.className='star';s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';s.style.opacity=Math.random()*0.6+0.1;s.style.width=s.style.height=(Math.random()*1.5+0.5)+'px';s.style.animation=`twinkle ${2+Math.random()*4}s ease-in-out infinite ${Math.random()*3}s`;sf.appendChild(s)}const st=document.createElement('style');st.textContent='@keyframes twinkle{0%,100%{opacity:0.1}50%{opacity:0.8}}';document.head.appendChild(st)})();
+(function(){const sf=document.getElementById('starField');for(let i=0;i<400;i++){const s=document.createElement('div');s.className='star';s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';const sz=Math.random();s.style.opacity=sz*0.5+0.1;s.style.width=s.style.height=(sz*2+0.5)+'px';if(sz>0.7) s.style.boxShadow='0 0 '+(sz*3)+'px rgba(255,255,255,0.4)';s.style.animation=`twinkle ${3+Math.random()*5}s ease-in-out infinite ${Math.random()*4}s`;sf.appendChild(s)}const st=document.createElement('style');st.textContent='@keyframes twinkle{0%,100%{opacity:0.05}50%{opacity:0.9}}';document.head.appendChild(st)})();
 
 
 
@@ -329,16 +326,8 @@ const groundStations=[
     {name:'Mauritius',lat:-20.35,lng:57.55}
 ];
 
-/* ===== FLIGHT ARCS ===== */
-const flightArcs=[
-    {startLat:28.55,startLng:77.10,endLat:37.62,endLng:-122.38,color:['rgba(34,211,238,0.6)','rgba(34,211,238,0.1)'],label:'DEL-SFO'},
-    {startLat:19.09,startLng:72.87,endLat:40.69,endLng:-74.17,color:['rgba(34,211,238,0.4)','rgba(34,211,238,0.1)'],label:'BOM-EWR'},
-    {startLat:51.47,startLng:-0.46,endLat:35.76,endLng:139.70,color:['rgba(34,211,238,0.4)','rgba(34,211,238,0.1)'],label:'LHR-NRT'}
-];
-
-/* ===== AURORA RINGS ===== */
 let currentKp=2;
-let showArcs=true,showAurora=true;
+let showAurora=true;
 
 function getAuroraData(){
     const r = 12 + currentKp * 3;
@@ -389,18 +378,6 @@ const myGlobe=Globe()
     .onPointHover(p=>{
         container.style.cursor=p?'pointer':'grab';
     })
-    /* Flight arcs */
-    .arcsData(flightArcs)
-    .arcStartLat('startLat')
-    .arcStartLng('startLng')
-    .arcEndLat('endLat')
-    .arcEndLng('endLng')
-    .arcColor('color')
-    .arcAltitude(0.15)
-    .arcStroke(0.8)
-    .arcDashLength(0.5)
-    .arcDashGap(0.1)
-    .arcDashAnimateTime(2500)
     /* Aurora rings */
     .ringsData(getAuroraData())
     .ringLat('lat')
@@ -454,11 +431,6 @@ container.addEventListener('touchend',()=>{
 function focusIndia(){myGlobe.pointOfView({lat:22,lng:80,altitude:1.5},1000)}
 function focusGlobal(){myGlobe.pointOfView({lat:20,lng:40,altitude:2.5},1000)}
 
-function toggleArcs(){
-    showArcs=!showArcs;
-    document.getElementById('btnArcs').classList.toggle('active',showArcs);
-    myGlobe.arcsData(showArcs?flightArcs:[]);
-}
 function toggleAurora(){
     showAurora=!showAurora;
     document.getElementById('btnAurora').classList.toggle('active',showAurora);
