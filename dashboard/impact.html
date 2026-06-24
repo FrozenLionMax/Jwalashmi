@@ -78,13 +78,6 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .legend-box{bottom:14px;left:14px;display:flex;gap:14px;padding:8px 14px;font-size:11px}
 .lg{display:flex;align-items:center;gap:5px}
 
-.stat-box{top:14px;right:52px;text-align:center;padding:10px 16px;
-    border:1px solid rgba(34,211,238,0.1)}
-.stat-val{font-size:28px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--cyan);
-    text-shadow:0 0 16px rgba(34,211,238,0.4)}
-.stat-sub{display:flex;gap:10px;justify-content:center;margin-top:5px;font-size:11px}
-.stat-isro{color:var(--orange);font-weight:700}.stat-intl{color:var(--cyan);font-weight:700}
-
 /* GLOBE BUTTONS */
 .globe-btns{position:absolute;top:14px;right:14px;z-index:900;display:flex;flex-direction:column;gap:5px}
 .g-btn-wrap{position:relative}
@@ -104,14 +97,6 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     border-radius:6px;pointer-events:none;opacity:0;transition:all 0.3s;backdrop-filter:blur(8px);
     box-shadow:0 4px 16px rgba(0,0,0,0.4)}
 .g-btn-wrap:hover .g-tip{opacity:1;transform:translateY(-50%) translateX(-4px)}
-
-/* SAT INFO TOOLTIP */
-.sat-tooltip{position:absolute;z-index:1000;background:rgba(10,14,23,0.95);border:1px solid rgba(34,211,238,0.25);
-    border-radius:8px;padding:12px 16px;backdrop-filter:blur(12px);pointer-events:none;display:none;
-    box-shadow:0 8px 32px rgba(0,0,0,0.6);font-size:12px;min-width:180px}
-.sat-tooltip .tt-name{font-size:14px;font-weight:700;margin-bottom:5px;color:var(--t0)}
-.sat-tooltip .tt-row{display:flex;justify-content:space-between;padding:2px 0;font-size:11px}
-.sat-tooltip .tt-k{color:var(--t2)}.sat-tooltip .tt-v{font-weight:600}
 
 /* SIDEBAR */
 .sidebar{grid-column:2;grid-row:1;overflow-y:auto;display:flex;flex-direction:column;
@@ -173,7 +158,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     .sidebar{grid-column:1;grid-row:2}
     .timeline{grid-column:1;grid-row:3}
     .g-tip{display:none}
-    .stat-box{top:auto;bottom:8px;right:8px}
+
 }
 @media(max-width:480px){
     .header{height:auto;min-height:36px;padding:4px 10px;flex-wrap:wrap;gap:4px}
@@ -182,24 +167,6 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     .content{grid-template-rows:50vh 1fr auto}
 }
 /* SPEED CONTROL */
-.speed-ctrl{position:absolute;bottom:54px;left:14px;z-index:800;
-    background:linear-gradient(135deg,rgba(10,14,23,0.94),rgba(15,20,35,0.92));
-    border:1px solid var(--glow-border);border-radius:8px;padding:10px 14px;
-    backdrop-filter:blur(14px);font-size:10px;box-shadow:0 4px 24px rgba(0,0,0,0.4)}
-.speed-ctrl label{color:var(--t2);font-size:9px;display:block;margin-bottom:5px;letter-spacing:1px;text-transform:uppercase}
-.speed-ctrl input[type=range]{width:130px;accent-color:var(--cyan);cursor:pointer;height:4px}
-.speed-val{color:var(--cyan);font-weight:700;font-family:'Space Grotesk',sans-serif;font-size:13px;
-    text-shadow:0 0 8px rgba(34,211,238,0.3);margin-left:6px}
-
-/* ORBIT BREAKDOWN */
-.orbit-break{position:absolute;bottom:14px;right:14px;z-index:800;
-    background:linear-gradient(135deg,rgba(10,14,23,0.94),rgba(15,20,35,0.92));
-    border:1px solid var(--glow-border);border-radius:8px;padding:10px 14px;
-    backdrop-filter:blur(14px);font-size:10px;box-shadow:0 4px 24px rgba(0,0,0,0.4)}
-.ob-row{display:flex;align-items:center;gap:7px;padding:3px 0}
-.ob-dot{width:8px;height:8px;border-radius:50%;box-shadow:0 0 6px currentColor}
-.ob-count{font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--t0);font-size:13px}
-.ob-label{color:var(--t2);font-size:10px}
 
 /* SUN INDICATOR */
 .sun-indicator{position:absolute;bottom:54px;right:14px;z-index:800;
@@ -404,7 +371,6 @@ const myGlobe=Globe()
     .pointResolution(16)
     .onPointClick(p=>{
         myGlobe.pointOfView({lat:p.lat,lng:p.lng,altitude:0.8},800);
-        showTooltip(p.name,'Ground Station',p.lat.toFixed(1)+'N, '+p.lng.toFixed(1)+'E','ACTIVE');
     })
     .onPointHover(p=>{
         container.style.cursor=p?'pointer':'grab';
@@ -432,19 +398,7 @@ const myGlobe=Globe()
     (container);
 
 /* ===== TOOLTIP ===== */
-function showTooltip(name,orbit,alt,status){
-    const tt=document.getElementById('satTooltip');
-    document.getElementById('ttName').textContent=name;
-    document.getElementById('ttOrbit').textContent=orbit;
-    document.getElementById('ttAlt').textContent=alt;
-    document.getElementById('ttStatus').textContent=status;
-    document.getElementById('ttStatus').style.color=status==='ISRO'?'var(--orange)':status==='INTL'?'var(--cyan)':'var(--green)';
-    tt.style.display='block';
-    tt.style.left='50%';tt.style.top='50%';tt.style.transform='translate(-50%,-50%)';
-    clearTimeout(tt._hideTimer);
-    tt._hideTimer=setTimeout(hideTooltip,3000);
-}
-function hideTooltip(){document.getElementById('satTooltip').style.display='none';}
+
 
 /* Enhance renderer for smooth visuals */
 setTimeout(()=>{
@@ -559,7 +513,7 @@ function updateSunPosition() {
 updateSunPosition();
 setInterval(updateSunPosition, 30000);
 
-/* ===== REAL-TIME ISS POSITION ===== */
+
 
 /* ===== CLOCK ===== */
 function updateClock(){
