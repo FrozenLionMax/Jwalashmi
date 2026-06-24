@@ -225,10 +225,39 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .kp-hist-title{font-size:9px;color:var(--t2);letter-spacing:1px;margin-bottom:6px}
 #kpHistCanvas{display:block;width:100%;border-radius:4px;background:rgba(0,0,0,0.2)}
 
+/* LOADING SCREEN */
+.loader-screen{position:fixed;inset:0;z-index:9999;background:#020408;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.6s}
+.loader-screen.hide{opacity:0;pointer-events:none}
+.loader-ring{width:60px;height:60px;border:3px solid rgba(34,211,238,0.1);border-top-color:var(--cyan);
+    border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-text{margin-top:16px;font-size:11px;color:var(--t2);letter-spacing:2px;font-weight:600}
+.loader-sub{font-size:9px;color:var(--t3);margin-top:6px}
 
+/* FULLSCREEN MODE */
+.fullscreen .sidebar{display:none}
+.fullscreen .content{grid-template-columns:1fr}
+.fullscreen .timeline{grid-column:1}
+
+/* STATION TOOLTIP */
+.station-tip{position:absolute;z-index:1200;background:rgba(10,14,23,0.96);border:1px solid rgba(34,211,238,0.2);
+    border-radius:6px;padding:8px 12px;font-size:10px;pointer-events:none;
+    backdrop-filter:blur(12px);box-shadow:0 8px 24px rgba(0,0,0,0.5);opacity:0;transition:opacity 0.2s}
+.station-tip.show{opacity:1}
+.station-tip-name{font-weight:700;color:var(--cyan);font-size:11px;margin-bottom:3px}
+.station-tip-coord{color:var(--t2)}
+.station-tip-status{color:var(--green);font-weight:600;margin-top:2px}
 </style>
 </head>
 <body>
+
+<!-- LOADING SCREEN -->
+<div class="loader-screen" id="loader">
+    <div class="loader-ring"></div>
+    <div class="loader-text">JWALASHMI</div>
+    <div class="loader-sub">Initializing Impact Globe...</div>
+</div>
 
 <div class="header">
     <a href="index.html" class="back-btn">&#9664; Mission Control</a>
@@ -237,7 +266,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     <div class="hdr-right">
         <div><div class="hdr-kp" id="kpVal" style="color:var(--green)">--</div><div class="hdr-label">Kp INDEX</div></div>
         <div><div class="hdr-kp" id="stormLvl" style="font-size:11px;color:var(--green)">Quiet</div><div class="hdr-label">STORM LEVEL</div></div>
-        <div class="hdr-clock" id="hdrClock">--</div>
+        <div><div class="hdr-clock" id="hdrClock">--</div><div class="hdr-label" id="hdrMET" style="font-size:8px;color:var(--t3)">T+ 00:00:00</div></div>
     </div>
 </div>
 
@@ -253,6 +282,14 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
         <div class="g-btn-wrap"><button class="g-btn active" id="btnStations" onclick="toggleStations()">&#128225;</button><span class="g-tip">Ground Stations</span></div>
         <div class="g-btn-wrap"><button class="g-btn" id="btnField" onclick="toggleFieldLines()">&#129522;</button><span class="g-tip">B-Field Lines</span></div>
         <div class="g-btn-wrap"><button class="g-btn" id="btnHex" onclick="toggleHeatmap()">&#9632;</button><span class="g-tip">Impact Heatmap</span></div>
+        <div class="g-btn-wrap"><button class="g-btn" id="btnFS" onclick="toggleFullscreen()">&#9974;</button><span class="g-tip">Fullscreen</span></div>
+    </div>
+
+    <!-- STATION TOOLTIP -->
+    <div class="station-tip" id="stationTip">
+        <div class="station-tip-name" id="stName">--</div>
+        <div class="station-tip-coord" id="stCoord">--</div>
+        <div class="station-tip-status" id="stStatus">LINK: ACTIVE</div>
     </div>
 
 
@@ -268,7 +305,9 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 
     <div class="globe-overlay legend-box">
         <div class="lg"><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="#f97316"/></svg>ISTRAC Station</div>
-        <div class="lg"><svg width="10" height="10"><circle cx="5" cy="5" r="3" fill="none" stroke="var(--cyan)" stroke-width="2"/></svg>Kp Reactive</div>
+        <div class="lg"><svg width="10" height="4"><rect width="10" height="4" fill="rgba(0,0,30,0.5)" rx="1"/></svg>Night Side</div>
+        <div class="lg"><svg width="10" height="10"><line x1="0" y1="5" x2="10" y2="5" stroke="#22d3ee" stroke-width="1" opacity="0.4"/></svg>B-Field</div>
+        <div class="lg"><svg width="10" height="10"><rect x="1" y="1" width="8" height="8" fill="rgba(249,115,22,0.4)" rx="1"/></svg>Hex Impact</div>
     </div>
 
     <!-- SUN INDICATOR -->
@@ -609,12 +648,31 @@ function updateWx(d){
 
 async function fetchNOAA(){
     try{
-        const r=await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json');
-        const d=await r.json();
-        if(d&&d.length>1){
-            const latest=d[d.length-1];
-            updateWx({kp:parseFloat(latest[1])||2,wind:380+Math.random()*40,bz:-1-Math.random()*3,proton:0.5+Math.random(),r:0,s:0,g:0});
-        }
+        /* Kp from forecast */
+        const rKp=await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json');
+        const dKp=await rKp.json();
+        let kp = 2;
+        if(dKp&&dKp.length>1) kp = parseFloat(dKp[dKp.length-1][1])||2;
+
+        /* Real solar wind from DSCOVR at L1 */
+        let wind=390, bz=-1.5, proton=0.7;
+        try {
+            const rWind=await fetch('https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json');
+            const dWind=await rWind.json();
+            if(dWind&&dWind.WindSpeed) wind=parseFloat(dWind.WindSpeed)||390;
+        } catch(e){}
+        try {
+            const rMag=await fetch('https://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json');
+            const dMag=await rMag.json();
+            if(dMag&&dMag.Bz) bz=parseFloat(dMag.Bz)||-1.5;
+        } catch(e){}
+        try {
+            const rFlux=await fetch('https://services.swpc.noaa.gov/json/goes/primary/integral-protons-1-day.json');
+            const dFlux=await rFlux.json();
+            if(dFlux&&dFlux.length>0) proton=parseFloat(dFlux[dFlux.length-1].flux)||0.7;
+        } catch(e){}
+
+        updateWx({kp:kp,wind:wind,bz:bz,proton:proton,r:0,s:0,g:0});
     }catch(e){
         updateWx({kp:2,wind:390,bz:-1.5,proton:0.7,r:0,s:0,g:0});
     }
@@ -990,6 +1048,93 @@ updateWx = function(d) {
 };
 
 
+/* ===== LIVE UTC CLOCK + MET ===== */
+const startTime = Date.now();
+function updateClock() {
+    const now = new Date();
+    const utc = now.toISOString().slice(11,19) + ' UTC';
+    document.getElementById('hdrClock').textContent = utc;
+    /* Mission Elapsed Time */
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const eh = String(Math.floor(elapsed/3600)).padStart(2,'0');
+    const em = String(Math.floor((elapsed%3600)/60)).padStart(2,'0');
+    const es = String(elapsed%60).padStart(2,'0');
+    const met = document.getElementById('hdrMET');
+    if(met) met.textContent = 'T+ ' + eh + ':' + em + ':' + es;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* ===== FULLSCREEN TOGGLE ===== */
+let isFS = false;
+function toggleFullscreen() {
+    isFS = !isFS;
+    document.body.classList.toggle('fullscreen', isFS);
+    document.getElementById('btnFS').classList.toggle('active', isFS);
+    setTimeout(() => {
+        myGlobe.width(container.clientWidth);
+        myGlobe.height(container.clientHeight);
+    }, 100);
+}
+
+/* ===== STATION TOOLTIP ===== */
+const stTip = document.getElementById('stationTip');
+myGlobe.onPointHover(p => {
+    container.style.cursor = p ? 'pointer' : 'grab';
+    if (p) {
+        document.getElementById('stName').textContent = p.name;
+        document.getElementById('stCoord').textContent =
+            Math.abs(p.lat).toFixed(2) + (p.lat>=0?'N':'S') + ', ' +
+            Math.abs(p.lng).toFixed(2) + (p.lng>=0?'E':'W');
+        const status = currentKp <= 4 ? 'LINK: ACTIVE' : currentKp <= 6 ? 'LINK: DEGRADED' : 'LINK: DISRUPTED';
+        const stEl = document.getElementById('stStatus');
+        stEl.textContent = status;
+        stEl.style.color = currentKp <= 4 ? 'var(--green)' : currentKp <= 6 ? 'var(--yellow)' : 'var(--red)';
+        stTip.classList.add('show');
+        stTip.style.bottom = '90px';
+        stTip.style.left = '14px';
+    } else {
+        stTip.classList.remove('show');
+    }
+});
+
+/* ===== ANIMATED TIMELINE ===== */
+function updateTimeline(kp) {
+    const stages = ['t0','t1','t2','t3','t4'];
+    /* Determine how many stages are 'active' based on Kp */
+    let active = 0;
+    if (kp >= 2) active = 1;  /* Flare detected */
+    if (kp >= 4) active = 2;  /* Blackout */
+    if (kp >= 5) active = 3;  /* Protons */
+    if (kp >= 7) active = 4;  /* CME arrival */
+    if (kp >= 8) active = 5;  /* Full storm */
+    stages.forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (i < active) {
+            el.classList.add('on');
+            el.style.background = el.style.borderColor;
+        } else {
+            el.classList.remove('on');
+            el.style.background = 'transparent';
+        }
+    });
+}
+/* Hook timeline into wx updates */
+const origUpdateWx3 = updateWx;
+updateWx = function(d) {
+    origUpdateWx3(d);
+    updateTimeline(d.kp);
+};
+
+/* ===== LOADER DISMISS ===== */
+setTimeout(() => {
+    const loader = document.getElementById('loader');
+    if (loader) {
+        loader.classList.add('hide');
+        setTimeout(() => loader.remove(), 700);
+    }
+}, 3000);
 </script>
 </body>
 </html>
