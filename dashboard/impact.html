@@ -206,7 +206,6 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     <div class="globe-btns">
         <div class="g-btn-wrap"><button class="g-btn" onclick="focusIndia()">&#127470;&#127475;</button><span class="g-tip">Focus India</span></div>
         <div class="g-btn-wrap"><button class="g-btn" onclick="focusGlobal()">&#127758;</button><span class="g-tip">Global View</span></div>
-        <div class="g-btn-wrap"><button class="g-btn active" id="btnAurora" onclick="toggleAurora()">&#127756;</button><span class="g-tip">Aurora Oval</span></div>
         <div class="g-btn-wrap"><button class="g-btn active" id="btnStations" onclick="toggleStations()">&#128225;</button><span class="g-tip">Ground Stations</span></div>
     </div>
 
@@ -221,8 +220,8 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     </div>
 
     <div class="globe-overlay legend-box">
-        <div class="lg"><svg width="10" height="10"><circle cx="5" cy="5" r="3" fill="none" stroke="#a855f7" stroke-width="2"/></svg>Aurora</div>
         <div class="lg"><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="#f97316"/></svg>ISTRAC Station</div>
+        <div class="lg"><svg width="10" height="10"><circle cx="5" cy="5" r="3" fill="none" stroke="var(--cyan)" stroke-width="2"/></svg>Kp Reactive</div>
     </div>
 
     <!-- SUN INDICATOR -->
@@ -326,68 +325,9 @@ const groundStations=[
     {name:'Mauritius',lat:-20.35,lng:57.55}
 ];
 
-let currentKp=2;
-let showAurora=true;
 
-/*
-  AURORAL OVAL — scientifically accurate
-  Centered on geomagnetic poles (not geographic):
-    North: 80.5°N, 72.6°W  (near Ellesmere Island, Canada)
-    South: 80.5°S, 107.4°E (Antarctic coast)
-  The oval's equatorward boundary scales with Kp:
-    Kp 0: ~67°   Kp 3: ~60°   Kp 5: ~55°   Kp 9: ~45°
-  Width is ~5-8° of latitude.
-*/
-const GEOMAG_NORTH = { lat: 80.5, lng: -72.6 };
-const GEOMAG_SOUTH = { lat: -80.5, lng: 107.4 };
 
-/* Great-circle point at angular distance & bearing from a pole */
-function geoPoint(poleLat, poleLng, angDistDeg, bearingDeg) {
-    const d = angDistDeg * Math.PI / 180;
-    const b = bearingDeg * Math.PI / 180;
-    const pLat = poleLat * Math.PI / 180;
-    const pLng = poleLng * Math.PI / 180;
-    const lat2 = Math.asin(
-        Math.sin(pLat) * Math.cos(d) +
-        Math.cos(pLat) * Math.sin(d) * Math.cos(b)
-    );
-    const lng2 = pLng + Math.atan2(
-        Math.sin(b) * Math.sin(d) * Math.cos(pLat),
-        Math.cos(d) - Math.sin(pLat) * Math.sin(lat2)
-    );
-    return [lng2 * 180 / Math.PI, lat2 * 180 / Math.PI];
-}
-
-/* Generate auroral oval polygon (annulus) for one hemisphere */
-function makeOvalGeoJSON(pole, kp) {
-    /* Equatorward edge: moves lower with higher Kp */
-    const outerColatitude = 23 + Math.max(0, 9 - kp) * 2.5;  /* Kp0=45.5°, Kp5=33°, Kp9=23° from pole */
-    const innerColatitude = outerColatitude - (5 + kp * 0.5);  /* Band width grows with Kp */
-    const steps = 72;
-    const outer = [];
-    const inner = [];
-    for (let i = 0; i <= steps; i++) {
-        const bearing = (i / steps) * 360;
-        outer.push(geoPoint(pole.lat, pole.lng, outerColatitude, bearing));
-        inner.push(geoPoint(pole.lat, pole.lng, innerColatitude, bearing));
-    }
-    inner.reverse();
-    return {
-        type: 'Feature',
-        properties: {},
-        geometry: {
-            type: 'Polygon',
-            coordinates: [outer.concat(inner)]
-        }
-    };
-}
-
-function getAuroraPolygons() {
-    return [
-        { geo: makeOvalGeoJSON(GEOMAG_NORTH, currentKp), color: 'rgba(74, 222, 128, 0.25)', side: 0.01 },
-        { geo: makeOvalGeoJSON(GEOMAG_SOUTH, currentKp), color: 'rgba(45, 212, 191, 0.20)', side: 0.01 }
-    ];
-}
+let currentKp = 2;
 
 /* ===== INIT GLOBE ===== */
 const container=document.getElementById('globeViz');
@@ -400,7 +340,7 @@ const myGlobe=Globe()
     .showAtmosphere(true)
     .atmosphereColor('#4fc3f7')
     .atmosphereAltitude(0.35)
-    .pointOfView({lat:60,lng:-40,altitude:2.0})
+    .pointOfView({lat:20,lng:78,altitude:2.0})
     /* Ground stations */
     .pointsData(groundStations)
     .pointLat('lat')
@@ -415,14 +355,6 @@ const myGlobe=Globe()
     .onPointHover(p=>{
         container.style.cursor=p?'pointer':'grab';
     })
-    /* Aurora oval polygons */
-    .polygonsData(getAuroraPolygons())
-    .polygonGeoJsonGeometry(d => d.geo.geometry)
-    .polygonCapColor(d => d.color)
-    .polygonSideColor(() => 'rgba(74, 222, 128, 0.05)')
-    .polygonStrokeColor(() => 'rgba(74, 222, 128, 0.4)')
-    .polygonAltitude(d => d.side)
-    .polygonsTransitionDuration(800)
     (container);
 
 
@@ -468,11 +400,6 @@ container.addEventListener('touchend',()=>{
 function focusIndia(){myGlobe.pointOfView({lat:22,lng:80,altitude:1.5},1000)}
 function focusGlobal(){myGlobe.pointOfView({lat:20,lng:40,altitude:2.5},1000)}
 
-function toggleAurora(){
-    showAurora=!showAurora;
-    document.getElementById('btnAurora').classList.toggle('active',showAurora);
-    myGlobe.polygonsData(showAurora?getAuroraPolygons():[]);
-}
 
 /* Ground station toggle */
 let showStations = true;
@@ -552,7 +479,7 @@ function updateWx(d){
     document.getElementById('cPr').textContent=d.proton+' pfu';
     document.getElementById('cRSG').textContent=d.r+'/'+d.s+'/'+d.g;
     document.getElementById('cUpd').textContent='Updated: '+new Date().toLocaleTimeString();
-    if(showAurora)myGlobe.polygonsData(getAuroraPolygons());
+
     const impPct=d.kp<=3?0:d.kp<=5?Math.round((d.kp-3)*4):Math.round(8+(d.kp-5)*8);
     document.getElementById('impArea').textContent=impPct+'%';
     document.getElementById('impArea').style.color=colorForKp(d.kp);
