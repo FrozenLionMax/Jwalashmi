@@ -58,6 +58,26 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .stars{position:absolute;inset:0;pointer-events:none;z-index:0;opacity:0.4}
 .star{position:absolute;width:1px;height:1px;background:#fff;border-radius:50%}
 
+/* SATELLITE MARKERS (2D on globe) */
+.sat-marker{display:flex;align-items:center;gap:5px;pointer-events:auto;cursor:pointer;
+    transform:translate(-50%,-50%);white-space:nowrap;transition:transform 0.2s}
+.sat-marker:hover{transform:translate(-50%,-50%) scale(1.2)}
+.sat-dot{width:10px;height:10px;border-radius:50%;position:relative;flex-shrink:0}
+.sat-dot::after{content:'';position:absolute;inset:-3px;border-radius:50%;border:1.5px solid;
+    opacity:0.4;animation:satPing 2s ease-out infinite}
+@keyframes satPing{0%{transform:scale(1);opacity:0.4}100%{transform:scale(2.2);opacity:0}}
+.sat-dot.isro{background:#f97316;box-shadow:0 0 8px rgba(249,115,22,0.6)}
+.sat-dot.isro::after{border-color:#f97316}
+.sat-dot.intl{background:#22d3ee;box-shadow:0 0 8px rgba(34,211,238,0.6)}
+.sat-dot.intl::after{border-color:#22d3ee}
+.sat-name{font-size:10px;font-weight:700;font-family:'Space Grotesk',sans-serif;
+    padding:2px 6px;border-radius:3px;letter-spacing:0.3px;
+    background:rgba(0,0,0,0.7);backdrop-filter:blur(4px)}
+.sat-name.isro{color:#f97316;border:1px solid rgba(249,115,22,0.2)}
+.sat-name.intl{color:#22d3ee;border:1px solid rgba(34,211,238,0.2)}
+.sat-orbit-tag{font-size:7px;color:var(--t2);margin-left:-2px;
+    background:rgba(0,0,0,0.5);padding:1px 4px;border-radius:2px}
+
 /* GLOBE OVERLAYS */
 .globe-overlay{position:absolute;z-index:800;
     background:linear-gradient(135deg,rgba(10,14,23,0.94),rgba(15,20,35,0.92));
@@ -501,24 +521,28 @@ const myGlobe=Globe()
     .ringPropagationSpeed('propagationSpeed')
     .ringRepeatPeriod('repeatPeriod')
     .ringColor('color')
-    /* Satellite labels */
-    .labelsData(satellites)
-    .labelLat(d=>d.lat)
-    .labelLng(d=>d.lng)
-    .labelText('name')
-    .labelSize(0.7)
-    .labelDotRadius(0.5)
-    .labelDotOrientation(()=>'bottom')
-    .labelColor(d=>d.type==='isro'?'rgba(249,115,22,0.9)':'rgba(34,211,238,0.9)')
-    .labelAltitude(d=>d.orbitAlt)
-    .labelResolution(3)
-    .onLabelClick(d=>{
-        showTooltip(d.name,d.orbit,d.alt,d.type==='isro'?'ISRO':'INTL');
-    })
-    .onLabelHover(d=>{
-        container.style.cursor=d?'pointer':'grab';
-        if(d) showTooltip(d.name,d.orbit,d.alt,d.type==='isro'?'ISRO':'INTL');
-        else hideTooltip();
+    /* Satellite HTML markers - flat on surface */
+    .htmlElementsData(satellites)
+    .htmlLat(d=>d.lat)
+    .htmlLng(d=>d.lng)
+    .htmlAltitude(0.005)
+    .htmlElement(d=>{
+        const wrap=document.createElement('div');
+        wrap.className='sat-marker';
+        wrap.innerHTML=`<div class="sat-dot ${d.type}"></div><span class="sat-name ${d.type}">${d.name}</span><span class="sat-orbit-tag">${d.orbit}</span>`;
+        wrap.addEventListener('click',()=>{
+            showTooltip(d.name,d.orbit,d.alt,d.type==='isro'?'ISRO':'INTL');
+        });
+        wrap.addEventListener('mouseenter',()=>{
+            container.style.cursor='pointer';
+            showTooltip(d.name,d.orbit,d.alt,d.type==='isro'?'ISRO':'INTL');
+        });
+        wrap.addEventListener('mouseleave',()=>{
+            container.style.cursor='grab';
+            hideTooltip();
+        });
+        d._el=wrap;
+        return wrap;
     })
     (container);
 
@@ -606,7 +630,7 @@ function animateSats(now) {
     });
 
     if (showLabels) {
-        myGlobe.labelsData([...satellites]);
+        myGlobe.htmlElementsData([...satellites]);
     }
 
     /* Update connection beams */
@@ -635,7 +659,7 @@ function toggleAurora(){
 function toggleLabels(){
     showLabels=!showLabels;
     document.getElementById('btnLabels').classList.toggle('active',showLabels);
-    myGlobe.labelsData(showLabels?satellites:[]);
+    myGlobe.htmlElementsData(showLabels?satellites:[]);
 }
 
 /* ===== CONNECTION BEAMS (Ground Station to nearest sat) ===== */
