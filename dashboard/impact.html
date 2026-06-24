@@ -76,7 +76,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .cond-k{color:var(--t2);font-size:11px}.cond-v{font-weight:700;font-family:'Space Grotesk',sans-serif;font-size:12px;
     text-shadow:0 0 6px currentColor}
 
-.legend-box{bottom:14px;left:14px;display:flex;gap:14px;padding:8px 14px;font-size:11px}
+.legend-box{bottom:14px;left:14px;display:flex;flex-direction:column;gap:6px;padding:8px 14px;font-size:10px}
 .lg{display:flex;align-items:center;gap:5px}
 
 /* GLOBE BUTTONS */
@@ -203,13 +203,13 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 @keyframes toastIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
 
 /* XRAY SPARKLINE */
-.xray-box{bottom:54px;left:14px;padding:8px 12px}
+.xray-box{bottom:100px;left:14px;padding:8px 12px}
 .xray-title{font-size:9px;color:var(--t2);letter-spacing:1px;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
 .xray-val{font-weight:700;font-family:'Space Grotesk',sans-serif;font-size:13px}
 #xrayCanvas{display:block;border-radius:4px;margin-top:4px;background:rgba(0,0,0,0.3)}
 
 /* JWALASHMI MODEL PANEL */
-.model-box{top:14px;right:58px;min-width:180px;padding:12px 16px}
+.model-box{top:14px;right:56px;min-width:170px;padding:10px 14px}
 .model-title{font-size:9px;color:var(--orange);letter-spacing:1.5px;font-weight:700;margin-bottom:8px;
     display:flex;align-items:center;gap:6px}
 .model-class{font-size:32px;font-weight:700;font-family:'Space Grotesk',sans-serif;line-height:1;
@@ -461,9 +461,6 @@ const myGlobe=Globe()
     .onPointClick(p=>{
         myGlobe.pointOfView({lat:p.lat,lng:p.lng,altitude:0.8},800);
     })
-    .onPointHover(p=>{
-        container.style.cursor=p?'pointer':'grab';
-    })
     (container);
 
 
@@ -472,8 +469,8 @@ setTimeout(()=>{
     try{
         const renderer=myGlobe.renderer();
         renderer.toneMapping=4; /* ACESFilmic */
-        renderer.toneMappingExposure=1.5;
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMappingExposure=1.4;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
         renderer.outputColorSpace = 'srgb';
     }catch(e){}
 },500);
@@ -679,15 +676,7 @@ async function fetchNOAA(){
 }
 fetchNOAA();setInterval(fetchNOAA,120000);
 
-/* ===== RENDERER ENHANCEMENT ===== */
-setTimeout(()=>{
-    try{
-        const renderer=myGlobe.renderer();
-        renderer.toneMapping=1;
-        renderer.toneMappingExposure=1.3;
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-    }catch(e){}
-},500);
+
 
 /* ===== RESIZE ===== */
 window.addEventListener('resize',()=>{
