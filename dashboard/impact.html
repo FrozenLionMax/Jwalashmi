@@ -224,6 +224,11 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .kp-hist-wrap{padding:8px 16px 12px}
 .kp-hist-title{font-size:9px;color:var(--t2);letter-spacing:1px;margin-bottom:6px}
 #kpHistCanvas{display:block;width:100%;border-radius:4px;background:rgba(0,0,0,0.2)}
+
+/* SOLAR WIND PARTICLES */
+.sw-particle{position:absolute;border-radius:50%;pointer-events:none;z-index:5;
+    background:radial-gradient(circle,#fde68a 0%,#f97316 50%,transparent 100%);
+    box-shadow:0 0 6px rgba(251,191,36,0.6);will-change:transform,opacity}
 </style>
 </head>
 <body>
@@ -249,7 +254,12 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
         <div class="g-btn-wrap"><button class="g-btn" onclick="focusIndia()">&#127470;&#127475;</button><span class="g-tip">Focus India</span></div>
         <div class="g-btn-wrap"><button class="g-btn" onclick="focusGlobal()">&#127758;</button><span class="g-tip">Global View</span></div>
         <div class="g-btn-wrap"><button class="g-btn active" id="btnStations" onclick="toggleStations()">&#128225;</button><span class="g-tip">Ground Stations</span></div>
+        <div class="g-btn-wrap"><button class="g-btn" id="btnField" onclick="toggleFieldLines()">&#129522;</button><span class="g-tip">B-Field Lines</span></div>
+        <div class="g-btn-wrap"><button class="g-btn" id="btnHex" onclick="toggleHeatmap()">&#9632;</button><span class="g-tip">Impact Heatmap</span></div>
     </div>
+
+    <!-- SOLAR WIND PARTICLES -->
+    <div id="swParticles" style="position:absolute;inset:0;pointer-events:none;z-index:5;overflow:hidden"></div>
 
     <div class="globe-overlay cond-box" id="condBox">
         <div class="cond-title">&#9889; NOAA LIVE</div>
@@ -824,6 +834,225 @@ updateWx = function(d) {
     checkAlerts(d);
     origUpdateWx(d);
 };
+
+/* ===== FEATURE 5: DAY/NIGHT TERMINATOR ===== */
+let nightMesh = null;
+setTimeout(() => {
+    try {
+        const scene = myGlobe.scene();
+        const R = 100.5;
+        const geo = new THREE.SphereGeometry(R, 64, 64);
+        const mat = new THREE.ShaderMaterial({
+            transparent: true, depthWrite: false, side: THREE.FrontSide,
+            uniforms: { sunDir: { value: new THREE.Vector3(1, 0, 0) } },
+            vertexShader: `
+                varying vec3 vNormal;
+                varying vec3 vPosition;
+                void main(){
+                    vNormal = normalize(normalMatrix * normal);
+                    vPosition = (modelMatrix * vec4(position,1.0)).xyz;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+                }`,
+            fragmentShader: `
+                uniform vec3 sunDir;
+                varying vec3 vNormal;
+                void main(){
+                    float d = dot(normalize(vNormal), sunDir);
+                    float night = smoothstep(-0.1, 0.15, -d);
+                    gl_FragColor = vec4(0.0, 0.0, 0.05, night * 0.55);
+                }`
+        });
+        nightMesh = new THREE.Mesh(geo, mat);
+        scene.add(nightMesh);
+    } catch(e) { console.log('Terminator skip:', e.message); }
+}, 2500);
+
+function updateTerminator() {
+    if (!nightMesh) return;
+    const now = new Date();
+    const doy = Math.floor((now - new Date(now.getFullYear(),0,0)) / 86400000);
+    const decl = -23.44 * Math.cos((360/365) * (doy+10) * Math.PI/180) * Math.PI/180;
+    const ha = ((now.getUTCHours() + now.getUTCMinutes()/60) - 12) * 15 * Math.PI/180;
+    const sx = Math.cos(decl) * Math.cos(-ha);
+    const sy = Math.sin(decl);
+    const sz = Math.cos(decl) * Math.sin(-ha);
+    nightMesh.material.uniforms.sunDir.value.set(sx, sy, sz);
+}
+setInterval(updateTerminator, 10000);
+setTimeout(updateTerminator, 3000);
+
+/* ===== FEATURE 6: MAGNETIC FIELD LINES ===== */
+let fieldLinesGroup = null;
+let showFieldLines = false;
+
+function createFieldLines() {
+    try {
+        const scene = myGlobe.scene();
+        fieldLinesGroup = new THREE.Group();
+        fieldLinesGroup.visible = false;
+        const R = 100;
+        /* Geomagnetic poles in 3D */
+        const npLat = 80.5 * Math.PI/180, npLng = -72.6 * Math.PI/180;
+        const spLat = -80.5 * Math.PI/180, spLng = 107.4 * Math.PI/180;
+        const np = new THREE.Vector3(
+            R*Math.cos(npLat)*Math.cos(npLng),
+            R*Math.sin(npLat),
+            R*Math.cos(npLat)*Math.sin(npLng) * -1
+        );
+        const sp = new THREE.Vector3(
+            R*Math.cos(spLat)*Math.cos(spLng),
+            R*Math.sin(spLat),
+            R*Math.cos(spLat)*Math.sin(spLng) * -1
+        );
+        for (let i = 0; i < 6; i++) {
+            const angle = (i / 6) * Math.PI * 2;
+            const apex = 1.8 + Math.sin(angle * 2) * 0.3;
+            const mid = new THREE.Vector3().addVectors(np, sp).multiplyScalar(0.5);
+            const offset = new THREE.Vector3(
+                Math.cos(angle) * R * 0.6,
+                apex * R * 0.4,
+                Math.sin(angle) * R * 0.6
+            );
+            const cp1 = new THREE.Vector3().lerpVectors(np, mid, 0.33).add(offset.clone().multiplyScalar(0.7));
+            const cp2 = new THREE.Vector3().lerpVectors(sp, mid, 0.33).add(offset.clone().multiplyScalar(0.7));
+            const curve = new THREE.CatmullRomCurve3([np, cp1, mid.clone().add(offset), cp2, sp]);
+            const points = curve.getPoints(60);
+            const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+            const lineMat = new THREE.LineBasicMaterial({
+                color: 0x22d3ee, transparent: true, opacity: 0.12 + (i%3)*0.03
+            });
+            fieldLinesGroup.add(new THREE.Line(lineGeo, lineMat));
+        }
+        scene.add(fieldLinesGroup);
+    } catch(e) { console.log('Field lines skip:', e.message); }
+}
+setTimeout(createFieldLines, 3000);
+
+function toggleFieldLines() {
+    showFieldLines = !showFieldLines;
+    document.getElementById('btnField').classList.toggle('active', showFieldLines);
+    if (fieldLinesGroup) fieldLinesGroup.visible = showFieldLines;
+}
+
+/* ===== FEATURE 7: IMPACT HEATMAP HEXAGONS ===== */
+let showHeatmap = false;
+let hexPoints = [];
+
+function generateHexPoints(kp) {
+    const pts = [];
+    for (let i = 0; i < 250; i++) {
+        /* Bias toward high latitudes where impact is strongest */
+        const u = Math.random();
+        const lat = (u < 0.4) ? (60 + Math.random()*30) * (Math.random()>0.5?1:-1) :
+                    (u < 0.7) ? (30 + Math.random()*30) * (Math.random()>0.5?1:-1) :
+                    (Math.random()*30) * (Math.random()>0.5?1:-1);
+        const lng = Math.random() * 360 - 180;
+        /* Weight by latitude and Kp */
+        const latFactor = Math.abs(lat) / 90;
+        const intensity = latFactor * (kp / 9) * (0.6 + Math.random()*0.4);
+        pts.push({ lat, lng, weight: intensity });
+    }
+    return pts;
+}
+
+function updateHeatmap() {
+    if (!showHeatmap) return;
+    hexPoints = generateHexPoints(currentKp);
+    myGlobe
+        .hexBinPointsData(hexPoints)
+        .hexBinPointLat('lat')
+        .hexBinPointLng('lng')
+        .hexBinPointWeight('weight')
+        .hexBinResolution(3)
+        .hexAltitude(d => d.sumWeight * 0.02)
+        .hexTopColor(d => {
+            const w = d.sumWeight / d.points.length;
+            return w > 0.6 ? 'rgba(239,68,68,0.7)' : w > 0.3 ? 'rgba(249,115,22,0.5)' : 'rgba(234,179,8,0.3)';
+        })
+        .hexSideColor(d => {
+            const w = d.sumWeight / d.points.length;
+            return w > 0.6 ? 'rgba(239,68,68,0.3)' : w > 0.3 ? 'rgba(249,115,22,0.2)' : 'rgba(234,179,8,0.1)';
+        })
+        .hexBinMerge(true)
+        .hexTransitionDuration(600);
+}
+
+function toggleHeatmap() {
+    showHeatmap = !showHeatmap;
+    document.getElementById('btnHex').classList.toggle('active', showHeatmap);
+    if (showHeatmap) {
+        updateHeatmap();
+    } else {
+        myGlobe.hexBinPointsData([]);
+    }
+}
+
+/* Update heatmap when Kp changes */
+const origUpdateWx2 = updateWx;
+updateWx = function(d) {
+    origUpdateWx2(d);
+    if (showHeatmap) updateHeatmap();
+};
+
+/* ===== FEATURE 8: SOLAR WIND PARTICLE STREAM ===== */
+const swContainer = document.getElementById('swParticles');
+const particles = [];
+const MAX_PARTICLES = 25;
+
+function getSunScreenAngle() {
+    const now = new Date();
+    const h = now.getUTCHours() + now.getUTCMinutes()/60;
+    return ((h - 12) / 24) * Math.PI * 2;
+}
+
+function spawnParticle() {
+    if (particles.length >= MAX_PARTICLES) return;
+    const el = document.createElement('div');
+    el.className = 'sw-particle';
+    const size = 2 + Math.random() * 3;
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+    /* Start from sun-side edge */
+    const angle = getSunScreenAngle();
+    const cw = swContainer.clientWidth || 800;
+    const ch = swContainer.clientHeight || 600;
+    const cx = cw / 2, cy = ch / 2;
+    const edge = Math.max(cw, ch) * 0.55;
+    const spread = (Math.random() - 0.5) * 0.8;
+    const startX = cx + Math.cos(angle + spread) * edge;
+    const startY = cy + Math.sin(angle + spread) * edge * 0.6;
+    el.style.left = startX + 'px';
+    el.style.top = startY + 'px';
+    el.style.opacity = '0';
+    swContainer.appendChild(el);
+    const speed = 0.3 + Math.random() * 0.5;
+    const dx = (cx - startX) * 0.012 * speed;
+    const dy = (cy - startY) * 0.012 * speed;
+    particles.push({ el, x: startX, y: startY, dx, dy, life: 0, maxLife: 80 + Math.random()*60 });
+}
+
+function animateParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.life++;
+        p.x += p.dx;
+        p.y += p.dy;
+        const progress = p.life / p.maxLife;
+        const fadeIn = Math.min(1, p.life / 15);
+        const fadeOut = Math.max(0, 1 - (progress - 0.7) / 0.3);
+        p.el.style.transform = 'translate(-50%,-50%)';
+        p.el.style.left = p.x + 'px';
+        p.el.style.top = p.y + 'px';
+        p.el.style.opacity = (fadeIn * fadeOut * 0.7).toFixed(2);
+        if (p.life >= p.maxLife) {
+            p.el.remove();
+            particles.splice(i, 1);
+        }
+    }
+    if (Math.random() < 0.3) spawnParticle();
+    requestAnimationFrame(animateParticles);
+}
+animateParticles();
 </script>
 </body>
 </html>
