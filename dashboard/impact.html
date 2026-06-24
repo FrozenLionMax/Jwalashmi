@@ -58,25 +58,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .stars{position:absolute;inset:0;pointer-events:none;z-index:0;opacity:0.4}
 .star{position:absolute;width:1px;height:1px;background:#fff;border-radius:50%}
 
-/* SATELLITE MARKERS (2D on globe) */
-.sat-marker{display:flex;align-items:center;gap:5px;pointer-events:auto;cursor:pointer;
-    transform:translate(-50%,-50%);white-space:nowrap;transition:transform 0.2s}
-.sat-marker:hover{transform:translate(-50%,-50%) scale(1.2)}
-.sat-dot{width:10px;height:10px;border-radius:50%;position:relative;flex-shrink:0}
-.sat-dot::after{content:'';position:absolute;inset:-3px;border-radius:50%;border:1.5px solid;
-    opacity:0.4;animation:satPing 2s ease-out infinite}
-@keyframes satPing{0%{transform:scale(1);opacity:0.4}100%{transform:scale(2.2);opacity:0}}
-.sat-dot.isro{background:#f97316;box-shadow:0 0 8px rgba(249,115,22,0.6)}
-.sat-dot.isro::after{border-color:#f97316}
-.sat-dot.intl{background:#22d3ee;box-shadow:0 0 8px rgba(34,211,238,0.6)}
-.sat-dot.intl::after{border-color:#22d3ee}
-.sat-name{font-size:10px;font-weight:700;font-family:'Space Grotesk',sans-serif;
-    padding:2px 6px;border-radius:3px;letter-spacing:0.3px;
-    background:rgba(0,0,0,0.7);backdrop-filter:blur(4px)}
-.sat-name.isro{color:#f97316;border:1px solid rgba(249,115,22,0.2)}
-.sat-name.intl{color:#22d3ee;border:1px solid rgba(34,211,238,0.2)}
-.sat-orbit-tag{font-size:7px;color:var(--t2);margin-left:-2px;
-    background:rgba(0,0,0,0.5);padding:1px 4px;border-radius:2px}
+
 
 /* GLOBE OVERLAYS */
 .globe-overlay{position:absolute;z-index:800;
@@ -258,9 +240,8 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
         <div class="g-btn-wrap"><button class="g-btn" onclick="focusGlobal()">&#127758;</button><span class="g-tip">Global View</span></div>
         <div class="g-btn-wrap"><button class="g-btn active" id="btnArcs" onclick="toggleArcs()">&#9992;&#65039;</button><span class="g-tip">Flight Routes</span></div>
         <div class="g-btn-wrap"><button class="g-btn active" id="btnAurora" onclick="toggleAurora()">&#127756;</button><span class="g-tip">Aurora Oval</span></div>
-        <div class="g-btn-wrap"><button class="g-btn active" id="btnLabels" onclick="toggleLabels()">Aa</button><span class="g-tip">Satellite Labels</span></div>
-        <div class="g-btn-wrap"><button class="g-btn" id="btnBeams" onclick="toggleBeams()">&#128225;</button><span class="g-tip">Station Links</span></div>
         <div class="g-btn-wrap"><button class="g-btn active" id="btnClouds" onclick="toggleClouds()">&#9729;&#65039;</button><span class="g-tip">Cloud Layer</span></div>
+        <div class="g-btn-wrap"><button class="g-btn active" id="btnStations" onclick="toggleStations()">&#128225;</button><span class="g-tip">Ground Stations</span></div>
     </div>
 
     <div class="globe-overlay cond-box" id="condBox">
@@ -274,30 +255,9 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     </div>
 
     <div class="globe-overlay legend-box">
-        <div class="lg"><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="#f97316"/></svg>ISRO</div>
-        <div class="lg"><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="#22d3ee"/></svg>Intl</div>
         <div class="lg"><svg width="10" height="10"><circle cx="5" cy="5" r="3" fill="none" stroke="#a855f7" stroke-width="2"/></svg>Aurora</div>
-        <div class="lg"><svg width="10" height="10"><rect x="1" y="1" width="8" height="8" rx="1" fill="none" stroke="#f97316" stroke-width="1.5" transform="rotate(45 5 5)"/></svg>Ground</div>
-    </div>
-
-    <div class="globe-overlay stat-box" id="statBox">
-        <div style="font-size:7px;color:var(--t2)">TRACKING</div>
-        <div class="stat-val" id="satCount">12</div>
-        <div class="stat-sub"><span class="stat-isro" id="satISRO">6 ISRO</span><span class="stat-intl" id="satINTL">6 INTL</span></div>
-    </div>
-
-    <!-- SPEED CONTROL -->
-    <div class="speed-ctrl">
-        <label>TIME WARP</label>
-        <input type="range" id="speedSlider" min="1" max="4" step="1" value="2">
-        <span class="speed-val" id="speedLabel">360x</span>
-    </div>
-
-    <!-- ORBIT BREAKDOWN -->
-    <div class="orbit-break">
-        <div class="ob-row"><div class="ob-dot" style="background:var(--green)"></div><span class="ob-count">7</span><span class="ob-label">LEO</span></div>
-        <div class="ob-row"><div class="ob-dot" style="background:var(--blue)"></div><span class="ob-count">2</span><span class="ob-label">MEO</span></div>
-        <div class="ob-row"><div class="ob-dot" style="background:var(--purple)"></div><span class="ob-count">3</span><span class="ob-label">GEO</span></div>
+        <div class="lg"><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="#f97316"/></svg>Ground Station</div>
+        <div class="lg"><svg width="14" height="10"><line x1="0" y1="5" x2="14" y2="5" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="3,2"/></svg>Flight Route</div>
     </div>
 
     <!-- SUN INDICATOR -->
@@ -306,13 +266,8 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
         <div><div class="sun-dir" id="sunDir">--</div><div class="sun-sub" id="sunSub">Subsolar Point</div></div>
     </div>
 
-    <div class="sat-tooltip" id="satTooltip">
-        <div class="tt-name" id="ttName"></div>
-        <div class="tt-row"><span class="tt-k">Orbit</span><span class="tt-v" id="ttOrbit"></span></div>
-        <div class="tt-row"><span class="tt-k">Altitude</span><span class="tt-v" id="ttAlt"></span></div>
-        <div class="tt-row"><span class="tt-k">Status</span><span class="tt-v" id="ttStatus" style="color:var(--green)">SAFE</span></div>
-    </div>
 </div>
+
 
 <!-- SIDEBAR -->
 <div class="sidebar">
@@ -389,55 +344,8 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 /* ===== STAR FIELD ===== */
 (function(){const sf=document.getElementById('starField');for(let i=0;i<200;i++){const s=document.createElement('div');s.className='star';s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';s.style.opacity=Math.random()*0.6+0.1;s.style.width=s.style.height=(Math.random()*1.5+0.5)+'px';s.style.animation=`twinkle ${2+Math.random()*4}s ease-in-out infinite ${Math.random()*3}s`;sf.appendChild(s)}const st=document.createElement('style');st.textContent='@keyframes twinkle{0%,100%{opacity:0.1}50%{opacity:0.8}}';document.head.appendChild(st)})();
 
-/* ===== SATELLITE DATA — Real Orbital Mechanics ===== */
-/*
-  Real orbital periods:
-  LEO (~400-800 km): ~90-100 min  → orbits ~16x/day
-  MEO (~20,000 km):  ~12 hr       → orbits 2x/day
-  GEO (35,786 km):   ~24 hr       → stationary (matches Earth rotation)
-  GSO (36,000 km):   ~24 hr       → traces figure-8 due to inclination
 
-  On screen: 1 real second = ~6 minutes of sim time (360x speedup)
-  So LEO completes one orbit in ~15 seconds, GEO stays put.
-*/
-const SIM_SPEED = 360; /* 1 sec = 6 min real */
-const DEG_PER_SEC_EARTH = 360 / 86400; /* Earth rotates 0.00417 deg/sec */
 
-const satellites = [
-    /* ISRO — Earth orbit */
-    {name:'INSAT-3DR', type:'isro', orbit:'GEO', alt:'35,786 km',
-     fixedLng:74, orbitAlt:0.20, period:86400, incl:0.1, phase:0},
-    {name:'GSAT-30', type:'isro', orbit:'GEO', alt:'35,786 km',
-     fixedLng:83, orbitAlt:0.20, period:86400, incl:0.1, phase:90},
-    {name:'NavIC', type:'isro', orbit:'GSO', alt:'36,000 km',
-     fixedLng:55, orbitAlt:0.21, period:86400, incl:29, phase:0},
-    {name:'Oceansat-3', type:'isro', orbit:'LEO', alt:'720 km',
-     fixedLng:80, orbitAlt:0.04, period:5940, incl:98.3, phase:0},
-    {name:'EOS-06', type:'isro', orbit:'LEO', alt:'817 km',
-     fixedLng:100, orbitAlt:0.045, period:6060, incl:97.4, phase:120},
-    {name:'RISAT-2B', type:'isro', orbit:'LEO', alt:'556 km',
-     fixedLng:60, orbitAlt:0.035, period:5760, incl:37, phase:200},
-    /* International — Earth orbit */
-    {name:'ISS', type:'intl', orbit:'LEO', alt:'408 km',
-     fixedLng:-80, orbitAlt:0.03, period:5520, incl:51.6, phase:45},
-    {name:'GPS-III', type:'intl', orbit:'MEO', alt:'20,200 km',
-     fixedLng:-120, orbitAlt:0.12, period:43080, incl:55, phase:30},
-    {name:'Starlink', type:'intl', orbit:'LEO', alt:'550 km',
-     fixedLng:-40, orbitAlt:0.035, period:5760, incl:53, phase:160},
-    {name:'GOES-18', type:'intl', orbit:'GEO', alt:'35,786 km',
-     fixedLng:-137, orbitAlt:0.20, period:86400, incl:0.1, phase:180},
-    {name:'Hubble', type:'intl', orbit:'LEO', alt:'547 km',
-     fixedLng:30, orbitAlt:0.035, period:5700, incl:28.5, phase:220},
-    {name:'Galileo', type:'intl', orbit:'MEO', alt:'23,222 km',
-     fixedLng:10, orbitAlt:0.14, period:50760, incl:56, phase:280}
-];
-
-/* Initialize computed positions */
-satellites.forEach(s => {
-    s.lat = 0;
-    s.lng = s.fixedLng;
-    s._angle = s.phase * Math.PI / 180;
-});
 
 /* ===== GROUND STATIONS ===== */
 const groundStations=[
@@ -462,7 +370,7 @@ const flightArcs=[
 
 /* ===== AURORA RINGS ===== */
 let currentKp=2;
-let showArcs=true,showAurora=true,showLabels=true;
+let showArcs=true,showAurora=true;
 
 function getAuroraData(){
     const baseRadius=15+currentKp*2;
@@ -521,29 +429,6 @@ const myGlobe=Globe()
     .ringPropagationSpeed('propagationSpeed')
     .ringRepeatPeriod('repeatPeriod')
     .ringColor('color')
-    /* Satellite HTML markers - flat on surface */
-    .htmlElementsData(satellites)
-    .htmlLat(d=>d.lat)
-    .htmlLng(d=>d.lng)
-    .htmlAltitude(0.005)
-    .htmlElement(d=>{
-        const wrap=document.createElement('div');
-        wrap.className='sat-marker';
-        wrap.innerHTML=`<div class="sat-dot ${d.type}"></div><span class="sat-name ${d.type}">${d.name}</span><span class="sat-orbit-tag">${d.orbit}</span>`;
-        wrap.addEventListener('click',()=>{
-            showTooltip(d.name,d.orbit,d.alt,d.type==='isro'?'ISRO':'INTL');
-        });
-        wrap.addEventListener('mouseenter',()=>{
-            container.style.cursor='pointer';
-            showTooltip(d.name,d.orbit,d.alt,d.type==='isro'?'ISRO':'INTL');
-        });
-        wrap.addEventListener('mouseleave',()=>{
-            container.style.cursor='grab';
-            hideTooltip();
-        });
-        d._el=wrap;
-        return wrap;
-    })
     (container);
 
 /* ===== TOOLTIP ===== */
@@ -598,54 +483,6 @@ container.addEventListener('touchend',()=>{
     rotateTimeout=setTimeout(()=>{myGlobe.controls().autoRotate=true},4000);
 });
 
-/* ===== SATELLITE POSITION UPDATES (every 5 seconds) ===== */
-let lastUpdate = performance.now();
-let simElapsed = 0;
-
-/* Speed slider */
-const speedLevels = [60, 360, 1800, 7200];
-const speedNames = ['60x', '360x', '1800x', '7200x'];
-let simSpeed = 360;
-document.getElementById('speedSlider').addEventListener('input', e => {
-    const idx = parseInt(e.target.value) - 1;
-    simSpeed = speedLevels[idx];
-    document.getElementById('speedLabel').textContent = speedNames[idx];
-});
-
-function computePositions() {
-    const now = performance.now();
-    const dtReal = Math.min((now - lastUpdate) / 1000, 10);
-    lastUpdate = now;
-    const dtSim = dtReal * simSpeed;
-
-    satellites.forEach(s => {
-        /* ISS uses live API position — skip orbital sim */
-        if (s.name === 'ISS') return;
-
-        const omega = (2 * Math.PI) / s.period;
-        s._angle += omega * dtSim;
-        const inclRad = s.incl * Math.PI / 180;
-        s.lat = Math.asin(Math.sin(inclRad) * Math.sin(s._angle)) * 180 / Math.PI;
-        const satDegPerSec = 360 / s.period;
-        const relativeSpeed = satDegPerSec - DEG_PER_SEC_EARTH;
-        s.lng = s.fixedLng + (relativeSpeed * dtSim);
-        s.fixedLng = s.lng;
-        while (s.lng > 180) s.lng -= 360;
-        while (s.lng < -180) s.lng += 360;
-    });
-
-    if (showLabels) {
-        myGlobe.htmlElementsData([...satellites]);
-    }
-    if (showBeams) {
-        updateBeams();
-    }
-}
-
-/* Update positions every 5 seconds */
-computePositions();
-setInterval(computePositions, 5000);
-
 /* ===== CONTROLS ===== */
 function focusIndia(){myGlobe.pointOfView({lat:22,lng:80,altitude:1.5},1000)}
 function focusGlobal(){myGlobe.pointOfView({lat:20,lng:40,altitude:2.5},1000)}
@@ -660,42 +497,13 @@ function toggleAurora(){
     document.getElementById('btnAurora').classList.toggle('active',showAurora);
     myGlobe.ringsData(showAurora?getAuroraData():[]);
 }
-function toggleLabels(){
-    showLabels=!showLabels;
-    document.getElementById('btnLabels').classList.toggle('active',showLabels);
-    myGlobe.htmlElementsData(showLabels?satellites:[]);
-}
 
-/* ===== CONNECTION BEAMS (Ground Station to nearest sat) ===== */
-let showBeams = false;
-function getBeamData() {
-    const beams = [];
-    groundStations.forEach(gs => {
-        let nearest = null, minDist = Infinity;
-        satellites.forEach(s => {
-            if (s.orbit !== 'LEO') return;
-            const d = Math.sqrt(Math.pow(gs.lat - s.lat, 2) + Math.pow(gs.lng - s.lng, 2));
-            if (d < minDist) { minDist = d; nearest = s; }
-        });
-        if (nearest && minDist < 40) {
-            beams.push({
-                startLat: gs.lat, startLng: gs.lng,
-                endLat: nearest.lat, endLng: nearest.lng,
-                color: ['rgba(249,115,22,0.5)', 'rgba(249,115,22,0.1)'],
-            });
-        }
-    });
-    return beams;
-}
-function updateBeams() {
-    const allArcs = showArcs ? [...flightArcs, ...getBeamData()] : getBeamData();
-    myGlobe.arcsData(allArcs);
-}
-function toggleBeams() {
-    showBeams = !showBeams;
-    document.getElementById('btnBeams').classList.toggle('active', showBeams);
-    if (showBeams) updateBeams();
-    else myGlobe.arcsData(showArcs ? flightArcs : []);
+/* Ground station toggle */
+let showStations = true;
+function toggleStations() {
+    showStations = !showStations;
+    document.getElementById('btnStations').classList.toggle('active', showStations);
+    myGlobe.pointsData(showStations ? groundStations : []);
 }
 
 /* ===== CLOUDS LAYER ===== */
@@ -752,21 +560,6 @@ updateSunPosition();
 setInterval(updateSunPosition, 30000);
 
 /* ===== REAL-TIME ISS POSITION ===== */
-async function fetchISS() {
-    try {
-        const r = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
-        const d = await r.json();
-        const iss = satellites.find(s => s.name === 'ISS');
-        if (iss && d.latitude && d.longitude) {
-            iss.lat = d.latitude;
-            iss.lng = d.longitude;
-            iss.fixedLng = d.longitude;
-            /* Refresh display after ISS update */
-            if (showLabels) myGlobe.htmlElementsData([...satellites]);
-        }
-    } catch(e) { /* ISS API optional */ }
-}
-fetchISS(); setInterval(fetchISS, 5000);
 
 /* ===== CLOCK ===== */
 function updateClock(){
