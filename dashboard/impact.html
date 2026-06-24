@@ -131,6 +131,30 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     .hdr-title{font-size:10px}
     .content{grid-template-rows:50vh 1fr auto}
 }
+/* SPEED CONTROL */
+.speed-ctrl{position:absolute;bottom:52px;left:12px;z-index:800;background:rgba(10,14,23,0.92);
+    border:1px solid var(--border);border-radius:6px;padding:8px 12px;backdrop-filter:blur(10px);font-size:10px}
+.speed-ctrl label{color:var(--t2);font-size:9px;display:block;margin-bottom:4px;letter-spacing:0.5px}
+.speed-ctrl input[type=range]{width:120px;accent-color:var(--cyan);cursor:pointer}
+.speed-val{color:var(--cyan);font-weight:700;font-family:'Space Grotesk',sans-serif;font-size:12px}
+
+/* ORBIT BREAKDOWN */
+.orbit-break{position:absolute;bottom:12px;right:12px;z-index:800;background:rgba(10,14,23,0.92);
+    border:1px solid var(--border);border-radius:6px;padding:8px 12px;backdrop-filter:blur(10px);font-size:10px}
+.ob-row{display:flex;align-items:center;gap:6px;padding:2px 0}
+.ob-dot{width:8px;height:8px;border-radius:50%}
+.ob-count{font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--t0);font-size:12px}
+.ob-label{color:var(--t2);font-size:10px}
+
+/* SUN INDICATOR */
+.sun-indicator{position:absolute;bottom:52px;right:12px;z-index:800;background:rgba(10,14,23,0.92);
+    border:1px solid rgba(249,115,22,0.15);border-radius:6px;padding:8px 12px;backdrop-filter:blur(10px);font-size:10px;
+    display:flex;align-items:center;gap:8px}
+.sun-icon{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle,#fbbf24 20%,#f97316 60%,rgba(249,115,22,0.2) 100%);
+    box-shadow:0 0 12px rgba(251,191,36,0.4);animation:sunPulse 3s ease-in-out infinite}
+@keyframes sunPulse{0%,100%{box-shadow:0 0 8px rgba(251,191,36,0.3)}50%{box-shadow:0 0 20px rgba(251,191,36,0.6)}}
+.sun-dir{color:var(--t0);font-weight:600}
+.sun-sub{color:var(--t2);font-size:9px}
 </style>
 </head>
 <body>
@@ -158,6 +182,8 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
         <div class="g-btn-wrap"><button class="g-btn active" id="btnArcs" onclick="toggleArcs()">&#9992;&#65039;</button><span class="g-tip">Flight Routes</span></div>
         <div class="g-btn-wrap"><button class="g-btn active" id="btnAurora" onclick="toggleAurora()">&#127756;</button><span class="g-tip">Aurora Oval</span></div>
         <div class="g-btn-wrap"><button class="g-btn active" id="btnLabels" onclick="toggleLabels()">Aa</button><span class="g-tip">Satellite Labels</span></div>
+        <div class="g-btn-wrap"><button class="g-btn" id="btnBeams" onclick="toggleBeams()">&#128225;</button><span class="g-tip">Station Links</span></div>
+        <div class="g-btn-wrap"><button class="g-btn active" id="btnClouds" onclick="toggleClouds()">&#9729;&#65039;</button><span class="g-tip">Cloud Layer</span></div>
     </div>
 
     <div class="globe-overlay cond-box" id="condBox">
@@ -181,6 +207,26 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
         <div style="font-size:7px;color:var(--t2)">TRACKING</div>
         <div class="stat-val" id="satCount">12</div>
         <div class="stat-sub"><span class="stat-isro" id="satISRO">6 ISRO</span><span class="stat-intl" id="satINTL">6 INTL</span></div>
+    </div>
+
+    <!-- SPEED CONTROL -->
+    <div class="speed-ctrl">
+        <label>TIME WARP</label>
+        <input type="range" id="speedSlider" min="1" max="4" step="1" value="2">
+        <span class="speed-val" id="speedLabel">360x</span>
+    </div>
+
+    <!-- ORBIT BREAKDOWN -->
+    <div class="orbit-break">
+        <div class="ob-row"><div class="ob-dot" style="background:var(--green)"></div><span class="ob-count">7</span><span class="ob-label">LEO</span></div>
+        <div class="ob-row"><div class="ob-dot" style="background:var(--blue)"></div><span class="ob-count">2</span><span class="ob-label">MEO</span></div>
+        <div class="ob-row"><div class="ob-dot" style="background:var(--purple)"></div><span class="ob-count">3</span><span class="ob-label">GEO</span></div>
+    </div>
+
+    <!-- SUN INDICATOR -->
+    <div class="sun-indicator">
+        <div class="sun-icon"></div>
+        <div><div class="sun-dir" id="sunDir">--</div><div class="sun-sub" id="sunSub">Subsolar Point</div></div>
     </div>
 
     <div class="sat-tooltip" id="satTooltip">
@@ -474,28 +520,30 @@ container.addEventListener('touchend',()=>{
 /* ===== REALISTIC SATELLITE ANIMATION ===== */
 let lastFrame = performance.now();
 
+/* Speed slider */
+const speedLevels = [60, 360, 1800, 7200];
+const speedNames = ['60x', '360x', '1800x', '7200x'];
+let simSpeed = 360;
+document.getElementById('speedSlider').addEventListener('input', e => {
+    const idx = parseInt(e.target.value) - 1;
+    simSpeed = speedLevels[idx];
+    document.getElementById('speedLabel').textContent = speedNames[idx];
+});
+
 function animateSats(now) {
-    const dtReal = Math.min((now - lastFrame) / 1000, 0.1); /* cap to avoid jumps */
+    const dtReal = Math.min((now - lastFrame) / 1000, 0.1);
     lastFrame = now;
-    const dtSim = dtReal * SIM_SPEED; /* simulated seconds elapsed */
+    const dtSim = dtReal * simSpeed;
 
     satellites.forEach(s => {
-        /* Angular velocity: 2*PI / period (rad per sim-second) */
         const omega = (2 * Math.PI) / s.period;
         s._angle += omega * dtSim;
-
-        /* Latitude: oscillates between +incl and -incl */
         const inclRad = s.incl * Math.PI / 180;
         s.lat = Math.asin(Math.sin(inclRad) * Math.sin(s._angle)) * 180 / Math.PI;
-
-        /* Longitude: difference from Earth rotation determines ground track */
-        /* Earth rotates at DEG_PER_SEC_EARTH deg/sec, sat at (360/period) deg/sec */
         const satDegPerSec = 360 / s.period;
-        const relativeSpeed = satDegPerSec - DEG_PER_SEC_EARTH; /* deg/sec faster than Earth */
+        const relativeSpeed = satDegPerSec - DEG_PER_SEC_EARTH;
         s.lng = s.fixedLng + (relativeSpeed * dtSim);
-        s.fixedLng = s.lng; /* update base for next frame */
-
-        /* Wrap longitude to [-180, 180] */
+        s.fixedLng = s.lng;
         while (s.lng > 180) s.lng -= 360;
         while (s.lng < -180) s.lng += 360;
     });
@@ -503,6 +551,12 @@ function animateSats(now) {
     if (showLabels) {
         myGlobe.labelsData([...satellites]);
     }
+
+    /* Update connection beams */
+    if (showBeams) {
+        updateBeams();
+    }
+
     requestAnimationFrame(animateSats);
 }
 requestAnimationFrame(animateSats);
@@ -526,6 +580,106 @@ function toggleLabels(){
     document.getElementById('btnLabels').classList.toggle('active',showLabels);
     myGlobe.labelsData(showLabels?satellites:[]);
 }
+
+/* ===== CONNECTION BEAMS (Ground Station to nearest sat) ===== */
+let showBeams = false;
+function getBeamData() {
+    const beams = [];
+    groundStations.forEach(gs => {
+        let nearest = null, minDist = Infinity;
+        satellites.forEach(s => {
+            if (s.orbit !== 'LEO') return;
+            const d = Math.sqrt(Math.pow(gs.lat - s.lat, 2) + Math.pow(gs.lng - s.lng, 2));
+            if (d < minDist) { minDist = d; nearest = s; }
+        });
+        if (nearest && minDist < 40) {
+            beams.push({
+                startLat: gs.lat, startLng: gs.lng,
+                endLat: nearest.lat, endLng: nearest.lng,
+                color: ['rgba(249,115,22,0.5)', 'rgba(249,115,22,0.1)'],
+            });
+        }
+    });
+    return beams;
+}
+function updateBeams() {
+    const allArcs = showArcs ? [...flightArcs, ...getBeamData()] : getBeamData();
+    myGlobe.arcsData(allArcs);
+}
+function toggleBeams() {
+    showBeams = !showBeams;
+    document.getElementById('btnBeams').classList.toggle('active', showBeams);
+    if (showBeams) updateBeams();
+    else myGlobe.arcsData(showArcs ? flightArcs : []);
+}
+
+/* ===== CLOUDS LAYER ===== */
+let showCloudsLayer = true;
+let cloudsMesh = null;
+setTimeout(() => {
+    try {
+        const THREE = myGlobe.scene().constructor === undefined ? window.THREE : Object.getPrototypeOf(myGlobe.scene()).constructor;
+        /* Use Three.js from Globe.gl's bundled version */
+        const globeGroup = myGlobe.scene().children.find(c => c.type === 'Group');
+        if (globeGroup) {
+            const globeRadius = 100;
+            const geo = new THREE.SphereGeometry(globeRadius * 1.005, 64, 64);
+            const loader = new THREE.TextureLoader();
+            loader.load('https://unpkg.com/three-globe@2.35.0/example/img/earth-water.png', tex => {
+                const mat = new THREE.MeshPhongMaterial({
+                    map: tex, transparent: true, opacity: 0.12,
+                    depthWrite: false, side: THREE.DoubleSide
+                });
+                cloudsMesh = new THREE.Mesh(geo, mat);
+                globeGroup.add(cloudsMesh);
+            });
+        }
+    } catch(e) { /* clouds optional */ }
+}, 1500);
+
+function toggleClouds() {
+    showCloudsLayer = !showCloudsLayer;
+    document.getElementById('btnClouds').classList.toggle('active', showCloudsLayer);
+    if (cloudsMesh) cloudsMesh.visible = showCloudsLayer;
+}
+
+/* Rotate clouds slowly */
+function rotateClouds() {
+    if (cloudsMesh && showCloudsLayer) cloudsMesh.rotation.y += 0.0001;
+    requestAnimationFrame(rotateClouds);
+}
+rotateClouds();
+
+/* ===== SUN DIRECTION ===== */
+function updateSunPosition() {
+    const now = new Date();
+    const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+    const declination = -23.44 * Math.cos((360 / 365) * (dayOfYear + 10) * Math.PI / 180);
+    const hourUTC = now.getUTCHours() + now.getUTCMinutes() / 60;
+    const sunLng = -(hourUTC - 12) * 15;
+    const sunLat = declination;
+    document.getElementById('sunDir').textContent =
+        Math.abs(sunLat).toFixed(1) + (sunLat >= 0 ? 'N' : 'S') + ', ' +
+        Math.abs(sunLng).toFixed(0) + (sunLng >= 0 ? 'E' : 'W');
+    document.getElementById('sunSub').textContent = 'Subsolar Point (' + now.toUTCString().slice(17, 22) + ' UTC)';
+}
+updateSunPosition();
+setInterval(updateSunPosition, 30000);
+
+/* ===== REAL-TIME ISS POSITION ===== */
+async function fetchISS() {
+    try {
+        const r = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
+        const d = await r.json();
+        const iss = satellites.find(s => s.name === 'ISS');
+        if (iss && d.latitude && d.longitude) {
+            iss.lat = d.latitude;
+            iss.lng = d.longitude;
+            iss.fixedLng = d.longitude;
+        }
+    } catch(e) { /* ISS API optional */ }
+}
+fetchISS(); setInterval(fetchISS, 15000);
 
 /* ===== CLOCK ===== */
 function updateClock(){
@@ -577,15 +731,10 @@ function updateWx(d){
     document.getElementById('cPr').textContent=d.proton+' pfu';
     document.getElementById('cRSG').textContent=d.r+'/'+d.s+'/'+d.g;
     document.getElementById('cUpd').textContent='Updated: '+new Date().toLocaleTimeString();
-
-    /* Update aurora based on Kp */
     if(showAurora)myGlobe.ringsData(getAuroraData());
-
-    /* Impact prediction */
     const impPct=d.kp<=3?0:d.kp<=5?Math.round((d.kp-3)*4):Math.round(8+(d.kp-5)*8);
     document.getElementById('impArea').textContent=impPct+'%';
     document.getElementById('impArea').style.color=colorForKp(d.kp);
-
     if(d.kp<=3){
         document.getElementById('impBlack').textContent='None';document.getElementById('impBlack').style.color='var(--green)';
         document.getElementById('impDur').textContent='--';document.getElementById('impDur').style.color='var(--green)';
@@ -602,8 +751,6 @@ function updateWx(d){
         document.getElementById('impRec').textContent='6-24 hr';document.getElementById('impRec').style.color='var(--red)';
         document.getElementById('impSats').textContent=Math.round(d.kp*1.5);document.getElementById('impSats').style.color='var(--red)';
     }
-
-    /* Satellite status */
     const els={sA:d.kp,sCh:d.kp,sIN:d.kp,sGS:d.kp,sNv:d.kp,sOc:d.kp,sEO:d.kp,sRI:d.kp,
                sIS:d.kp,sGP:d.kp,sSL:d.kp,sGO:d.kp,sHu:d.kp,sGa:d.kp};
     Object.keys(els).forEach(id=>{
@@ -617,29 +764,24 @@ function updateWx(d){
     if(d.kp<=3){isroEl.textContent='NOMINAL';isroEl.className='sb-badge s0';}
     else if(d.kp<=5){isroEl.textContent='ALERT';isroEl.className='sb-badge s1';}
     else{isroEl.textContent='CRITICAL';isroEl.className='sb-badge s3';}
-
-    /* Comms */
     ['cHF','cGN','cSC','cAD'].forEach(id=>{
         const el=document.getElementById(id);if(!el)return;
         if(d.kp<=3){el.textContent='OK';el.className='ast s0';}
         else if(d.kp<=5){el.textContent='DEGRADED';el.className='ast s1';}
         else{el.textContent='DISRUPTED';el.className='ast s3';}
     });
-    /* Ground */
     ['gPw','gIn','gIS'].forEach(id=>{
         const el=document.getElementById(id);if(!el)return;
         if(d.kp<=4){el.textContent=id==='gIS'?'NOMINAL':'STABLE';el.className='ast s0';}
         else if(d.kp<=6){el.textContent='STRESSED';el.className='ast s1';}
         else{el.textContent='AT RISK';el.className='ast s3';}
     });
-    /* Flights */
     ['f1','f2','f3'].forEach(id=>{
         const el=document.getElementById(id);if(!el)return;
         if(d.kp<=4){el.textContent='CLEAR';el.className='ast s0';}
         else if(d.kp<=6){el.textContent='ADVISORY';el.className='ast s1';}
         else{el.textContent='REROUTE';el.className='ast s3';}
     });
-    /* Regions */
     const rHi=document.getElementById('rHi'),rMd=document.getElementById('rMd'),rIn=document.getElementById('rIn');
     if(d.kp<=3){rHi.textContent='SAFE';rHi.className='ast s0';rMd.textContent='SAFE';rMd.className='ast s0';rIn.textContent='SAFE';rIn.className='ast s0';}
     else if(d.kp<=5){rHi.textContent='AURORA';rHi.className='ast s1';rMd.textContent='SAFE';rMd.className='ast s0';rIn.textContent='SAFE';rIn.className='ast s0';}
@@ -647,7 +789,6 @@ function updateWx(d){
     else{rHi.textContent='SEVERE';rHi.className='ast s3';rMd.textContent='STORM';rMd.className='ast s2';rIn.textContent='AURORA';rIn.className='ast s1';}
 }
 
-/* Fetch NOAA */
 async function fetchNOAA(){
     try{
         const r=await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json');
@@ -661,6 +802,16 @@ async function fetchNOAA(){
     }
 }
 fetchNOAA();setInterval(fetchNOAA,120000);
+
+/* ===== RENDERER ENHANCEMENT ===== */
+setTimeout(()=>{
+    try{
+        const renderer=myGlobe.renderer();
+        renderer.toneMapping=1;
+        renderer.toneMappingExposure=1.3;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+    }catch(e){}
+},500);
 
 /* ===== RESIZE ===== */
 window.addEventListener('resize',()=>{
