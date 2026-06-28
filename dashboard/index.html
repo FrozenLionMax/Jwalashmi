@@ -31,7 +31,8 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 
 /* === STARFIELD === */
 #starfield{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.4}
-.main,.topbar,.flux-row,.mid,.console-row,.status-bar,.loader-overlay{position:relative;z-index:1}
+.main,.flux-row,.mid,.console-row,.status-bar,.loader-overlay{position:relative;z-index:1}
+.topbar{position:relative;z-index:100}
 
 /* === MISSION BADGE === */
 .mission-badge{display:flex;align-items:center;gap:6px;margin-right:8px;padding:2px 8px 2px 4px;
@@ -57,7 +58,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 
 /* === TOP BAR === */
 .topbar{display:flex;align-items:center;height:48px;padding:0 18px;
-    background:linear-gradient(180deg,#0c1120,#080c18);border-bottom:1px solid var(--border);flex-shrink:0;gap:0;position:relative}
+    background:linear-gradient(180deg,#0c1120,#080c18);border-bottom:1px solid var(--border);flex-shrink:0;gap:0;position:relative;overflow:visible;z-index:100}
 .tb-brand{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;
     color:var(--cyan);letter-spacing:1.2px;margin-right:4px;white-space:nowrap}
 .tb-ver{font-size:9px;color:var(--t3);margin-right:12px;background:rgba(34,211,238,0.06);
