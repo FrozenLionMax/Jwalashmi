@@ -533,10 +533,11 @@ let globalSunLng = 0;
 
 /* Init Leaflet map with dark CartoDB tiles */
 const map = L.map('mapViz', {
-    center: [20, 78], zoom: 3, zoomControl: true,
+    center: [20, 78], zoom: 3, zoomControl: false,
     attributionControl: false, scrollWheelZoom: true,
     worldCopyJump: false, maxBoundsViscosity: 1.0
 });
+L.control.zoom({ position: 'bottomright' }).addTo(map);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     maxZoom: 10, minZoom: 2, subdomains: 'abcd',
     noWrap: true, bounds: L.latLngBounds(L.latLng(-90, -180), L.latLng(90, 180))
