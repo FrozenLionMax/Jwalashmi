@@ -1009,6 +1009,22 @@ def space_weather():
         return jsonify(space_weather_data)
 
 
+@app.route("/api/noaa_alerts")
+def noaa_alerts():
+    """Proxy NOAA space weather alerts to avoid CORS issues."""
+    try:
+        import urllib.request, json as _json
+        req = urllib.request.Request(
+            "https://services.swpc.noaa.gov/products/alerts.json",
+            headers={"User-Agent": "JWALASHMI-Dashboard/6.2"}
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = _json.loads(resp.read().decode())
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+
 @app.route("/api/metrics")
 def metrics():
     """Return real model performance metrics from latest training."""

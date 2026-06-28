@@ -102,21 +102,24 @@ The primary operational dashboard with:
 
 Full-page geomagnetic impact assessment:
 
-- **World Map Visualization** — Canvas-rendered with:
-  - Animated aurora ovals (expand/contract with real Kp)
-  - Color-coded danger zones (polar → equatorial)
-  - India highlighted in orange with ISRO ground stations
-  - Satellite positions with orbital animation
-  - Polar flight routes drawn when Kp ≥ 4
-  - Latitude grid and labels
-- **ISRO Space Assets** — Aditya-L1, Chandrayaan-3, INSAT-3DR, GSAT-30, NavIC, Oceansat-3, RISAT-2B
-- **International Assets** — ISS, GPS-III, Galileo, Starlink, Tiangong, GOES-18, SOHO
-- **Communications & Navigation** — HF Radio, GPS, NavIC, SATCOM, ADS-B, VHF, Submarine Cables
-- **Ground Infrastructure** — Power Grids, Pipelines, Rail Signaling, Transformers, PGCIL, ISTRAC
-- **Impact Timeline** — Solar Flare → Radio Blackout (T+8min) → Proton Storm (T+15-60min) → CME Impact (T+18-36hr) → Geomagnetic Storm
-- **Regions at Risk** — Canada, Scandinavia, Russia, N. America, Europe, India, Australia
-- **Polar Flight Routes** — DEL→SFO, BOM→EWR, DEL→YYZ, LHR→NRT, FRA→ICN (Air India routes)
-- **Real-time Conditions** — Kp, Solar Wind, Bz, Proton Flux, R/S/G scales from NOAA
+- **World Map** — Leaflet.js dark CartoDB tiles with:
+  - Real-time aurora ovals (expand/contract with live NOAA Kp)
+  - Day/night terminator with subsolar point tracking
+  - ISRO ground station markers with hover tooltips
+  - Aurora boundary labels and high-impact zone overlays
+- **Status Summary Strip** — Plain-English conditions: *"All quiet — Kp 2.3 | Solar wind 380 km/s | No action needed"*
+- **Trend Arrows** — ↑↓→ on Kp, solar wind, Bz to track rising/falling values
+- **NOAA Alerts Feed** — Live warnings/watches from NOAA SWPC (proxied server-side)
+- **Interactive Timeline** — Nodes pulse when Kp triggers: Flare → Blackout → Protons → CME → Storm
+- **Kp History Chart** — 24h bar chart from NOAA 1-minute Kp data
+- **ISRO Space Assets** — Aditya-L1, Chandrayaan-3, INSAT-3DR, GSAT-30, NavIC, Oceansat-3, EOS-06, RISAT-2B
+- **Communications** — HF Radio, GPS/NavIC, SATCOM, Indian Grid, ISTRAC Network
+- **Regions & Aurora** — Canada/Scandinavia, N.America/Europe, India + aurora boundary
+- **Impact Prediction** — Affected area %, blackout zone, duration, recovery, sats at risk
+- **JWALASHMI Model Overlay** — Live prediction with probability bars and strategic outlook
+- **X-Ray Sparkline** — GOES/SoLEXS flux with C/M/X threshold lines
+- **Toast Alert System** — Reactive popups on Kp changes, solar wind spikes, Bz southward
+- **CME Countdown** — Activates on M/X prediction with lead time
 
 > All statuses update dynamically based on real-time Kp index from NOAA SWPC
 
@@ -347,6 +350,7 @@ Input: (batch, 3600, 12) — 60 min @ 1s, 12 features
 |----------|--------|-------------|
 | `/api/predict` | GET | Current prediction with flux data |
 | `/api/space_weather` | GET | Real-time NOAA Kp, wind, Bz, R/S/G |
+| `/api/noaa_alerts` | GET | Proxied NOAA space weather alerts feed |
 | `/api/catalog` | GET | Detected flare event catalog |
 | `/api/metrics` | GET | Model performance metrics |
 | `/api/feature_importance` | GET | Gradient-based feature attribution |

@@ -5,11 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JWALASHMI | Mission Control</title>
 <meta name="description" content="JWALASHMI — AI-Powered Solar Flare Early Warning System using ISRO Aditya-L1 SoLEXS + HEL1OS">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23f97316' opacity='0.9'/><circle cx='50' cy='50' r='25' fill='%23fbbf24'/><circle cx='50' cy='50' r='12' fill='%23fde68a'/></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.12)}
+*{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.06) transparent}
 :root{
     --bg:#020408;--panel:#0a0e17;--panel2:#0d1220;--border:rgba(255,255,255,0.06);
     --borderHi:rgba(34,211,238,0.18);
@@ -19,7 +25,9 @@
 }
 html,body{height:100%;overflow:hidden}
 body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0);
-    display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;position:relative}
+    display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;position:relative;
+    animation:fadeIn 1s ease-out}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
 /* === STARFIELD === */
 #starfield{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.4}
@@ -48,7 +56,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .conn-label{font-size:7px;color:var(--t3);margin-left:4px;letter-spacing:0.3px}
 
 /* === TOP BAR === */
-.topbar{display:flex;align-items:center;height:40px;padding:0 18px;
+.topbar{display:flex;align-items:center;height:42px;padding:0 18px;
     background:linear-gradient(180deg,#0c1120,#080c18);border-bottom:1px solid var(--border);flex-shrink:0;gap:0}
 .tb-brand{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;
     color:var(--cyan);letter-spacing:1.2px;margin-right:4px;white-space:nowrap}
@@ -78,7 +86,12 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .tb-date{font-size:10px;color:var(--t3);margin-right:10px}
 
 /* === MAIN GRID === */
-.main{flex:1;display:grid;grid-template-rows:280px 1fr auto;overflow:hidden}
+.main{flex:1;display:grid;grid-template-columns:1fr 320px;grid-template-rows:280px 1fr auto;overflow:hidden}
+.main>.flux-row{grid-column:1/-1}
+.main>.mid{grid-column:1;grid-row:2}
+.main>.sdo-pnl{grid-column:2;grid-row:2/4;border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.main>.sdo-pnl:hover{background:rgba(255,255,255,0.005)}
+.main>.console-row{grid-column:1;grid-row:3}
 
 /* === FLUX === */
 .flux-row{border-bottom:1px solid var(--border);position:relative;background:linear-gradient(180deg,rgba(10,14,23,0.5),transparent)}
@@ -111,10 +124,22 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .flux-stat-v{font-weight:600;font-size:11px}
 
 /* === MID === */
-.mid{display:grid;grid-template-columns:220px 1fr 1fr 220px;gap:0;overflow:hidden}
-.pnl{border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:background 0.3s ease}
+.mid{display:grid;grid-template-columns:200px 1fr 1fr;gap:0;overflow:hidden}
+.pnl{border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:background 0.3s ease;position:relative}
 .pnl:last-child{border-right:none}
 .pnl:hover{background:rgba(255,255,255,0.005)}
+.pnl::after{content:'⌄';position:absolute;bottom:0;left:0;right:0;height:28px;
+    background:linear-gradient(transparent,var(--panel) 70%);pointer-events:none;z-index:2;
+    display:flex;align-items:flex-end;justify-content:center;
+    font-size:10px;color:var(--t3);padding-bottom:2px;opacity:0.6;
+    animation:scrollHint 2s ease-in-out infinite}
+@keyframes scrollHint{0%,100%{opacity:0.4;transform:translateY(0)}50%{opacity:0.8;transform:translateY(-2px)}}
+.sdo-pnl::after{content:'⌄';position:absolute;bottom:0;left:0;right:0;height:28px;
+    background:linear-gradient(transparent,var(--panel) 70%);pointer-events:none;z-index:2;
+    display:flex;align-items:flex-end;justify-content:center;
+    font-size:10px;color:var(--t3);padding-bottom:2px;opacity:0.6;
+    animation:scrollHint 2s ease-in-out infinite}
+.sdo-pnl{position:relative}
 .pnl-hdr{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;
     justify-content:space-between;flex-shrink:0;background:rgba(255,255,255,0.01);position:relative}
 .pnl-hdr::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;
@@ -191,7 +216,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 
 /* SDO */
 .sdo-wrap{text-align:center;padding:8px}
-.sdo-img{width:130px;height:130px;border-radius:50%;object-fit:cover;
+.sdo-img{width:240px;height:240px;border-radius:50%;object-fit:cover;
     border:1px solid rgba(249,115,22,0.12);display:block;margin:0 auto;
     box-shadow:0 0 20px rgba(249,115,22,0.06);transition:transform 0.4s,box-shadow 0.4s}
 .sdo-img:hover{transform:scale(1.06);box-shadow:0 0 24px rgba(249,115,22,0.1)}
@@ -202,6 +227,9 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .sdo-tab.on{background:rgba(249,115,22,0.06);color:var(--orange);border-color:rgba(249,115,22,0.2)}
 .sdo-label{font-size:8px;color:var(--t3);margin-top:4px}
 .sdo-meta{font-size:8px;color:var(--t3);margin-top:2px;opacity:0.6}
+.sdo-time{font-size:8px;color:var(--orange);font-weight:600;margin-top:4px;
+    background:rgba(249,115,22,0.06);border:1px solid rgba(249,115,22,0.1);
+    display:inline-block;padding:2px 8px;border-radius:3px;letter-spacing:0.3px}
 
 /* Inner split */
 .inner-split{display:grid;grid-template-columns:1fr 1fr;height:100%}
@@ -212,7 +240,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 
 /* === CONSOLE === */
 .console-row{border-top:1px solid var(--border);display:flex;flex-direction:column;
-    height:130px;flex-shrink:0;background:linear-gradient(180deg,var(--panel),#060a14)}
+    height:90px;flex-shrink:0;background:linear-gradient(180deg,var(--panel),#060a14)}
 .console-hdr{padding:5px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
 .console-title{font-size:9px;color:var(--t2);font-weight:600;text-transform:uppercase;letter-spacing:0.6px}
 .console-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 4px var(--green);animation:blink 2s infinite}
@@ -351,20 +379,15 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
 @keyframes redPulse{0%,100%{box-shadow:none}50%{box-shadow:0 0 20px rgba(239,68,68,0.3),inset 0 0 20px rgba(239,68,68,0.08)}}
 
 /* === ANALYTICS BUTTON === */
-.analytics-btn{display:flex;align-items:center;gap:5px;padding:3px 12px;font-size:9px;font-weight:700;
-    font-family:'JetBrains Mono',monospace;color:var(--purple);background:rgba(168,85,247,0.06);
-    border:1px solid rgba(168,85,247,0.15);border-radius:4px;cursor:pointer;
-    text-decoration:none;text-transform:uppercase;letter-spacing:0.5px;
-    transition:all 0.4s cubic-bezier(0.4,0,0.2,1);position:relative;overflow:hidden}
-.analytics-btn::before{content:'';position:absolute;top:50%;left:50%;width:0;height:0;
-    background:rgba(168,85,247,0.08);border-radius:50%;transform:translate(-50%,-50%);
-    transition:all 0.6s}
-.analytics-btn:hover{background:rgba(168,85,247,0.12);border-color:rgba(168,85,247,0.3);
-    box-shadow:0 0 16px rgba(168,85,247,0.12);transform:translateY(-1px)}
-.analytics-btn:hover::before{width:200px;height:200px}
-.analytics-btn .ab-dot{width:5px;height:5px;border-radius:50%;background:var(--purple);
-    box-shadow:0 0 6px var(--purple);animation:abPulse 2s ease-in-out infinite}
-@keyframes abPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
+.nav-btn,.nav-btn.orange,.nav-btn.purple{display:none}/* deprecated — use .ptab */
+.page-tabs{display:flex;gap:4px;align-items:center}
+.ptab{font-size:9px;padding:6px 16px;color:var(--t3);text-decoration:none;
+    border-radius:5px;font-weight:600;transition:all 0.25s;font-family:inherit;
+    letter-spacing:0.4px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02)}
+.ptab:hover{color:var(--t1);background:rgba(34,211,238,0.06);border-color:rgba(34,211,238,0.15);
+    box-shadow:0 0 8px rgba(34,211,238,0.06);transform:translateY(-1px)}
+.ptab.active{color:var(--cyan);background:rgba(34,211,238,0.08);
+    border-color:rgba(34,211,238,0.2);box-shadow:0 0 10px rgba(34,211,238,0.08)}
 </style>
 </head>
 <body>
@@ -427,6 +450,12 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
         <div class="conn-bar on" style="height:11px"></div>
         <div class="conn-bar on" style="height:13px"></div>
         <span class="conn-label" id="connLabel">LIVE</span>
+    </div>
+    <div class="tb-sep"></div>
+    <div class="page-tabs">
+        <a href="/" class="ptab active">Mission Control</a>
+        <a href="/impact.html" class="ptab">Impact Map</a>
+        <a href="/analytics.html" class="ptab">Analytics</a>
     </div>
     <div class="tb-right">
         <span class="tb-date" id="clkDate">--</span>
@@ -523,8 +552,8 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
             <div class="kv"><span class="kv-k">Electron Flux</span><span class="kv-v" style="color:var(--t2);font-size:10px" id="vElectron">2.1e+02</span></div>
 
             <div class="section-lbl" style="margin-top:10px">Ensemble</div>
-            <div class="kv"><span class="kv-k">Models</span><span class="kv-v" style="color:var(--cyan);font-size:10px">16 (10T + 5S)</span></div>
-            <div class="kv"><span class="kv-k">Features</span><span class="kv-v" style="color:var(--t1);font-size:10px">12 (SoLEXS+HEL1OS)</span></div>
+            <div class="kv"><span class="kv-k">Models</span><span class="kv-v" style="color:var(--cyan);font-size:10px" id="vModels">16 (10T + 5S)</span></div>
+            <div class="kv"><span class="kv-k">Features</span><span class="kv-v" style="color:var(--t1);font-size:10px" id="vFeatures">12 (SoLEXS+HEL1OS)</span></div>
             <div class="kv"><span class="kv-k">Latency</span><span class="kv-v" style="color:var(--t2);font-size:10px" id="vInference">~50ms</span></div>
         </div>
     </div>
@@ -554,41 +583,42 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Panel 4: SDO + Strategic -->
-    <div class="pnl" style="border-right:none">
-        <div class="pnl-hdr"><span class="pnl-title">SDO Live</span>
-            <span class="pnl-badge" style="background:rgba(249,115,22,0.06);color:var(--orange);border:1px solid rgba(249,115,22,0.12)">NASA</span></div>
-        <div class="pnl-body" style="padding:0">
-            <div class="sdo-wrap">
-                <div class="sdo-tabs">
-                    <button class="sdo-tab on" onclick="setSDO('0193',this)">193</button>
-                    <button class="sdo-tab" onclick="setSDO('0131',this)">131</button>
-                    <button class="sdo-tab" onclick="setSDO('0171',this)">171</button>
-                    <button class="sdo-tab" onclick="setSDO('0304',this)">304</button>
-                    <button class="sdo-tab" onclick="setSDO('0211',this)">211</button>
-                    <button class="sdo-tab" onclick="setSDO('HMIB',this)">MAG</button>
-                    <button class="sdo-tab" onclick="setSDO('HMIIC',this)">HMI</button>
-                    <button class="sdo-tab" onclick="setSDO('LASCO',this)">LASCO</button>
-                </div>
-                <img class="sdo-img" id="sdoImg" src="https://sdo.gsfc.nasa.gov/assets/img/latest/latest_512_0193.jpg" alt="SDO" style="width:150px;height:150px">
-                <div class="sdo-label" id="sdoLbl">AIA 193&#x212B; &mdash; 1.2 MK corona</div>
-                <div class="sdo-meta" id="sdoMeta">Live &bull; Auto-refresh 30s</div>
+<!-- Panel 4: SDO + Strategic (spans full right side) -->
+<div class="sdo-pnl">
+    <div class="pnl-hdr"><span class="pnl-title">SDO Live</span>
+        <span class="pnl-badge" style="background:rgba(249,115,22,0.06);color:var(--orange);border:1px solid rgba(249,115,22,0.12)">NASA</span>
+        <span class="sdo-time" id="sdoTime" style="margin-left:auto">Fetched --</span></div>
+    <div class="pnl-body" style="padding:0;flex:1;overflow-y:auto">
+        <div class="sdo-wrap">
+            <div class="sdo-tabs">
+                <button class="sdo-tab on" onclick="setSDO('0193',this)">193</button>
+                <button class="sdo-tab" onclick="setSDO('0131',this)">131</button>
+                <button class="sdo-tab" onclick="setSDO('0171',this)">171</button>
+                <button class="sdo-tab" onclick="setSDO('0304',this)">304</button>
+                <button class="sdo-tab" onclick="setSDO('0211',this)">211</button>
+                <button class="sdo-tab" onclick="setSDO('HMIB',this)">MAG</button>
+                <button class="sdo-tab" onclick="setSDO('HMIIC',this)">HMI</button>
+                <button class="sdo-tab" onclick="setSDO('LASCO',this)">LASCO</button>
             </div>
-            <div style="padding:6px 14px;border-top:1px solid var(--border)">
-                <div class="section-lbl">Strategic V2 Forecast (12h)</div>
-                <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
-                    <span id="sClass" style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--yellow);transition:all 0.4s">--</span>
-                    <span style="font-size:9px;color:var(--t3)">class</span>
-                    <span id="sConf" style="font-size:11px;font-weight:600;margin-left:auto">--</span>
-                </div>
-                <div class="kv"><span class="kv-k">Architecture</span><span class="kv-v" style="font-size:9px;color:var(--t2)">5x CNN+Attn V2</span></div>
-                <div class="kv"><span class="kv-k">Bal. Accuracy</span><span class="kv-v" style="font-size:9px;color:var(--green)">98.5%</span></div>
+            <img class="sdo-img" id="sdoImg" src="https://sdo.gsfc.nasa.gov/assets/img/latest/latest_512_0193.jpg" alt="SDO">
+            <div class="sdo-label" id="sdoLbl">AIA 193&#x212B; &mdash; 1.2 MK corona</div>
+            <div class="sdo-meta" id="sdoMeta">Live &bull; Auto-refresh 30s</div>
+        </div>
+        <div style="padding:6px 14px;border-top:1px solid var(--border)">
+            <div class="section-lbl">Strategic V2 Forecast (12h)</div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+                <span id="sClass" style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--yellow);transition:all 0.4s">--</span>
+                <span style="font-size:9px;color:var(--t3)">class</span>
+                <span id="sConf" style="font-size:11px;font-weight:600;margin-left:auto">--</span>
             </div>
-            <div style="padding:6px 14px;border-top:1px solid var(--border)">
-                <div class="section-lbl">Feature Importance (Gradient Attribution)</div>
-                <div id="featChart" style="width:100%;height:120px"></div>
-            </div>
+            <div class="kv"><span class="kv-k">Architecture</span><span class="kv-v" style="font-size:9px;color:var(--t2)">5x CNN+Attn V2</span></div>
+            <div class="kv"><span class="kv-k">Bal. Accuracy</span><span class="kv-v" style="font-size:9px;color:var(--green)">98.5%</span></div>
+        </div>
+        <div style="padding:6px 14px;border-top:1px solid var(--border)">
+            <div class="section-lbl">Feature Importance (Gradient Attribution)</div>
+            <div id="featChart" style="width:100%;height:120px"></div>
         </div>
     </div>
 </div>
@@ -605,14 +635,14 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
             <button class="c-filter" data-t="warn" onclick="filterConsole('warn',this)">Warn</button>
             <button class="c-filter" data-t="err" onclick="filterConsole('err',this)">Err</button>
         </div>
-        <span style="font-size:8px;color:var(--t3);margin-left:auto">16-model two-tier ensemble &bull; SoLEXS+HEL1OS fusion &bull; V6.2+V2</span>
+        <span style="font-size:8px;color:var(--t3);margin-left:auto" id="sbSystemDesc">16-model two-tier ensemble &bull; SoLEXS+HEL1OS fusion &bull; V6.2+V2</span>
     </div>
     <div class="console-body" id="consoleBody"></div>
 </div>
 
 <!-- STATUS BAR -->
 <div class="status-bar">
-    <div class="sb-item"><div class="sb-dot"></div>Models <span class="sb-val">16/16</span></div>
+    <div class="sb-item"><div class="sb-dot"></div>Models <span class="sb-val" id="sbModels">16/16</span></div>
     <div class="sb-sep"></div>
     <div class="sb-item">Source <span class="sb-val" id="sbSource" style="color:#f97316">Aditya-L1</span></div>
     <div class="sb-sep"></div>
@@ -628,8 +658,8 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
     <div class="sb-sep"></div>
     <div class="sb-item">Samples <span class="sb-val" id="sbSamples">0</span></div>
     <div class="sb-item" style="margin-left:auto;display:flex;align-items:center;gap:12px">
-        <a href="/impact.html" class="analytics-btn" style="color:var(--orange);background:rgba(249,115,22,0.06);border-color:rgba(249,115,22,0.15)"><span class="ab-dot" style="background:var(--orange);box-shadow:0 0 6px var(--orange)"></span>Impact Map</a>
-        <a href="/analytics.html" class="analytics-btn"><span class="ab-dot"></span>Model Analytics</a>
+        <a href="/impact.html" class="ptab" style="font-size:10px;padding:4px 12px">&#127758; Impact Map</a>
+        <a href="/analytics.html" class="ptab" style="font-size:10px;padding:4px 12px">&#128202; Analytics</a>
         <span style="color:var(--t3)">ISRO Aditya-L1 &bull; SoLEXS + HEL1OS</span>
     </div>
 </div>
@@ -800,16 +830,20 @@ const SDO_D={
     'HMIIC':'HMI Intensitygram \u2014 photosphere',
     'LASCO':'SOHO LASCO C2 \u2014 coronagraph (CMEs)'
 };
+const sdoImgEl=document.getElementById('sdoImg');
+const sdoTimeEl=document.getElementById('sdoTime');
+const sdoMetaEl=document.getElementById('sdoMeta');
+function stampSDO(){const n=new Date();sdoTimeEl.textContent='Fetched '+n.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' '+n.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});sdoMetaEl.textContent='Live \u2022 '+n.toLocaleTimeString()}
+sdoImgEl.onload=stampSDO;
 function setSDO(ch,el){document.querySelectorAll('.sdo-tab').forEach(t=>t.classList.remove('on'));el.classList.add('on');
     if(ch==='LASCO'){
-        document.getElementById('sdoImg').src='https://sohowww.nascom.nasa.gov/data/realtime/c2/512/latest.jpg?t='+Date.now();
-        document.getElementById('sdoImg').style.borderRadius='4px';
+        sdoImgEl.src='https://sohowww.nascom.nasa.gov/data/realtime/c2/512/latest.jpg?t='+Date.now();
+        sdoImgEl.style.borderRadius='4px';
     } else {
-        document.getElementById('sdoImg').src='https://sdo.gsfc.nasa.gov/assets/img/latest/latest_512_'+ch+'.jpg?t='+Date.now();
-        document.getElementById('sdoImg').style.borderRadius='50%';
+        sdoImgEl.src='https://sdo.gsfc.nasa.gov/assets/img/latest/latest_512_'+ch+'.jpg?t='+Date.now();
+        sdoImgEl.style.borderRadius='50%';
     }
     document.getElementById('sdoLbl').textContent=SDO_D[ch];
-    document.getElementById('sdoMeta').textContent='Live \u2022 '+new Date().toLocaleTimeString();
     clog('SDO channel: '+ch,'info')}
 // SDO auto-cycle through wavelengths + refresh
 const SDO_CHANNELS=['0193','0131','0171','0304','0211','HMIB','HMIIC','LASCO'];
@@ -818,15 +852,14 @@ setInterval(()=>{
     sdoCycleIdx=(sdoCycleIdx+1)%SDO_CHANNELS.length;
     const ch=SDO_CHANNELS[sdoCycleIdx];
     if(ch==='LASCO'){
-        document.getElementById('sdoImg').src='https://sohowww.nascom.nasa.gov/data/realtime/c2/512/latest.jpg?t='+Date.now();
-        document.getElementById('sdoImg').style.borderRadius='4px';
+        sdoImgEl.src='https://sohowww.nascom.nasa.gov/data/realtime/c2/512/latest.jpg?t='+Date.now();
+        sdoImgEl.style.borderRadius='4px';
     } else {
-        document.getElementById('sdoImg').src='https://sdo.gsfc.nasa.gov/assets/img/latest/latest_512_'+ch+'.jpg?t='+Date.now();
-        document.getElementById('sdoImg').style.borderRadius='50%';
+        sdoImgEl.src='https://sdo.gsfc.nasa.gov/assets/img/latest/latest_512_'+ch+'.jpg?t='+Date.now();
+        sdoImgEl.style.borderRadius='50%';
     }
     document.getElementById('sdoLbl').textContent=SDO_D[ch];
     document.querySelectorAll('.sdo-tab').forEach((t,i)=>t.classList.toggle('on',i===sdoCycleIdx));
-    document.getElementById('sdoMeta').textContent='Live \u2022 '+new Date().toLocaleTimeString();
 },20000);
 
 /* PER-CLASS METRICS */
@@ -834,7 +867,8 @@ function showClassDetail(cls,el){
     document.querySelectorAll('.cm-cell').forEach(c=>c.classList.remove('active'));
     el.classList.add('active');
     const m=CLASS_METRICS[cls];
-    document.getElementById('classDetail').innerHTML=
+    const cd=document.getElementById('classDetail');
+    if(cd) cd.innerHTML=
         `Precision: <b style="color:var(--cyan)">${m.p}%</b> | Recall: <b style="color:var(--green)">${m.r}%</b> | F1: <b style="color:var(--yellow)">${m.f1}%</b> | Support: <b>${m.support}</b>`;
 }
 
@@ -1395,9 +1429,55 @@ async function fetchSpaceWeather(){
     }
 }
 
+/* ===== ENSEMBLE METRICS FETCH ===== */
+async function fetchMetrics() {
+    try {
+        const r = await fetch('/api/metrics');
+        if (r.ok) {
+            const m = await r.json();
+            
+            // 1. Update version badge in topbar
+            const tbVer = document.querySelector('.tb-ver');
+            if (tbVer && m.tactical && m.tactical.version) {
+                tbVer.textContent = m.tactical.version.toLowerCase();
+            }
+            
+            // 2. Update models count in sidebar
+            const vm = document.getElementById('vModels');
+            if (vm && m.training) {
+                vm.textContent = `${m.training.total_models} (${m.training.tactical_models}T + ${m.training.strategic_models}S)`;
+            }
+            
+            // 3. Update features count in sidebar
+            const vf = document.getElementById('vFeatures');
+            if (vf && m.training) {
+                vf.textContent = `${m.training.features} (SoLEXS+HEL1OS)`;
+            }
+            
+            // 4. Update models count in status bar
+            const sbm = document.getElementById('sbModels');
+            if (sbm && m.training) {
+                sbm.textContent = `${m.training.total_models}/${m.training.total_models}`;
+            }
+            
+            // 5. Update system description above console
+            const sysDesc = document.getElementById('sbSystemDesc');
+            if (sysDesc && m.training && m.tactical && m.strategic) {
+                sysDesc.textContent = `${m.training.total_models}-model two-tier ensemble • SoLEXS+HEL1OS fusion • ${m.tactical.version}+${m.strategic.version}`;
+            }
+            
+            clog(`Model parameters loaded: ${m.training.total_models} models, ${m.training.features} features on ${m.training.training_platform}`, 'ok');
+            clog(`Ensemble Accuracies: Tactical=${(m.tactical.balanced_accuracy*100).toFixed(1)}% | Strategic=${(m.strategic.balanced_accuracy*100).toFixed(1)}%`, 'info');
+        }
+    } catch(e) {
+        clog('Failed to load backend metrics: ' + e.message, 'warn');
+    }
+}
+
 /* LOADER */
 let loaderDone=false;
 async function init(){
+    await fetchMetrics();
     await go();
     fetchSpaceWeather();
     if(!loaderDone){loaderDone=true;

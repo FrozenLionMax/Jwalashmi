@@ -3,34 +3,41 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jwalashmi | 3D Geomagnetic Impact Globe</title>
+<title>JWALASHMI | Space Weather Command Centre</title>
+<meta name="description" content="JWALASHMI Geomagnetic Impact Map — Real-time aurora zones, NOAA space weather alerts, ISRO ground stations, Kp tracking">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23f97316' opacity='0.9'/><circle cx='50' cy='50' r='25' fill='%23fbbf24'/><circle cx='50' cy='50' r='12' fill='%23fde68a'/></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-<script src="https://unpkg.com/globe.gl@2.35.0"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
-    --bg:#020408;--panel:#070b14;--panel2:#0d1220;--border:rgba(255,255,255,0.07);
-    --glow-border:rgba(34,211,238,0.08);
-    --t0:#edf0f7;--t1:#c8d0e4;--t2:#8692ad;--t3:#4e5b78;
+    --bg:#020408;--panel:#0a0e17;--panel2:#0d1220;--border:rgba(255,255,255,0.06);
+    --borderHi:rgba(34,211,238,0.18);--glow-border:rgba(34,211,238,0.08);
+    --t0:#e8ecf4;--t1:#c4cce0;--t2:#7e8ba4;--t3:#4a5572;
     --cyan:#22d3ee;--blue:#3b82f6;--green:#10b981;--yellow:#eab308;
     --orange:#f97316;--red:#ef4444;--purple:#a855f7;
 }
+
 html,body{height:100%;overflow:hidden}
 body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0);
     display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
-    animation:fadeIn 1s ease-out}
+    animation:fadeIn 1s ease-out;min-height:100vh}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
 /* HEADER */
-.header{display:flex;align-items:center;height:54px;padding:0 20px;
-    background:linear-gradient(180deg,#0e1424 0%,#080d19 100%);border-bottom:1px solid var(--border);
-    box-shadow:0 2px 20px rgba(0,0,0,0.4);flex-shrink:0;gap:12px;z-index:1001}
-.back-btn{font-size:12px;color:var(--cyan);text-decoration:none;padding:7px 14px;
-    border:1px solid rgba(34,211,238,0.12);border-radius:6px;font-family:inherit;font-weight:600;
-    transition:all 0.3s;background:rgba(34,211,238,0.03)}
-.back-btn:hover{background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.4);
-    box-shadow:0 0 12px rgba(34,211,238,0.1);transform:translateY(-1px)}
+.header{display:flex;align-items:center;height:42px;padding:0 18px;
+    background:linear-gradient(180deg,#0c1120,#080c18);border-bottom:1px solid var(--border);
+    box-shadow:0 1px 0 rgba(34,211,238,0.04);flex-shrink:0;gap:10px;z-index:1001}
+/* nav-btn deprecated — using .ptab */
+.page-tabs{display:flex;gap:4px;align-items:center}
+.ptab{font-size:9px;padding:6px 16px;color:var(--t3);text-decoration:none;
+    border-radius:5px;font-weight:600;transition:all 0.25s;font-family:inherit;
+    letter-spacing:0.4px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02)}
+.ptab:hover{color:var(--t1);background:rgba(34,211,238,0.06);border-color:rgba(34,211,238,0.15);
+    box-shadow:0 0 8px rgba(34,211,238,0.06);transform:translateY(-1px)}
+.ptab.active{color:var(--cyan);background:rgba(34,211,238,0.08);
+    border-color:rgba(34,211,238,0.2);box-shadow:0 0 10px rgba(34,211,238,0.08)}
 .hdr-badge{display:flex;align-items:center;gap:6px;padding:5px 12px;
     background:linear-gradient(135deg,rgba(249,115,22,0.06),rgba(34,211,238,0.03));
     border:1px solid rgba(249,115,22,0.12);border-radius:6px}
@@ -40,35 +47,52 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 @keyframes sg{0%,100%{box-shadow:0 0 8px rgba(249,115,22,0.4),0 0 16px rgba(249,115,22,0.1)}
     50%{box-shadow:0 0 16px rgba(249,115,22,0.6),0 0 32px rgba(249,115,22,0.2)}}
 .hdr-isro{font-size:10px;font-weight:700;color:var(--orange);letter-spacing:2px}
-.hdr-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;
-    background:linear-gradient(135deg,var(--cyan),#67e8f9);-webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;letter-spacing:2px}
-.hdr-right{margin-left:auto;display:flex;align-items:center;gap:20px}
-.hdr-kp{font-size:26px;font-weight:700;font-family:'Space Grotesk',sans-serif;line-height:1;
-    text-shadow:0 0 12px currentColor}
-.hdr-label{font-size:9px;color:var(--t2);letter-spacing:0.8px;margin-top:2px;text-transform:uppercase}
-.hdr-clock{font-size:12px;color:var(--t1);opacity:0.8}
+.hdr-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;
+    color:var(--cyan);letter-spacing:1.2px}.hdr-right{margin-left:auto;display:flex;align-items:center;gap:16px}
+.hdr-kp{font-size:22px;font-weight:700;font-family:'Space Grotesk',sans-serif;line-height:1;
+    text-shadow:0 0 10px currentColor}
+.hdr-label{font-size:8px;color:var(--t3);letter-spacing:0.6px;margin-top:2px;text-transform:uppercase;font-weight:600}
+.hdr-clock{font-size:13px;font-weight:700;color:var(--cyan);font-family:'Space Grotesk',sans-serif}
+.tb-date{font-size:9px;color:var(--t3);margin-right:4px}
+.tb-clk{font-size:13px;font-weight:700;color:var(--cyan);font-family:'Space Grotesk',sans-serif}
+.tb-clk-label{font-size:7px;color:var(--t3);margin-left:2px}
+.tb-utc{font-size:9px;color:var(--t3);margin-left:6px}
 
 /* MAIN GRID */
 .content{flex:1;display:grid;grid-template-columns:1fr 340px;grid-template-rows:1fr auto;overflow:hidden;gap:0}
 
-/* GLOBE CONTAINER */
-.globe-wrap{grid-column:1;grid-row:1;position:relative;border-right:1px solid var(--border);min-height:0;overflow:hidden;background:#000}
-#globeViz{width:100%;height:100%;cursor:grab;background:radial-gradient(ellipse at 50% 50%,#081428 0%,#030812 40%,#000 100%)}
-#globeViz:active{cursor:grabbing}
+/* MAP CONTAINER */
+.globe-wrap{grid-column:1;grid-row:1;position:relative;min-height:0;overflow:hidden;background:#020810}
+#mapViz{position:absolute;inset:0;}
 
-/* STAR FIELD - behind globe */
-.stars{position:absolute;inset:0;pointer-events:none;z-index:0;opacity:0.4}
+/* Leaflet dark overrides */
+.leaflet-container{background:#020810!important;font-family:'JetBrains Mono',monospace}
+.leaflet-control-zoom{border:none!important}
+.leaflet-control-zoom a{background:rgba(10,14,23,0.9)!important;color:var(--t1)!important;
+    border:1px solid rgba(255,255,255,0.06)!important;backdrop-filter:blur(8px)}
+.leaflet-control-zoom a:hover{background:rgba(34,211,238,0.08)!important;color:var(--cyan)!important}
+.leaflet-tile-pane{filter:brightness(0.75) contrast(1.1) saturate(0.8)}
+.leaflet-control-scale-line{background:rgba(10,14,23,0.8)!important;color:var(--t2)!important;
+    border-color:rgba(255,255,255,0.15)!important;font-size:9px!important;
+    backdrop-filter:blur(6px);padding:2px 6px!important}
+
+/* CANVAS OVERLAY */
+#mapCanvas{position:absolute;inset:0;pointer-events:none;z-index:500}
+
+/* STAR FIELD - behind map */
+.stars{position:absolute;inset:0;pointer-events:none;z-index:0;opacity:0.25}
 .star{position:absolute;width:1px;height:1px;background:#fff;border-radius:50%}
 
 
 
 /* GLOBE OVERLAYS */
 .globe-overlay{position:absolute;z-index:800;
-    background:linear-gradient(135deg,rgba(10,14,23,0.94),rgba(15,20,35,0.92));
-    border:1px solid var(--glow-border);border-radius:8px;padding:10px 14px;
+    background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 14px;
     backdrop-filter:blur(14px);font-size:12px;
-    box-shadow:0 4px 24px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.03)}
+    box-shadow:0 4px 24px rgba(0,0,0,0.4);transition:border-color 0.3s}
+.globe-overlay:hover{border-color:var(--borderHi)}
+.globe-overlay::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(34,211,238,0.08),transparent);border-radius:8px 8px 0 0}
 .cond-box{top:14px;left:14px;min-width:210px}
 .cond-title{font-size:12px;font-weight:700;color:var(--cyan);margin-bottom:6px;letter-spacing:1px;
     text-shadow:0 0 8px rgba(34,211,238,0.3)}
@@ -78,23 +102,19 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .cond-k{color:var(--t2);font-size:11px}.cond-v{font-weight:700;font-family:'Space Grotesk',sans-serif;font-size:12px;
     text-shadow:0 0 6px currentColor}
 
-.legend-box{bottom:14px;left:14px;display:flex;flex-direction:column;gap:6px;padding:8px 14px;font-size:10px}
-.lg{display:flex;align-items:center;gap:5px}
 
-/* GLOBE BUTTONS */
+
+/* MAP BUTTONS */
 .globe-btns{position:absolute;top:14px;right:14px;z-index:900;display:flex;flex-direction:column;gap:5px}
 .g-btn-wrap{position:relative}
-.g-btn{width:38px;height:38px;border:1px solid rgba(255,255,255,0.06);
-    background:linear-gradient(135deg,rgba(10,14,23,0.92),rgba(15,20,32,0.88));
-    color:var(--t2);border-radius:6px;cursor:pointer;font-size:16px;
+.g-btn{width:36px;height:36px;border:1px solid var(--border);
+    background:var(--panel);color:var(--t2);border-radius:6px;cursor:pointer;font-size:15px;
     display:flex;align-items:center;justify-content:center;
     transition:all 0.3s cubic-bezier(0.4,0,0.2,1);backdrop-filter:blur(8px);
     box-shadow:0 2px 8px rgba(0,0,0,0.3)}
-.g-btn:hover{border-color:rgba(34,211,238,0.3);color:var(--cyan);
-    background:rgba(34,211,238,0.08);box-shadow:0 0 12px rgba(34,211,238,0.1);
-    transform:scale(1.05)}
-.g-btn.active{border-color:rgba(249,115,22,0.3);color:var(--orange);
-    box-shadow:0 0 10px rgba(249,115,22,0.1)}
+.g-btn:hover{border-color:var(--borderHi);color:var(--cyan);
+    background:rgba(34,211,238,0.06);box-shadow:0 0 12px rgba(34,211,238,0.08);transform:scale(1.05)}
+.g-btn.active{border-color:rgba(249,115,22,0.25);color:var(--orange);box-shadow:0 0 8px rgba(249,115,22,0.08)}
 .g-tip{position:absolute;right:44px;top:50%;transform:translateY(-50%);white-space:nowrap;font-size:11px;
     color:var(--t0);background:rgba(10,14,23,0.95);border:1px solid rgba(255,255,255,0.08);padding:6px 12px;
     border-radius:6px;pointer-events:none;opacity:0;transition:all 0.3s;backdrop-filter:blur(8px);
@@ -103,15 +123,17 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 
 /* SIDEBAR */
 .sidebar{grid-column:2;grid-row:1;overflow-y:auto;display:flex;flex-direction:column;
-    background:linear-gradient(180deg,var(--panel) 0%,#060a12 100%);
-    scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent}
+    background:var(--panel);border-left:1px solid var(--border);
+    scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.06) transparent}
 .sidebar::-webkit-scrollbar{width:4px}
-.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:4px}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:4px}
 .sb-sec{border-bottom:1px solid var(--border)}
-.sb-hdr{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;
-    font-size:12px;font-weight:700;color:var(--t0);
-    background:linear-gradient(90deg,rgba(255,255,255,0.01),rgba(255,255,255,0.02));
-    cursor:pointer;user-select:none;transition:all 0.3s}
+.sb-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;
+    font-size:11px;font-weight:700;color:var(--t1);text-transform:uppercase;letter-spacing:0.6px;
+    background:rgba(255,255,255,0.01);
+    cursor:pointer;user-select:none;transition:all 0.3s;position:relative}
+.sb-hdr::before{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(34,211,238,0.06),transparent)}
 .sb-hdr:hover{background:linear-gradient(90deg,rgba(34,211,238,0.03),rgba(255,255,255,0.02));
     padding-left:18px}
 .sb-hdr::after{content:'\25B2';font-size:8px;color:var(--t3);margin-left:6px;transition:transform 0.3s}
@@ -140,12 +162,14 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 @keyframes statusPulse{0%,100%{box-shadow:0 0 0 transparent}50%{box-shadow:0 0 8px currentColor}}
 
 /* TIMELINE */
-.timeline{grid-column:1/-1;display:flex;align-items:center;padding:12px 20px;
-    background:linear-gradient(180deg,var(--panel),#050810);
-    border-top:1px solid var(--border);box-shadow:0 -2px 16px rgba(0,0,0,0.3)}
-.tl-nd{display:flex;align-items:center;gap:7px;flex:1}
+.timeline{grid-column:1/-1;display:flex;align-items:center;padding:10px 20px;
+    background:linear-gradient(180deg,var(--panel),#060a14);
+    border-top:1px solid var(--border);box-shadow:0 -1px 0 rgba(34,211,238,0.04)}
+.tl-nd{display:flex;align-items:center;gap:7px;flex:1;cursor:pointer;user-select:none;transition:transform 0.2s ease}
+.tl-nd:hover{transform:translateY(-1px)}
+.tl-nd:hover .tl-d{transform:scale(1.25);box-shadow:0 0 12px currentColor}
 .tl-d{width:14px;height:14px;border-radius:50%;border:2px solid;flex-shrink:0;
-    box-shadow:0 0 6px currentColor}
+    box-shadow:0 0 6px currentColor;transition:all 0.25s ease}
 .tl-d.on{animation:tp 1.5s infinite}
 @keyframes tp{0%,100%{opacity:1;box-shadow:0 0 4px currentColor}50%{opacity:0.4;box-shadow:0 0 14px currentColor}}
 .tl-t{font-size:11px}.tl-n{font-weight:700;text-shadow:0 0 6px currentColor}.tl-s{color:var(--t2)}
@@ -169,10 +193,10 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 
 /* SUN INDICATOR */
 .sun-indicator{position:absolute;bottom:14px;right:14px;z-index:800;
-    background:linear-gradient(135deg,rgba(10,14,23,0.94),rgba(15,20,35,0.92));
-    border:1px solid rgba(249,115,22,0.12);border-radius:8px;padding:10px 14px;
+    background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 14px;
     backdrop-filter:blur(14px);font-size:10px;display:flex;align-items:center;gap:10px;
-    box-shadow:0 4px 24px rgba(0,0,0,0.4)}
+    box-shadow:0 4px 24px rgba(0,0,0,0.4);transition:border-color 0.3s}
+.sun-indicator:hover{border-color:var(--borderHi)}
 .sun-icon{width:22px;height:22px;border-radius:50%;
     background:radial-gradient(circle,#fde68a 10%,#fbbf24 30%,#f97316 60%,rgba(249,115,22,0.15) 100%);
     box-shadow:0 0 14px rgba(251,191,36,0.5),0 0 28px rgba(249,115,22,0.2);animation:sunPulse 4s ease-in-out infinite}
@@ -201,22 +225,52 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 @keyframes toastIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
 
 /* XRAY SPARKLINE */
-.xray-box{bottom:100px;left:14px;padding:8px 12px}
+.xray-box{bottom:54px;left:14px;padding:8px 12px}
 .xray-title{font-size:9px;color:var(--t2);letter-spacing:1px;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
 .xray-val{font-weight:700;font-family:'Space Grotesk',sans-serif;font-size:13px}
 #xrayCanvas{display:block;border-radius:4px;margin-top:4px;background:rgba(0,0,0,0.3)}
 
 /* JWALASHMI MODEL PANEL */
-.model-box{top:14px;right:56px;min-width:170px;padding:10px 14px}
-.model-title{font-size:9px;color:var(--orange);letter-spacing:1.5px;font-weight:700;margin-bottom:8px;
-    display:flex;align-items:center;gap:6px}
-.model-class{font-size:32px;font-weight:700;font-family:'Space Grotesk',sans-serif;line-height:1;
+.model-box{top:14px;right:56px;min-width:190px;max-width:200px;padding:8px 12px}
+.model-title{font-size:9px;color:var(--orange);letter-spacing:1.5px;font-weight:700;margin-bottom:6px;
+    display:flex;align-items:center;justify-content:space-between}
+.model-acc{font-size:8px;padding:2px 6px;border-radius:3px;background:rgba(16,185,129,0.08);
+    border:1px solid rgba(16,185,129,0.15);color:var(--green);font-weight:700}
+.model-class{font-size:30px;font-weight:700;font-family:'Space Grotesk',sans-serif;line-height:1;
     text-shadow:0 0 20px currentColor}
-.model-prob{font-size:11px;color:var(--t1);margin-top:4px}
-.model-gauge{width:100%;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;margin-top:6px;overflow:hidden}
+.model-prob{font-size:10px;color:var(--t1);margin-top:3px;line-height:1.6}
+.model-gauge{width:100%;height:3px;background:rgba(255,255,255,0.06);border-radius:2px;margin-top:5px;overflow:hidden}
 .model-gauge-fill{height:100%;border-radius:2px;transition:width 0.8s cubic-bezier(0.4,0,0.2,1)}
-.model-lead{display:flex;justify-content:space-between;margin-top:8px;font-size:10px;color:var(--t2)}
+.model-lead{display:flex;justify-content:space-between;margin-top:6px;font-size:9px;color:var(--t2)}
 .model-lead span{font-weight:600;color:var(--t0)}
+.model-divider{border:none;border-top:1px solid rgba(255,255,255,0.05);margin:7px 0}
+.model-prob-bars{margin-top:5px;display:flex;flex-direction:column;gap:3px}
+.prob-bar-row{display:flex;align-items:center;gap:5px;font-size:9px}
+.prob-bar-label{width:22px;color:var(--t2);text-align:right;flex-shrink:0}
+.prob-bar-track{flex:1;height:4px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden}
+.prob-bar-fill{height:100%;border-radius:2px;transition:width 0.6s ease}
+.prob-bar-val{width:26px;color:var(--t1);text-align:right;font-size:8px;flex-shrink:0}
+.model-true{font-size:9px;color:var(--t3);margin-top:4px;display:flex;align-items:center;gap:4px}
+.model-strat{margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.05)}
+.model-strat-title{font-size:8px;color:var(--t3);letter-spacing:1px;margin-bottom:3px}
+.model-strat-row{display:flex;justify-content:space-between;font-size:10px}
+/* CME COUNTDOWN */
+.cme-badge{position:absolute;bottom:14px;right:14px;z-index:800;padding:7px 12px;
+    background:linear-gradient(135deg,rgba(239,68,68,0.12),rgba(249,115,22,0.08));
+    border:1px solid rgba(239,68,68,0.3);border-radius:8px;backdrop-filter:blur(12px);
+    font-size:10px;display:none;animation:cmePulse 2s ease-in-out infinite}
+.cme-badge.show{display:block}
+@keyframes cmePulse{0%,100%{box-shadow:0 0 8px rgba(239,68,68,0.2)}50%{box-shadow:0 0 20px rgba(239,68,68,0.4)}}
+.cme-label{font-size:8px;color:var(--red);letter-spacing:1.5px;font-weight:700}
+.cme-time{font-size:16px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--red);line-height:1.2}
+.cme-sub{font-size:8px;color:var(--t2);margin-top:1px}
+/* AURORA BAND */
+.aurora-badge{position:absolute;top:14px;left:240px;z-index:800;padding:6px 10px;
+    background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.25);border-radius:6px;
+    backdrop-filter:blur(10px);font-size:9px;display:none;white-space:nowrap}
+.aurora-badge.show{display:block}
+.aurora-label{color:var(--purple);font-weight:700;letter-spacing:1px;font-size:8px}
+.aurora-val{color:var(--t0);font-weight:600;margin-top:2px}
 
 /* KP HISTORY */
 .kp-hist-wrap{padding:8px 16px 12px}
@@ -229,68 +283,101 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .fullscreen .content{grid-template-columns:1fr}
 .fullscreen .timeline{grid-column:1}
 
-/* STATION TOOLTIP */
-.station-tip{position:absolute;z-index:1200;background:rgba(10,14,23,0.96);border:1px solid rgba(34,211,238,0.2);
-    border-radius:6px;padding:8px 12px;font-size:10px;pointer-events:none;
-    backdrop-filter:blur(12px);box-shadow:0 8px 24px rgba(0,0,0,0.5);opacity:0;transition:opacity 0.2s}
-.station-tip.show{opacity:1}
-.station-tip-name{font-weight:700;color:var(--cyan);font-size:11px;margin-bottom:3px}
-.station-tip-coord{color:var(--t2)}
-.station-tip-status{color:var(--green);font-weight:600;margin-top:2px}
+/* STATUS STRIP */
+.status-strip{display:flex;align-items:center;gap:8px;padding:5px 18px;font-size:11px;
+    background:rgba(16,185,129,0.04);border-bottom:1px solid rgba(16,185,129,0.1);
+    transition:all 0.5s;flex-shrink:0}
+.ss-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);
+    animation:ssBlink 2s ease-in-out infinite;flex-shrink:0}
+@keyframes ssBlink{0%,100%{opacity:1}50%{opacity:0.4}}
+.ss-text{color:var(--t1);font-weight:500;letter-spacing:0.3px}
+
+/* FOOTER */
+.footer{text-align:center;padding:8px 18px;color:var(--t3);font-size:8px;
+    letter-spacing:0.3px;flex-shrink:0;border-top:1px solid var(--border);
+    background:linear-gradient(180deg,var(--panel),#060a14);position:relative}
+.footer::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(34,211,238,0.06),transparent)}
+
+/* STATION MARKER */
+.st-marker{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.st-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;
+    background:var(--cyan);box-shadow:0 0 4px rgba(34,211,238,0.4)}
+.st-dot:hover{transform:scale(1.6)}
+.st-name{font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:500;
+    color:rgba(34,211,238,0.6);letter-spacing:0.2px;
+    text-shadow:0 0 6px rgba(0,0,0,0.9),0 1px 2px rgba(0,0,0,0.8)}
+
+/* LEAFLET TOOLTIP DARK THEME */
+.leaflet-tooltip.station-tooltip{background:rgba(10,14,23,0.96);color:#edf0f7;
+    border:1px solid rgba(34,211,238,0.2);border-radius:6px;padding:8px 12px;
+    font-family:'JetBrains Mono',monospace;font-size:10px;box-shadow:0 8px 24px rgba(0,0,0,0.5);
+    backdrop-filter:blur(12px)}
+.leaflet-tooltip.station-tooltip::before{border-right-color:rgba(34,211,238,0.2)}
+.stt-name{font-weight:700;color:#22d3ee;font-size:11px;margin-bottom:2px}
+.stt-coord{color:#7e8ba4;font-size:9px}
 </style>
 </head>
 <body>
 
 
 <div class="header">
-    <a href="index.html" class="back-btn">&#9664; Mission Control</a>
     <div class="hdr-badge"><div class="hdr-sun"></div><span class="hdr-isro">ISRO</span></div>
-    <span class="hdr-title">3D GEOMAGNETIC IMPACT GLOBE</span>
+    <span class="hdr-title">JWALASHMI</span>
+    <span style="font-size:9px;color:var(--t3);background:rgba(34,211,238,0.06);padding:1px 5px;border-radius:2px;border:1px solid rgba(34,211,238,0.08)">v6.2</span>
+    <div style="width:1px;height:22px;background:var(--border)"></div>
+    <span style="font-size:10px;color:var(--t2);font-weight:600;letter-spacing:0.5px">IMPACT MAP</span>
+    <div style="width:1px;height:22px;background:var(--border)"></div>
+    <div><div class="hdr-kp" id="kpVal" style="color:var(--green)">--</div><div class="hdr-label">Kp INDEX</div></div>
+    <div><div class="hdr-kp" id="stormLvl" style="font-size:10px;color:var(--green)">Quiet</div><div class="hdr-label">STORM LEVEL</div></div>
+    <div style="width:1px;height:22px;background:var(--border)"></div>
+    <div class="page-tabs" style="margin-left:auto">
+        <a href="/" class="ptab">Mission Control</a>
+        <a href="/impact.html" class="ptab active">Impact Map</a>
+        <a href="/analytics.html" class="ptab">Analytics</a>
+    </div>
     <div class="hdr-right">
-        <div><div class="hdr-kp" id="kpVal" style="color:var(--green)">--</div><div class="hdr-label">Kp INDEX</div></div>
-        <div><div class="hdr-kp" id="stormLvl" style="font-size:11px;color:var(--green)">Quiet</div><div class="hdr-label">STORM LEVEL</div></div>
-        <div><div class="hdr-clock" id="hdrClock">--</div><div class="hdr-label" id="hdrMET" style="font-size:8px;color:var(--t3)">T+ 00:00:00</div></div>
+        <span class="tb-date" id="clkDate">--</span>
+        <span class="tb-clk" id="clkIST">--:--:--</span><span class="tb-clk-label">IST</span>
+        <span class="tb-utc" id="clkUTC">--:--:-- UTC</span>
     </div>
 </div>
 
+<div class="status-strip" id="statusStrip">
+    <span class="ss-dot" id="ssDot"></span>
+    <span class="ss-text" id="ssText">Connecting to NOAA...</span>
+</div>
+
 <div class="content">
-<!-- 3D GLOBE -->
+<!-- 2D MAP -->
 <div class="globe-wrap" id="globeWrap">
-    <div id="globeViz"></div>
+    <div id="mapViz"></div>
+    <canvas id="mapCanvas"></canvas>
     <div class="stars" id="starField"></div>
 
     <div class="globe-btns">
         <div class="g-btn-wrap"><button class="g-btn" onclick="focusIndia()">&#127470;&#127475;</button><span class="g-tip">Focus India</span></div>
         <div class="g-btn-wrap"><button class="g-btn" onclick="focusGlobal()">&#127758;</button><span class="g-tip">Global View</span></div>
         <div class="g-btn-wrap"><button class="g-btn active" id="btnStations" onclick="toggleStations()">&#128225;</button><span class="g-tip">Ground Stations</span></div>
-        <div class="g-btn-wrap"><button class="g-btn" id="btnField" onclick="toggleFieldLines()">&#129522;</button><span class="g-tip">B-Field Lines</span></div>
-        <div class="g-btn-wrap"><button class="g-btn" id="btnHex" onclick="toggleHeatmap()">&#9632;</button><span class="g-tip">Impact Heatmap</span></div>
+        <div class="g-btn-wrap"><button class="g-btn active" id="btnAurora" onclick="toggleAurora()">&#127775;</button><span class="g-tip">Aurora Zones</span></div>
+        <div class="g-btn-wrap"><button class="g-btn active" id="btnNight" onclick="toggleNight()">&#127761;</button><span class="g-tip">Day/Night</span></div>
         <div class="g-btn-wrap"><button class="g-btn" id="btnFS" onclick="toggleFullscreen()">&#9974;</button><span class="g-tip">Fullscreen</span></div>
     </div>
 
-    <!-- STATION TOOLTIP -->
-    <div class="station-tip" id="stationTip">
-        <div class="station-tip-name" id="stName">--</div>
-        <div class="station-tip-coord" id="stCoord">--</div>
-        <div class="station-tip-status" id="stStatus">LINK: ACTIVE</div>
-    </div>
+
 
 
     <div class="globe-overlay cond-box" id="condBox">
-        <div class="cond-title">&#9889; NOAA LIVE</div>
+        <div class="cond-title">&#9889; NOAA / DSCOVR LIVE</div>
         <div class="cond-row"><span class="cond-k">Kp</span><span class="cond-v" id="cKp">--</span></div>
-        <div class="cond-row"><span class="cond-k">Wind</span><span class="cond-v" id="cWind">--</span></div>
-        <div class="cond-row"><span class="cond-k">Bz</span><span class="cond-v" id="cBz">--</span></div>
+        <div class="cond-row"><span class="cond-k">Solar Wind</span><span class="cond-v" id="cWind">--</span></div>
+        <div class="cond-row"><span class="cond-k">IMF Bz</span><span class="cond-v" id="cBz">--</span></div>
         <div class="cond-row"><span class="cond-k">Proton</span><span class="cond-v" id="cPr">--</span></div>
         <div class="cond-row"><span class="cond-k">R/S/G</span><span class="cond-v" id="cRSG">0/0/0</span></div>
-        <div style="margin-top:3px;font-size:7px;color:var(--t3)" id="cUpd">--</div>
-    </div>
-
-    <div class="globe-overlay legend-box">
-        <div class="lg"><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="#f97316"/></svg>ISTRAC Station</div>
-        <div class="lg"><svg width="10" height="4"><rect width="10" height="4" fill="rgba(0,0,30,0.5)" rx="1"/></svg>Night Side</div>
-        <div class="lg"><svg width="10" height="10"><line x1="0" y1="5" x2="10" y2="5" stroke="#22d3ee" stroke-width="1" opacity="0.4"/></svg>B-Field</div>
-        <div class="lg"><svg width="10" height="10"><rect x="1" y="1" width="8" height="8" fill="rgba(249,115,22,0.4)" rx="1"/></svg>Hex Impact</div>
+        <div style="margin-top:4px;font-size:7px;color:var(--t3);display:flex;justify-content:space-between">
+            <span>Updated: <span id="cUpd">--</span></span>
+            <span style="color:rgba(34,211,238,0.4)">&#8635; 2min</span>
+        </div>
     </div>
 
     <!-- SUN INDICATOR -->
@@ -310,11 +397,40 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 
     <!-- JWALASHMI MODEL -->
     <div class="globe-overlay model-box" id="modelBox">
-        <div class="model-title"><span style="color:var(--orange)">&#9788;</span> JWALASHMI PREDICT</div>
-        <div class="model-class" id="modelClass" style="color:var(--t3)">--</div>
+        <div class="model-title">
+            <span><span style="color:var(--orange)">&#9788;</span> JWALASHMI V6.2</span>
+            <span class="model-acc">95.2% ACC</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:8px">
+            <div class="model-class" id="modelClass" style="color:var(--t3)">--</div>
+            <div id="modelTrueRow" style="display:none;font-size:9px;color:var(--t3)">
+                Ground truth: <span id="modelTrue" style="font-weight:700">--</span> <span id="modelMatch"></span>
+            </div>
+        </div>
         <div class="model-prob" id="modelProb">Awaiting data...</div>
         <div class="model-gauge"><div class="model-gauge-fill" id="modelGauge" style="width:0%;background:var(--t3)"></div></div>
-        <div class="model-lead"><span>Lead: <span id="modelLead">--</span> min</span><span>Conf: <span id="modelConf">--</span></span></div>
+        <div class="model-lead"><span>Lead: <span id="modelLead">--</span> min</span><span id="modelConf" style="color:var(--t3);font-size:9px">--</span></div>
+        <div class="model-prob-bars" id="probBars"></div>
+        <hr class="model-divider">
+        <div class="model-strat">
+            <div class="model-strat-title">12H STRATEGIC OUTLOOK</div>
+            <div class="model-strat-row"><span style="color:var(--t2);font-size:9px">Class</span><span id="stratClass" style="font-weight:700;color:var(--t3)">--</span></div>
+            <div class="model-strat-row"><span style="color:var(--t2);font-size:9px">Confidence</span><span id="stratConf" style="font-weight:700;color:var(--t3)">--</span></div>
+        </div>
+        <div style="margin-top:4px;font-size:7px;color:var(--t3)" id="modelSrc">--</div>
+    </div>
+
+    <!-- CME COUNTDOWN -->
+    <div class="cme-badge" id="cmeBadge">
+        <div class="cme-label">&#9762; CME IMPACT IN</div>
+        <div class="cme-time" id="cmeTime">--</div>
+        <div class="cme-sub">estimated arrival</div>
+    </div>
+
+    <!-- AURORA VISIBILITY -->
+    <div class="aurora-badge" id="auroraBadge">
+        <div class="aurora-label">&#127775; AURORA VISIBLE</div>
+        <div class="aurora-val" id="auroraVal">below --&#176;N/S</div>
     </div>
 
 </div>
@@ -325,7 +441,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     <!-- KP HISTORY -->
     <div class="sb-sec"><div class="sb-hdr"><span>&#128202; Kp HISTORY (24h)</span></div>
         <div class="sb-body kp-hist-wrap">
-            <canvas id="kpHistCanvas" height="60"></canvas>
+            <canvas id="kpHistCanvas" height="90"></canvas>
         </div></div>
     <div class="sb-sec"><div class="sb-hdr"><span>&#128752; ISRO SPACE ASSETS</span><span class="sb-badge s0" id="isroSt">NOMINAL</span></div>
         <div class="sb-body">
@@ -338,39 +454,21 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
             <div class="asset"><span class="asset-name">EOS-06</span><span class="asset-det">LEO 817km</span><span class="ast s0" id="sEO">SAFE</span></div>
             <div class="asset"><span class="asset-name">RISAT-2B</span><span class="asset-det">LEO 556km</span><span class="ast s0" id="sRI">SAFE</span></div>
         </div></div>
-    <div class="sb-sec"><div class="sb-hdr"><span>&#128640; INTERNATIONAL</span></div>
-        <div class="sb-body">
-            <div class="asset"><span class="asset-name">ISS</span><span class="asset-det">LEO 408km</span><span class="ast s0" id="sIS">SAFE</span></div>
-            <div class="asset"><span class="asset-name">GPS-III</span><span class="asset-det">MEO 20Mkm</span><span class="ast s0" id="sGP">SAFE</span></div>
-            <div class="asset"><span class="asset-name">Starlink</span><span class="asset-det">LEO 550km</span><span class="ast s0" id="sSL">SAFE</span></div>
-            <div class="asset"><span class="asset-name">GOES-18</span><span class="asset-det">GEO 137W</span><span class="ast s0" id="sGO">SAFE</span></div>
-            <div class="asset"><span class="asset-name">Hubble</span><span class="asset-det">LEO 547km</span><span class="ast s0" id="sHu">SAFE</span></div>
-            <div class="asset"><span class="asset-name">Galileo</span><span class="asset-det">MEO 23Mkm</span><span class="ast s0" id="sGa">SAFE</span></div>
-        </div></div>
-    <div class="sb-sec"><div class="sb-hdr"><span>&#128225; COMMS</span></div>
+    <div class="sb-sec"><div class="sb-hdr"><span>&#128225; COMMS &amp; GROUND</span></div>
         <div class="sb-body">
             <div class="asset"><span class="asset-name">HF Radio</span><span class="ast s0" id="cHF">OK</span></div>
             <div class="asset"><span class="asset-name">GPS/NavIC</span><span class="ast s0" id="cGN">OK</span></div>
             <div class="asset"><span class="asset-name">SATCOM</span><span class="ast s0" id="cSC">OK</span></div>
-            <div class="asset"><span class="asset-name">ADS-B Aviation</span><span class="ast s0" id="cAD">OK</span></div>
-        </div></div>
-    <div class="sb-sec"><div class="sb-hdr"><span>&#9889; GROUND</span></div>
-        <div class="sb-body">
-            <div class="asset"><span class="asset-name">Power Grid</span><span class="ast s0" id="gPw">STABLE</span></div>
             <div class="asset"><span class="asset-name">Indian Grid (PGCIL)</span><span class="ast s0" id="gIn">STABLE</span></div>
             <div class="asset"><span class="asset-name">ISTRAC Network</span><span class="ast s0" id="gIS">NOMINAL</span></div>
         </div></div>
-    <div class="sb-sec"><div class="sb-hdr"><span>&#9992;&#65039; POLAR FLIGHTS</span></div>
-        <div class="sb-body">
-            <div class="asset"><span class="asset-name">DEL-SFO</span><span class="ast s0" id="f1">CLEAR</span></div>
-            <div class="asset"><span class="asset-name">BOM-EWR</span><span class="ast s0" id="f2">CLEAR</span></div>
-            <div class="asset"><span class="asset-name">LHR-NRT</span><span class="ast s0" id="f3">CLEAR</span></div>
+    <div class="sb-sec"><div class="sb-hdr"><span>📡 GROUND NETWORK PROPAGATION</span></div>
+        <div class="sb-body" id="stationDiagBody" style="font-size:9px;padding:8px 12px">
+            <div style="color:var(--t3);text-align:center;padding:10px 0">Awaiting calculations...</div>
         </div></div>
-    <div class="sb-sec"><div class="sb-hdr"><span>&#127758; REGIONS</span></div>
-        <div class="sb-body">
-            <div class="asset"><span class="asset-name">Canada/Scandinavia</span><span class="ast s0" id="rHi">SAFE</span></div>
-            <div class="asset"><span class="asset-name">N.America/Europe</span><span class="ast s0" id="rMd">SAFE</span></div>
-            <div class="asset"><span class="asset-name">India</span><span class="ast s0" id="rIn">SAFE</span></div>
+    <div class="sb-sec"><div class="sb-hdr"><span>&#9888; NOAA ALERTS</span><span class="sb-badge s0" id="alertBadge">NONE</span></div>
+        <div class="sb-body" id="noaaAlertBody" style="font-size:10px;color:var(--t2)">
+            <div style="padding:4px 0;color:var(--t3)">Loading alerts...</div>
         </div></div>
     <div class="sb-sec" style="flex:1;display:flex;flex-direction:column;border:none"><div class="sb-hdr"><span>&#128200; IMPACT PREDICTION</span></div>
         <div class="sb-body" style="flex:1">
@@ -388,114 +486,345 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 
 <!-- TIMELINE -->
 <div class="timeline">
-    <div class="tl-nd"><div class="tl-d" id="t0" style="border-color:var(--cyan);color:var(--cyan)"></div><div class="tl-t"><span class="tl-n" style="color:var(--cyan)">Flare</span> <span class="tl-s">T+0</span></div><div class="tl-l" style="background:linear-gradient(90deg,var(--cyan),var(--yellow))"></div></div>
-    <div class="tl-nd"><div class="tl-d" id="t1" style="border-color:var(--yellow);color:var(--yellow)"></div><div class="tl-t"><span class="tl-n" style="color:var(--yellow)">Blackout</span> <span class="tl-s">T+8m</span></div><div class="tl-l" style="background:linear-gradient(90deg,var(--yellow),var(--orange))"></div></div>
-    <div class="tl-nd"><div class="tl-d" id="t2" style="border-color:var(--orange);color:var(--orange)"></div><div class="tl-t"><span class="tl-n" style="color:var(--orange)">Protons</span> <span class="tl-s">T+30m</span></div><div class="tl-l" style="background:linear-gradient(90deg,var(--orange),var(--red))"></div></div>
-    <div class="tl-nd"><div class="tl-d" id="t3" style="border-color:var(--red);color:var(--red)"></div><div class="tl-t"><span class="tl-n" style="color:var(--red)">CME</span> <span class="tl-s">T+24h</span></div><div class="tl-l" style="background:linear-gradient(90deg,var(--red),var(--purple))"></div></div>
-    <div class="tl-nd"><div class="tl-d" id="t4" style="border-color:var(--purple);color:var(--purple)"></div><div class="tl-t"><span class="tl-n" style="color:var(--purple)">Storm</span> <span class="tl-s">T+36h</span></div></div>
+    <div class="tl-nd" onclick="simulateStormStage(0)" title="Simulate Solar Flare Eruption (Kp 2.0)"><div class="tl-d" id="t0" style="border-color:var(--cyan);color:var(--cyan)"></div><div class="tl-t"><span class="tl-n" style="color:var(--cyan)">Flare</span> <span class="tl-s">T+0</span></div><div class="tl-l" style="background:linear-gradient(90deg,var(--cyan),var(--yellow))"></div></div>
+    <div class="tl-nd" onclick="simulateStormStage(1)" title="Simulate Radio Blackout Phase (Kp 4.0)"><div class="tl-d" id="t1" style="border-color:var(--yellow);color:var(--yellow)"></div><div class="tl-t"><span class="tl-n" style="color:var(--yellow)">Blackout</span> <span class="tl-s">T+8m</span></div><div class="tl-l" style="background:linear-gradient(90deg,var(--yellow),var(--orange))"></div></div>
+    <div class="tl-nd" onclick="simulateStormStage(2)" title="Simulate Radiation Storm Phase (Kp 5.0)"><div class="tl-d" id="t2" style="border-color:var(--orange);color:var(--orange)"></div><div class="tl-t"><span class="tl-n" style="color:var(--orange)">Protons</span> <span class="tl-s">T+30m</span></div><div class="tl-l" style="background:linear-gradient(90deg,var(--orange),var(--red))"></div></div>
+    <div class="tl-nd" onclick="simulateStormStage(3)" title="Simulate Coronal Mass Ejection Arrival (Kp 7.0)"><div class="tl-d" id="t3" style="border-color:var(--red);color:var(--red)"></div><div class="tl-t"><span class="tl-n" style="color:var(--red)">CME</span> <span class="tl-s">T+24h</span></div><div class="tl-l" style="background:linear-gradient(90deg,var(--red),var(--purple))"></div></div>
+    <div class="tl-nd" onclick="simulateStormStage(4)" title="Simulate Geomagnetic Storm Peak (Kp 9.0)"><div class="tl-d" id="t4" style="border-color:var(--purple);color:var(--purple)"></div><div class="tl-t"><span class="tl-n" style="color:var(--purple)">Storm</span> <span class="tl-s">T+36h</span></div></div>
 </div>
 </div>
 
 <script>
-/* ===== STAR FIELD ===== */
-(function(){const sf=document.getElementById('starField');for(let i=0;i<400;i++){const s=document.createElement('div');s.className='star';s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';const sz=Math.random();s.style.opacity=sz*0.5+0.1;s.style.width=s.style.height=(sz*2+0.5)+'px';if(sz>0.7) s.style.boxShadow='0 0 '+(sz*3)+'px rgba(255,255,255,0.4)';s.style.animation=`twinkle ${3+Math.random()*5}s ease-in-out infinite ${Math.random()*4}s`;sf.appendChild(s)}const st=document.createElement('style');st.textContent='@keyframes twinkle{0%,100%{opacity:0.05}50%{opacity:0.9}}';document.head.appendChild(st)})();
-
-
-
-
-/* ===== GROUND STATIONS ===== */
-const groundStations=[
-    {name:'ISTRAC Bangalore',lat:12.95,lng:77.59},
+/* ===== LEAFLET 2D MAP ===== */
+const groundStations = [
+    {name:'ISTRAC Complex',lat:13.00,lng:77.10},
     {name:'SDSC Sriharikota',lat:13.72,lng:80.23},
     {name:'SAC Ahmedabad',lat:23.02,lng:72.57},
     {name:'NRSC Hyderabad',lat:17.38,lng:78.48},
-    {name:'MCF Hassan',lat:13.00,lng:76.10},
-    {name:'IDSN Byalalu',lat:13.04,lng:77.37},
     {name:'Port Blair',lat:11.67,lng:92.73},
     {name:'Lucknow',lat:26.85,lng:80.95},
     {name:'Brunei',lat:4.93,lng:114.95},
     {name:'Mauritius',lat:-20.35,lng:57.55}
 ];
-
-
-
 let currentKp = 2;
+let globalSunLat = 0;
+let globalSunLng = 0;
 
-/* ===== INIT GLOBE ===== */
-const container=document.getElementById('globeViz');
-const myGlobe=Globe()
-    .globeImageUrl('https://unpkg.com/three-globe@2.35.0/example/img/earth-blue-marble.jpg')
-    .bumpImageUrl('https://unpkg.com/three-globe@2.35.0/example/img/earth-topology.png')
-    .backgroundImageUrl('')
-    .backgroundColor('rgba(0,0,0,0)')
-    .showGlobe(true)
-    .showAtmosphere(true)
-    .atmosphereColor('#4fc3f7')
-    .atmosphereAltitude(0.35)
-    .pointOfView({lat:20,lng:78,altitude:2.0})
-    /* Ground stations */
-    .pointsData(groundStations)
-    .pointLat('lat')
-    .pointLng('lng')
-    .pointAltitude(0.008)
-    .pointRadius(0.5)
-    .pointColor(() => '#f97316')
-    .pointResolution(20)
-    .onPointClick(p=>{
-        myGlobe.pointOfView({lat:p.lat,lng:p.lng,altitude:0.8},800);
-    })
-    (container);
-
-
-/* Enhance renderer */
-setTimeout(()=>{
-    try{
-        const renderer=myGlobe.renderer();
-        renderer.toneMapping=4; /* ACESFilmic */
-        renderer.toneMappingExposure=1.4;
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-        renderer.outputColorSpace = 'srgb';
-    }catch(e){}
-},500);
-
-/* ===== AUTO ROTATION ===== */
-let autoRotate=true;
-let rotateTimeout;
-myGlobe.controls().autoRotate=true;
-myGlobe.controls().autoRotateSpeed=0.3;
-myGlobe.controls().enableDamping=true;
-myGlobe.controls().dampingFactor=0.15;
-myGlobe.controls().rotateSpeed=0.5;
-myGlobe.controls().zoomSpeed=0.8;
-myGlobe.controls().minDistance=120;
-myGlobe.controls().maxDistance=600;
-
-container.addEventListener('mousedown',()=>{
-    myGlobe.controls().autoRotate=false;
-    clearTimeout(rotateTimeout);
+/* Init Leaflet map with dark CartoDB tiles */
+const map = L.map('mapViz', {
+    center: [20, 78], zoom: 3, zoomControl: true,
+    attributionControl: false, scrollWheelZoom: true,
+    worldCopyJump: false, maxBoundsViscosity: 1.0
 });
-container.addEventListener('mouseup',()=>{
-    rotateTimeout=setTimeout(()=>{myGlobe.controls().autoRotate=true},4000);
-});
-container.addEventListener('touchstart',()=>{
-    myGlobe.controls().autoRotate=false;
-    clearTimeout(rotateTimeout);
-});
-container.addEventListener('touchend',()=>{
-    rotateTimeout=setTimeout(()=>{myGlobe.controls().autoRotate=true},4000);
-});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 10, minZoom: 2, subdomains: 'abcd',
+    noWrap: true, bounds: L.latLngBounds(L.latLng(-90, -180), L.latLng(90, 180))
+}).addTo(map);
 
-/* ===== CONTROLS ===== */
-function focusIndia(){myGlobe.pointOfView({lat:22,lng:80,altitude:1.5},1000)}
-function focusGlobal(){myGlobe.pointOfView({lat:20,lng:40,altitude:2.5},1000)}
+/* Constrain map to single world copy */
+const WORLD_BOUNDS = L.latLngBounds(L.latLng(-85, -180), L.latLng(85, 180));
+map.setMaxBounds(WORLD_BOUNDS);
+map.on('drag', function() { map.panInsideBounds(WORLD_BOUNDS, { animate: false }); });
 
+/* Station marker — cyan dot + name */
+function makeStationIcon(name) {
+    return L.divIcon({
+        className: '',
+        html: `<div class="st-marker"><div class="st-dot"></div><span class="st-name">${name}</span></div>`,
+        iconSize: [100, 14],
+        iconAnchor: [3, 7]
+    });
+}
 
-/* Ground station toggle */
+/* Add station markers */
+let stationMarkers = [];
 let showStations = true;
+groundStations.forEach(st => {
+    const coordStr = Math.abs(st.lat).toFixed(2)+(st.lat>=0?'°N':'°S')+', '+Math.abs(st.lng).toFixed(2)+(st.lng>=0?'°E':'°W');
+    const m = L.marker([st.lat, st.lng], { icon: makeStationIcon(st.name) })
+        .addTo(map)
+        .bindTooltip(
+            `<div class="stt-name">${st.name}</div><div class="stt-coord">${coordStr}</div>`,
+            {className:'station-tooltip',direction:'right',offset:[8,0],opacity:1}
+        );
+    m.stData = st;
+    stationMarkers.push(m);
+});
+
 function toggleStations() {
     showStations = !showStations;
     document.getElementById('btnStations').classList.toggle('active', showStations);
-    myGlobe.pointsData(showStations ? groundStations : []);
+    stationMarkers.forEach(m => showStations ? map.addLayer(m) : map.removeLayer(m));
+}
+
+function focusIndia() { map.flyTo([22, 80], 4, {duration: 1.2}); }
+function focusGlobal() { map.flyTo([20, 20], 2, {duration: 1.2}); }
+
+/* ===== CANVAS OVERLAY (day/night + aurora + impact zones) ===== */
+const canvas = document.getElementById('mapCanvas');
+const ctx = canvas.getContext('2d');
+let showAuroraLayer = true;
+let showNightLayer = true;
+
+function resizeCanvas() {
+    const wrap = document.getElementById('globeWrap');
+    canvas.width  = wrap.offsetWidth;
+    canvas.height = wrap.offsetHeight;
+    /* Force Leaflet to recalculate its size too */
+    map.invalidateSize();
+    drawOverlays();
+}
+
+/* Convert lat/lng to pixel on the Leaflet map */
+function latLngToXY(lat, lng) {
+    const pt = map.latLngToContainerPoint([lat, lng]);
+    return { x: pt.x, y: pt.y };
+}
+
+function drawOverlays() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    /* === NIGHT SIDE === */
+    if (showNightLayer) {
+        const now = new Date();
+        const doy = Math.floor((now - new Date(now.getFullYear(),0,0)) / 86400000);
+        const decl = -23.44 * Math.cos((360/365)*(doy+10)*Math.PI/180);
+        const hourUTC = now.getUTCHours() + now.getUTCMinutes()/60;
+        const sunLng = -(hourUTC - 12) * 15;
+        /* Draw night band — sample terminator line */
+        const steps = 200;
+        for (let i = 0; i < steps; i++) {
+            const lng1 = -180 + (i / steps) * 360;
+            const lng2 = -180 + ((i+1) / steps) * 360;
+            const p1 = latLngToXY(decl, lng1);
+            const p2 = latLngToXY(decl, lng2);
+            /* Determine which side is night */
+        }
+        /* Simpler: draw dark overlay on night hemisphere */
+        const terminatorX = latLngToXY(0, sunLng + 90).x;
+        const grad = ctx.createLinearGradient(terminatorX - 60, 0, terminatorX + 60, 0);
+        grad.addColorStop(0, 'rgba(0,5,25,0.55)');
+        grad.addColorStop(0.5, 'rgba(0,5,25,0.0)');
+        /* Determine sun position pixel */
+        const sunX = latLngToXY(decl, sunLng).x;
+        if (sunX < W / 2) {
+            /* Sun on left → night on right */
+            const g2 = ctx.createLinearGradient(W*0.4, 0, W*0.9, 0);
+            g2.addColorStop(0, 'rgba(0,5,25,0)');
+            g2.addColorStop(1, 'rgba(0,5,25,0.55)');
+            ctx.fillStyle = g2;
+        } else {
+            /* Sun on right → night on left */
+            const g2 = ctx.createLinearGradient(W*0.1, 0, W*0.6, 0);
+            g2.addColorStop(0, 'rgba(0,5,25,0.55)');
+            g2.addColorStop(1, 'rgba(0,5,25,0)');
+            ctx.fillStyle = g2;
+        }
+        ctx.fillRect(0, 0, W, H);
+    }
+
+    /* === AURORA ZONES === */
+    if (showAuroraLayer) {
+        const boundary = Math.max(20, 66.5 - 2.5 * currentKp);
+        const kpColor = currentKp >= 7 ? '239,68,68' : currentKp >= 5 ? '249,115,22' : '168,85,247';
+        const alpha   = Math.min(0.45, 0.10 + currentKp * 0.030);
+
+        /* Helper: draw a filled aurora band between two latitude lines */
+        function drawAuroraBand(latTop, latBot) {
+            /* Sample the boundary curve as a polygon */
+            const topPts = [], botPts = [];
+            for (let lng = -180; lng <= 180; lng += 3) {
+                topPts.push(latLngToXY(latTop, lng));
+                botPts.push(latLngToXY(latBot,  lng));
+            }
+            /* Clamp y to canvas */
+            const clamp = y => Math.max(-10, Math.min(H + 10, y));
+
+            /* Fill polygon */
+            ctx.beginPath();
+            ctx.moveTo(topPts[0].x, clamp(topPts[0].y));
+            for (let i = 1; i < topPts.length; i++) ctx.lineTo(topPts[i].x, clamp(topPts[i].y));
+            for (let i = botPts.length - 1; i >= 0; i--) ctx.lineTo(botPts[i].x, clamp(botPts[i].y));
+            ctx.closePath();
+
+            /* Vertical gradient inside the band */
+            const y0 = clamp(topPts[0].y);
+            const y1 = clamp(botPts[0].y);
+            const grad = ctx.createLinearGradient(0, Math.min(y0,y1), 0, Math.max(y0,y1));
+            grad.addColorStop(0,   `rgba(${kpColor},0)`);
+            grad.addColorStop(0.35, `rgba(${kpColor},${alpha})`);
+            grad.addColorStop(0.65, `rgba(${kpColor},${alpha})`);
+            grad.addColorStop(1,   `rgba(${kpColor},0)`);
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            /* Boundary dashed line */
+            ctx.beginPath();
+            ctx.moveTo(botPts[0].x, botPts[0].y);
+            for (let i = 1; i < botPts.length; i++) ctx.lineTo(botPts[i].x, botPts[i].y);
+            ctx.strokeStyle = `rgba(${kpColor},${Math.min(0.7, alpha * 2.5)})`;
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([5, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        /* North aurora band: pole → boundary */
+        drawAuroraBand(82, boundary);
+        /* South aurora band: -boundary → -pole */
+        drawAuroraBand(-boundary, -82);
+
+        /* Boundary latitude label */
+        const labelPt = latLngToXY(boundary, -160);
+        if (labelPt.y > 0 && labelPt.y < H) {
+            ctx.fillStyle = `rgba(${kpColor},0.75)`;
+            ctx.font = 'bold 9px JetBrains Mono, monospace';
+            ctx.fillText(`Aurora: ${boundary.toFixed(1)}°N/S`, labelPt.x + 4, labelPt.y - 4);
+        }
+    }
+
+    /* === HIGH IMPACT ZONE (equatorial, Kp>6) === */
+    if (currentKp >= 6) {
+        const eqTop = latLngToXY(30, 0).y;
+        const eqBot = latLngToXY(-30, 0).y;
+        const eg = ctx.createLinearGradient(0, eqTop, 0, eqBot);
+        const ei = (currentKp - 6) / 3 * 0.12;
+        eg.addColorStop(0, `rgba(239,68,68,0)`);
+        eg.addColorStop(0.5, `rgba(239,68,68,${ei})`);
+        eg.addColorStop(1, `rgba(239,68,68,0)`);
+        ctx.fillStyle = eg;
+        ctx.fillRect(0, Math.min(eqTop, eqBot), W, Math.abs(eqBot - eqTop));
+    }
+
+    /* === GEOMAGNETIC CUTOFF LATITUDE === */
+    const cutoffLat = Math.max(40, 65 - 2.5 * (currentKp - 1));
+    
+    // Draw North Cutoff Line
+    ctx.beginPath();
+    for (let lng = -180; lng <= 180; lng += 5) {
+        const pt = latLngToXY(cutoffLat, lng);
+        if (lng === -180) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+    }
+    ctx.strokeStyle = 'rgba(239,68,68,0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    
+    // Draw South Cutoff Line
+    ctx.beginPath();
+    for (let lng = -180; lng <= 180; lng += 5) {
+        const pt = latLngToXY(-cutoffLat, lng);
+        if (lng === -180) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Add cutoff labels
+    const labelN = latLngToXY(cutoffLat, -140);
+    if (labelN.y > 0 && labelN.y < H) {
+        ctx.fillStyle = 'rgba(239,68,68,0.85)';
+        ctx.font = 'bold 8px JetBrains Mono, monospace';
+        ctx.fillText(`Geomagnetic Cutoff (Protons): ${cutoffLat.toFixed(1)}°N`, labelN.x, labelN.y - 4);
+    }
+
+    /* === D-REGION ABSORPTION (D-RAP) CONTOURS === */
+    const xray = getCurrentXrayFlux();
+    const haf = xray > 1e-9 ? Math.max(0, 10 * Math.log10(xray) + 32.2) : 0;
+    
+    if (haf > 2.0) {
+        // Draw subsolar point marker
+        const subPt = latLngToXY(globalSunLat, globalSunLng);
+        if (subPt.x >= 0 && subPt.x <= W && subPt.y >= 0 && subPt.y <= H) {
+            ctx.beginPath();
+            ctx.arc(subPt.x, subPt.y, 4, 0, 2*Math.PI);
+            ctx.fillStyle = 'var(--yellow)';
+            ctx.fill();
+            
+            // Draw HAF value text
+            ctx.fillStyle = 'rgba(251,191,36,0.9)';
+            ctx.font = 'bold 9px JetBrains Mono, monospace';
+            ctx.fillText(`Subsolar Point (HAF: ${haf.toFixed(1)} MHz)`, subPt.x + 8, subPt.y + 3);
+        }
+
+        const a10_subsolar = Math.pow(10, (haf - 10) / 10);
+        
+        const drawContour = (targetDb, color) => {
+            const targetCos = Math.pow(targetDb / a10_subsolar, 1 / 0.75);
+            if (targetCos > 1.0 || targetCos <= 0.0) return;
+            
+            const targetAngleRad = Math.acos(targetCos);
+            
+            ctx.beginPath();
+            const steps = 90;
+            let first = true;
+            
+            for (let i = 0; i <= steps; i++) {
+                const bearing = (i / steps) * 2 * Math.PI;
+                const lat1 = globalSunLat * Math.PI / 180;
+                const lng1 = globalSunLng * Math.PI / 180;
+                
+                const lat2 = Math.asin(Math.sin(lat1)*Math.cos(targetAngleRad) + Math.cos(lat1)*Math.sin(targetAngleRad)*Math.cos(bearing));
+                let lng2 = lng1 + Math.atan2(Math.sin(bearing)*Math.sin(targetAngleRad)*Math.cos(lat1), Math.cos(targetAngleRad)-Math.sin(lat1)*Math.sin(lat2));
+                
+                // Keep longitude within bounds
+                let lng2Deg = lng2 * 180 / Math.PI;
+                if (lng2Deg > 180) lng2Deg -= 360;
+                if (lng2Deg < -180) lng2Deg += 360;
+
+                const pt = latLngToXY(lat2 * 180 / Math.PI, lng2Deg);
+                
+                if (first) {
+                    ctx.moveTo(pt.x, pt.y);
+                    first = false;
+                } else {
+                    ctx.lineTo(pt.x, pt.y);
+                }
+            }
+            ctx.closePath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.0;
+            ctx.stroke();
+            
+            ctx.fillStyle = color.replace('1)', '0.04)');
+            ctx.fill();
+        };
+
+        drawContour(1.0, 'rgba(234,179,8,1)');   // 1 dB contour
+        drawContour(5.0, 'rgba(249,115,22,1)');  // 5 dB contour
+        drawContour(15.0, 'rgba(239,68,68,1)');  // 15 dB contour
+    }
+}
+
+/* Redraw overlays when map moves */
+map.on('move zoom moveend zoomend', drawOverlays);
+window.addEventListener('resize', resizeCanvas);
+setInterval(drawOverlays, 30000);
+setTimeout(resizeCanvas, 200);
+
+function toggleAurora() {
+    showAuroraLayer = !showAuroraLayer;
+    document.getElementById('btnAurora').classList.toggle('active', showAuroraLayer);
+    drawOverlays();
+}
+function toggleNight() {
+    showNightLayer = !showNightLayer;
+    document.getElementById('btnNight').classList.toggle('active', showNightLayer);
+    drawOverlays();
+}
+function toggleFullscreen() {
+    document.body.classList.toggle('fullscreen');
+    document.getElementById('btnFS').classList.toggle('active');
+    setTimeout(() => { map.invalidateSize(); resizeCanvas(); }, 150);
+}
+
+/* Update station markers + overlays when Kp changes */
+function updateMapForKp(kp) {
+    currentKp = kp;
+    /* stations are static markers — no live link data */
+    drawOverlays();
 }
 
 
@@ -508,6 +837,10 @@ function updateSunPosition() {
     const hourUTC = now.getUTCHours() + now.getUTCMinutes() / 60;
     const sunLng = -(hourUTC - 12) * 15;
     const sunLat = declination;
+    
+    globalSunLat = sunLat;
+    globalSunLng = sunLng;
+    
     document.getElementById('sunDir').textContent =
         Math.abs(sunLat).toFixed(1) + (sunLat >= 0 ? 'N' : 'S') + ', ' +
         Math.abs(sunLng).toFixed(0) + (sunLng >= 0 ? 'E' : 'W');
@@ -546,19 +879,25 @@ function stormName(kp){
 }
 
 function updateWx(d){
+    const prevD = {...wxData};
     wxData=d;currentKp=d.kp;
+    function trend(cur, prev) { return cur > prev + 0.1 ? ' ↑' : cur < prev - 0.1 ? ' ↓' : ' →'; }
     const c=colorForKp(d.kp);
-    document.getElementById('kpVal').textContent=d.kp;
+    document.getElementById('kpVal').textContent=parseFloat(d.kp).toFixed(1);
     document.getElementById('kpVal').style.color=c;
     document.getElementById('stormLvl').textContent=stormName(d.kp);
     document.getElementById('stormLvl').style.color=c;
-    document.getElementById('cKp').textContent=d.kp;document.getElementById('cKp').style.color=c;
-    document.getElementById('cWind').textContent=d.wind+' km/s';
-    document.getElementById('cBz').textContent=d.bz+' nT';
+    document.getElementById('cKp').textContent=parseFloat(d.kp).toFixed(2)+trend(d.kp,prevD.kp);document.getElementById('cKp').style.color=c;
+    document.getElementById('cWind').textContent=parseFloat(d.wind).toFixed(0)+' km/s'+trend(d.wind,prevD.wind);
+    document.getElementById('cBz').textContent=parseFloat(d.bz).toFixed(1)+' nT'+trend(d.bz,prevD.bz);
     document.getElementById('cBz').style.color=d.bz<-10?'var(--red)':d.bz<-5?'var(--orange)':d.bz<0?'var(--yellow)':'var(--green)';
-    document.getElementById('cPr').textContent=d.proton+' pfu';
+    /* #4: proton flux with color thresholds */
+    const protonVal = parseFloat(d.proton);
+    const protonEl = document.getElementById('cPr');
+    protonEl.textContent = protonVal.toFixed(2)+' pfu';
+    protonEl.style.color = protonVal>=100?'var(--red)':protonVal>=10?'var(--orange)':protonVal>=1?'var(--yellow)':'var(--green)';
     document.getElementById('cRSG').textContent=d.r+'/'+d.s+'/'+d.g;
-    document.getElementById('cUpd').textContent='Updated: '+new Date().toLocaleTimeString();
+    document.getElementById('cUpd').textContent=new Date().toLocaleTimeString();
 
     const impPct=d.kp<=3?0:d.kp<=5?Math.round((d.kp-3)*4):Math.round(8+(d.kp-5)*8);
     document.getElementById('impArea').textContent=impPct+'%';
@@ -579,85 +918,196 @@ function updateWx(d){
         document.getElementById('impRec').textContent='6-24 hr';document.getElementById('impRec').style.color='var(--red)';
         document.getElementById('impSats').textContent=Math.round(d.kp*1.5);document.getElementById('impSats').style.color='var(--red)';
     }
-    const els={sA:d.kp,sCh:d.kp,sIN:d.kp,sGS:d.kp,sNv:d.kp,sOc:d.kp,sEO:d.kp,sRI:d.kp,
-               sIS:d.kp,sGP:d.kp,sSL:d.kp,sGO:d.kp,sHu:d.kp,sGa:d.kp};
-    Object.keys(els).forEach(id=>{
+    /* #1 & #2: Only update IDs that actually exist in DOM - removed INTERNATIONAL/POLAR/ADS-B */
+    /* ISRO assets only */
+    ['sA','sCh','sIN','sGS','sNv','sOc','sEO','sRI'].forEach(id=>{
         const el=document.getElementById(id);if(!el)return;
+        /* Aditya-L1 (sA) always nominal - it's at L1, shielded from geomagnetic storms */
+        if(id==='sA'){
+            if(d.kp>=8){el.textContent='MONITOR';el.className='ast s1';}
+            else{el.textContent='NOMINAL';el.className='ast s0';}
+            return;
+        }
         if(d.kp<=3){el.textContent='SAFE';el.className='ast s0';}
         else if(d.kp<=5){el.textContent='CAUTION';el.className='ast s1';}
         else if(d.kp<=7){el.textContent='WARNING';el.className='ast s2';}
         else{el.textContent='DANGER';el.className='ast s3';}
     });
     const isroEl=document.getElementById('isroSt');
-    if(d.kp<=3){isroEl.textContent='NOMINAL';isroEl.className='sb-badge s0';}
-    else if(d.kp<=5){isroEl.textContent='ALERT';isroEl.className='sb-badge s1';}
-    else{isroEl.textContent='CRITICAL';isroEl.className='sb-badge s3';}
-    ['cHF','cGN','cSC','cAD'].forEach(id=>{
+    if(isroEl){
+        if(d.kp<=3){isroEl.textContent='NOMINAL';isroEl.className='sb-badge s0';}
+        else if(d.kp<=5){isroEl.textContent='ALERT';isroEl.className='sb-badge s1';}
+        else{isroEl.textContent='CRITICAL';isroEl.className='sb-badge s3';}
+    }
+    /* COMMS - cHF, cGN, cSC exist; cAD removed */
+    ['cHF','cGN','cSC'].forEach(id=>{
         const el=document.getElementById(id);if(!el)return;
         if(d.kp<=3){el.textContent='OK';el.className='ast s0';}
         else if(d.kp<=5){el.textContent='DEGRADED';el.className='ast s1';}
         else{el.textContent='DISRUPTED';el.className='ast s3';}
     });
-    ['gPw','gIn','gIS'].forEach(id=>{
+    /* GROUND - gIn, gIS exist; gPw removed */
+    ['gIn','gIS'].forEach(id=>{
         const el=document.getElementById(id);if(!el)return;
         if(d.kp<=4){el.textContent=id==='gIS'?'NOMINAL':'STABLE';el.className='ast s0';}
         else if(d.kp<=6){el.textContent='STRESSED';el.className='ast s1';}
         else{el.textContent='AT RISK';el.className='ast s3';}
     });
-    ['f1','f2','f3'].forEach(id=>{
-        const el=document.getElementById(id);if(!el)return;
-        if(d.kp<=4){el.textContent='CLEAR';el.className='ast s0';}
-        else if(d.kp<=6){el.textContent='ADVISORY';el.className='ast s1';}
-        else{el.textContent='REROUTE';el.className='ast s3';}
+    /* Update ground station diagnostics based on physics models */
+    updateStationDiagnostics();
+
+    /* Status summary strip */
+    const strip = document.getElementById('statusStrip');
+    const sDot = document.getElementById('ssDot');
+    const sText = document.getElementById('ssText');
+    if(strip && sDot && sText){
+        if(d.kp>=7){
+            strip.style.background='rgba(239,68,68,0.08)';strip.style.borderColor='rgba(239,68,68,0.2)';
+            sDot.style.background='var(--red)';sDot.style.boxShadow='0 0 8px var(--red)';
+            sText.textContent='\u26a0 SEVERE STORM (G'+(d.kp>=9?5:d.kp>=8?4:3)+') \u2014 '+stormName(d.kp)+' | Kp '+d.kp.toFixed(1)+' | Wind '+Math.round(d.wind)+' km/s | Bz '+d.bz.toFixed(1)+' nT';
+        }else if(d.kp>=5){
+            strip.style.background='rgba(249,115,22,0.06)';strip.style.borderColor='rgba(249,115,22,0.15)';
+            sDot.style.background='var(--orange)';sDot.style.boxShadow='0 0 6px var(--orange)';
+            sText.textContent='\u26a1 GEOMAGNETIC STORM \u2014 '+stormName(d.kp)+' | Kp '+d.kp.toFixed(1)+' | Aurora visible below '+Math.round(66.5-2.5*d.kp)+'\u00b0';
+        }else if(d.kp>=4){
+            strip.style.background='rgba(234,179,8,0.05)';strip.style.borderColor='rgba(234,179,8,0.12)';
+            sDot.style.background='var(--yellow)';sDot.style.boxShadow='0 0 6px var(--yellow)';
+            sText.textContent='Unsettled conditions \u2014 Kp '+d.kp.toFixed(1)+' | Minor aurora activity possible at high latitudes';
+        }else{
+            strip.style.background='rgba(16,185,129,0.04)';strip.style.borderColor='rgba(16,185,129,0.1)';
+            sDot.style.background='var(--green)';sDot.style.boxShadow='0 0 6px var(--green)';
+            sText.textContent='All quiet \u2014 Kp '+d.kp.toFixed(1)+' | Solar wind '+Math.round(d.wind)+' km/s | No action needed';
+        }
+    }
+}
+
+/* ===== RESEARCH & SCIENTIFIC MODELS ===== */
+function getCurrentXrayFlux() {
+    if (window.xrayData && window.xrayData.length > 0) {
+        return window.xrayData[window.xrayData.length - 1];
+    }
+    if (isSimulationActive) {
+        const kp = currentKp;
+        if (kp >= 8) return 1.5e-4; // X-class
+        if (kp >= 7) return 3.5e-5; // M-class
+        if (kp >= 5) return 4.5e-6; // C-class
+        if (kp >= 4) return 8.5e-7; // B-class
+        return 1.2e-8; // A-class
+    }
+    return 1.0e-8;
+}
+
+function getSolarZenith(lat, lng) {
+    const rLat = lat * Math.PI / 180;
+    const rLng = lng * Math.PI / 180;
+    const rSLat = globalSunLat * Math.PI / 180;
+    const rSLng = globalSunLng * Math.PI / 180;
+    const cosChi = Math.sin(rLat) * Math.sin(rSLat) + Math.cos(rLat) * Math.cos(rSLat) * Math.cos(rLng - rSLng);
+    return Math.acos(Math.max(-1, Math.min(1, cosChi)));
+}
+
+function updateStationDiagnostics() {
+    const container = document.getElementById('stationDiagBody');
+    if (!container) return;
+
+    const xray = getCurrentXrayFlux();
+    const haf = xray > 1e-9 ? Math.max(0, 10 * Math.log10(xray) + 32.2) : 0;
+    const a10_subsolar = haf > 0 ? Math.pow(10, (haf - 10) / 10) : 0;
+
+    let html = '<table style="width:100%;border-collapse:collapse;color:var(--t1)">' +
+        '<tr style="border-bottom:1px solid var(--border);color:var(--t3);font-weight:700">' +
+        '<th style="text-align:left;padding:2px 0">STATION</th>' +
+        '<th style="text-align:right">ZENITH (χ)</th>' +
+        '<th style="text-align:right">ABS (10MHz)</th>' +
+        '<th style="text-align:right">STATUS</th></tr>';
+
+    groundStations.forEach(st => {
+        const zenithRad = getSolarZenith(st.lat, st.lng);
+        const zenithDeg = zenithRad * 180 / Math.PI;
+        
+        let abs = 0;
+        if (zenithDeg < 90) {
+            abs = a10_subsolar * Math.pow(Math.cos(zenithRad), 0.75);
+        }
+
+        let statusClass = 's0';
+        let statusText = 'SAFE';
+        if (abs > 15) {
+            statusClass = 's3';
+            statusText = 'BLACKOUT';
+        } else if (abs > 5) {
+            statusClass = 's2';
+            statusText = 'SEVERE';
+        } else if (abs > 1.5) {
+            statusClass = 's1';
+            statusText = 'CAUTION';
+        }
+
+        html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.02)">` +
+            `<td style="padding:4px 0;font-weight:600">${st.name.replace(' Station','').replace(' Complex','')}</td>` +
+            `<td style="text-align:right;color:var(--t2)">${zenithDeg.toFixed(1)}°</td>` +
+            `<td style="text-align:right;color:${abs > 0 ? 'var(--orange)' : 'var(--t3)'}">${abs > 0.05 ? abs.toFixed(1) + ' dB' : '0.0 dB'}</td>` +
+            `<td style="text-align:right"><span class="ast ${statusClass}" style="padding:1px 3px;font-size:7px;border-radius:2px">${statusText}</span></td>` +
+            `</tr>`;
     });
-    const rHi=document.getElementById('rHi'),rMd=document.getElementById('rMd'),rIn=document.getElementById('rIn');
-    if(d.kp<=3){rHi.textContent='SAFE';rHi.className='ast s0';rMd.textContent='SAFE';rMd.className='ast s0';rIn.textContent='SAFE';rIn.className='ast s0';}
-    else if(d.kp<=5){rHi.textContent='AURORA';rHi.className='ast s1';rMd.textContent='SAFE';rMd.className='ast s0';rIn.textContent='SAFE';rIn.className='ast s0';}
-    else if(d.kp<=7){rHi.textContent='STORM';rHi.className='ast s2';rMd.textContent='AURORA';rMd.className='ast s1';rIn.textContent='SAFE';rIn.className='ast s0';}
-    else{rHi.textContent='SEVERE';rHi.className='ast s3';rMd.textContent='STORM';rMd.className='ast s2';rIn.textContent='AURORA';rIn.className='ast s1';}
+
+    html += '</table>';
+    container.innerHTML = html;
 }
 
 async function fetchNOAA(){
     try{
-        /* Kp from forecast */
+        /* Kp from 3-day forecast */
         const rKp=await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json');
         const dKp=await rKp.json();
         let kp = 2;
-        if(dKp&&dKp.length>1) kp = parseFloat(dKp[dKp.length-1][1])||2;
+        if(dKp&&dKp.length>1){
+            const last=dKp[dKp.length-1];
+            kp = parseFloat(last.kp || last[1]) || 2;
+        }
 
-        /* Real solar wind from DSCOVR at L1 */
+        /* Real solar wind speed from DSCOVR — field is proton_speed */
         let wind=390, bz=-1.5, proton=0.7;
         try {
             const rWind=await fetch('https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json');
             const dWind=await rWind.json();
-            if(dWind&&dWind.WindSpeed) wind=parseFloat(dWind.WindSpeed)||390;
+            const w = Array.isArray(dWind) ? dWind[0] : dWind;
+            if(w&&w.proton_speed) wind=parseFloat(w.proton_speed)||390;
         } catch(e){}
+
+        /* Real IMF Bz — field is bz_gsm */
         try {
             const rMag=await fetch('https://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json');
             const dMag=await rMag.json();
-            if(dMag&&dMag.Bz) bz=parseFloat(dMag.Bz)||-1.5;
+            const m = Array.isArray(dMag) ? dMag[0] : dMag;
+            if(m&&m.bz_gsm!=null) bz=parseFloat(m.bz_gsm);
         } catch(e){}
+
+        /* Real proton flux from GOES */
         try {
             const rFlux=await fetch('https://services.swpc.noaa.gov/json/goes/primary/integral-protons-1-day.json');
             const dFlux=await rFlux.json();
             if(dFlux&&dFlux.length>0) proton=parseFloat(dFlux[dFlux.length-1].flux)||0.7;
         } catch(e){}
 
-        updateWx({kp:kp,wind:wind,bz:bz,proton:proton,r:0,s:0,g:0});
+        /* Real R/S/G indices from NOAA */
+        let r=0,s=0,g=0;
+        try {
+            const rRSG=await fetch('https://services.swpc.noaa.gov/products/noaa-scales.json');
+            const dRSG=await rRSG.json();
+            if(dRSG&&dRSG['-1']){
+                r=parseInt(dRSG['-1'].R.Scale)||0;
+                s=parseInt(dRSG['-1'].S.Scale)||0;
+                g=parseInt(dRSG['-1'].G.Scale)||0;
+            }
+        } catch(e){}
+
+        updateWx({kp:kp,wind:wind,bz:bz,proton:proton,r:r,s:s,g:g});
     }catch(e){
         updateWx({kp:2,wind:390,bz:-1.5,proton:0.7,r:0,s:0,g:0});
     }
 }
 fetchNOAA();setInterval(fetchNOAA,120000);
-
-
-
-/* ===== RESIZE ===== */
-window.addEventListener('resize',()=>{
-    myGlobe.width(container.clientWidth);
-    myGlobe.height(container.clientHeight);
-});
-setTimeout(()=>{myGlobe.width(container.clientWidth);myGlobe.height(container.clientHeight)},100);
 
 /* ===== TOAST ALERT SYSTEM ===== */
 let prevWx = null;
@@ -766,6 +1216,61 @@ fetchXray(); setInterval(fetchXray, 120000);
 
 /* ===== JWALASHMI MODEL PREDICTION ===== */
 const classColors = {B:'var(--green)',C:'var(--yellow)',M:'var(--orange)',X:'var(--red)',None:'var(--t2)'};
+const probBarColors = {None:'rgba(134,146,173,0.6)',B:'rgba(16,185,129,0.7)',C:'rgba(234,179,8,0.7)',M:'rgba(249,115,22,0.7)',X:'rgba(239,68,68,0.8)'};
+
+/* Sound alert using Web Audio API */
+function playAlert(type) {
+    try {
+        const ac = new (window.AudioContext||window.webkitAudioContext)();
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.connect(gain); gain.connect(ac.destination);
+        osc.frequency.value = type === 'X' ? 880 : 660;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.3, ac.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.5);
+        osc.start(); osc.stop(ac.currentTime + 0.5);
+    } catch(e) {}
+}
+
+/* CME countdown state */
+let cmeTargetTime = null;
+function updateCMECountdown() {
+    const badge = document.getElementById('cmeBadge');
+    const timeEl = document.getElementById('cmeTime');
+    if (!cmeTargetTime) {
+        badge.classList.remove('show');
+        return;
+    }
+    const remaining = cmeTargetTime - Date.now();
+    if (remaining <= 0) {
+        badge.classList.remove('show');
+        cmeTargetTime = null;
+        return;
+    }
+    const h = Math.floor(remaining / 3600000);
+    const m = Math.floor((remaining % 3600000) / 60000);
+    const s = Math.floor((remaining % 60000) / 1000);
+    timeEl.textContent = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    badge.classList.add('show');
+}
+setInterval(updateCMECountdown, 1000);
+
+/* Aurora visibility from Kp */
+function updateAuroraVisibility(kp) {
+    /* Empirical: auroral equatorward boundary ≈ 66.5 - 2.5*kp degrees latitude */
+    const boundary = Math.max(20, 66.5 - 2.5 * kp);
+    const el = document.getElementById('auroraVal');
+    const badge = document.getElementById('auroraBadge');
+    const sb = document.getElementById('auroraSb');
+    const bStr = boundary.toFixed(1) + '°N/S';
+    if (el) el.textContent = 'below ' + bStr;
+    if (sb) sb.textContent = boundary.toFixed(1) + '°N';
+    if (badge) {
+        if (kp >= 4) badge.classList.add('show');
+        else badge.classList.remove('show');
+    }
+}
 
 async function fetchModelPrediction() {
     try {
@@ -773,61 +1278,134 @@ async function fetchModelPrediction() {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         const d = await r.json();
 
-        /* Server wraps result in d.tactical */
         const t = d.tactical || d;
         if (!t || !t.predicted_class) throw new Error('No prediction data');
 
-        const cls      = t.predicted_class;
-        const conf     = t.confidence || 0;
-        const prob     = Math.round(conf * 100);
-        const lead     = t.lead_time_min != null ? Math.round(t.lead_time_min) : '--';
-        const alert    = t.alert_level || 'GREEN';
-        const uncert   = t.uncertainty != null ? Math.round(t.uncertainty * 100) : null;
-        const infMode  = d.inference_mode || d.data_source || 'live';
-        const color    = classColors[cls] || 'var(--cyan)';
-        const alertColor = alert === 'RED' ? 'var(--red)' : alert === 'YELLOW' ? 'var(--yellow)' : 'var(--green)';
+        const cls     = t.predicted_class;
+        const conf    = t.confidence || 0;
+        const prob    = Math.round(conf * 100);
+        const lead    = t.lead_time_min != null ? Math.round(t.lead_time_min) : '--';
+        const alert   = t.alert_level || 'GREEN';
+        const uncert  = t.uncertainty != null ? Math.round(t.uncertainty * 100) : null;
+        const trueC   = t.true_class || null;
+        const probs   = t.probabilities || null;
+        const replayW = d.replay_window != null ? d.replay_window : null;
+        const totalW  = d.total_windows || null;
+        const src     = d.data_source || d.inference_mode || 'ensemble';
+        const color   = classColors[cls] || 'var(--cyan)';
+        const alertColor = alert==='RED'?'var(--red)':alert==='YELLOW'?'var(--yellow)':'var(--green)';
 
-        /* Class display */
+        /* Class */
         document.getElementById('modelClass').textContent = cls;
         document.getElementById('modelClass').style.color = color;
 
-        /* Probability gauge */
+        /* Gauge */
         document.getElementById('modelGauge').style.width = prob + '%';
         document.getElementById('modelGauge').style.background = color;
 
-        /* Prob text */
+        /* Prob line */
         document.getElementById('modelProb').innerHTML =
-            'Confidence: <strong style="color:' + color + '">' + prob + '%</strong>' +
-            (uncert != null ? ' <span style="color:var(--t3);font-size:9px">±' + uncert + '%</span>' : '') +
-            ' <span style="font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,0.04);color:' + alertColor + '">' + alert + '</span>';
+            'Conf: <strong style="color:'+color+'">'+prob+'%</strong>' +
+            (uncert!=null?' <span style="color:var(--t3);font-size:8px">±'+uncert+'%</span>':'') +
+            ' <span style="font-size:8px;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,0.04);color:'+alertColor+'">'+alert+'</span>';
 
-        /* Lead time & mode */
-        document.getElementById('modelLead').textContent = lead !== '--' ? lead : '--';
-        document.getElementById('modelConf').textContent = infMode === 'simulation' ? 'SIM' : infMode === 'goes-live' ? 'GOES' : 'L1';
+        /* Lead + source badge */
+        document.getElementById('modelLead').textContent = lead!=='--'?lead:'--';
+        const srcLabel = src==='aditya-l1'?'Aditya-L1 SoLEXS':src==='goes-live'?'GOES-18 XRS':src==='simulation'?'SIM':'Ensemble';
+        document.getElementById('modelConf').textContent = srcLabel;
+        document.getElementById('modelConf').style.color = src==='aditya-l1'?'var(--orange)':'var(--t3)';
 
-        /* Glow border on M/X class */
-        const box = document.getElementById('modelBox');
-        if (cls === 'X') {
-            box.style.borderColor = 'rgba(239,68,68,0.6)';
-            box.style.boxShadow = '0 0 24px rgba(239,68,68,0.25)';
-        } else if (cls === 'M') {
-            box.style.borderColor = 'rgba(249,115,22,0.5)';
-            box.style.boxShadow = '0 0 16px rgba(249,115,22,0.2)';
-        } else {
-            box.style.borderColor = '';
-            box.style.boxShadow = '';
+        /* Data source row */
+        const srcEl = document.getElementById('modelSrc');
+        if (srcEl) {
+            const nModels = (d.system && d.system.ensemble_models) ? d.system.ensemble_models : null;
+            const modelStr = nModels ? nModels+'-Model Ensemble' : 'Ensemble';
+            const ver = (d.system && d.system.version) ? d.system.version : 'V6.2';
+            srcEl.textContent = src==='aditya-l1' && replayW!=null
+                ? 'Aditya-L1 SoLEXS | Window '+replayW+' / '+(totalW||'?')
+                : src==='goes-live' ? 'GOES-18 XRS Live Feed'
+                : modelStr+' | '+ver;
         }
 
-        /* Fire toast on M/X */
-        if ((cls === 'M' || cls === 'X') && conf > 0.5) {
+        /* Per-class probability bars */
+        const barsEl = document.getElementById('probBars');
+        if (barsEl && probs) {
+            const classes = ['None','B','C','M','X'];
+            barsEl.innerHTML = classes.map(c => {
+                const pct = Math.round((probs[c]||0)*100);
+                const bc = probBarColors[c]||'rgba(255,255,255,0.3)';
+                const isBold = c===cls ? 'font-weight:700;color:var(--t0)' : '';
+                return '<div class="prob-bar-row">' +
+                    '<span class="prob-bar-label" style="'+isBold+'">'+c+'</span>' +
+                    '<div class="prob-bar-track"><div class="prob-bar-fill" style="width:'+pct+'%;background:'+bc+'"></div></div>' +
+                    '<span class="prob-bar-val">'+pct+'%</span></div>';
+            }).join('');
+        }
+
+        /* True class validation */
+        const trueRow = document.getElementById('modelTrueRow');
+        const trueEl = document.getElementById('modelTrue');
+        const matchEl = document.getElementById('modelMatch');
+        if (trueRow && trueC && trueC !== 'None') {
+            trueRow.style.display = 'flex';
+            trueEl.textContent = trueC;
+            trueEl.style.color = classColors[trueC]||'var(--t2)';
+            const match = trueC===cls;
+            matchEl.textContent = match ? '✓' : '✗';
+            matchEl.style.color = match ? 'var(--green)' : 'var(--red)';
+        } else if (trueRow) {
+            trueRow.style.display = 'none';
+        }
+
+        /* Strategic 12h outlook */
+        const strat = d.strategic;
+        if (strat && strat.class_name != null) {
+            const sc = typeof strat.class_name==='string' ? strat.class_name : ['None','B','C','M','X'][strat.class_name]||'--';
+            const sconf = Math.round((strat.confidence||0)*100);
+            const scol = classColors[sc]||'var(--t2)';
+            document.getElementById('stratClass').textContent = sc;
+            document.getElementById('stratClass').style.color = scol;
+            document.getElementById('stratConf').textContent = sconf+'%';
+            document.getElementById('stratConf').style.color = scol;
+        }
+
+        /* Glow border */
+        const box = document.getElementById('modelBox');
+        if (cls==='X') { box.style.borderColor='rgba(239,68,68,0.6)'; box.style.boxShadow='0 0 24px rgba(239,68,68,0.25)'; }
+        else if (cls==='M') { box.style.borderColor='rgba(249,115,22,0.5)'; box.style.boxShadow='0 0 16px rgba(249,115,22,0.2)'; }
+        else { box.style.borderColor=''; box.style.boxShadow=''; }
+
+        /* CME countdown: if M/X and lead time known, set target */
+        if ((cls==='M'||cls==='X') && lead!=='--' && conf>0.5) {
+            cmeTargetTime = Date.now() + lead * 60000;
+        }
+
+        /* Toast + sound on M/X class change */
+        if ((cls==='M'||cls==='X') && conf>0.5) {
             const lastCls = fetchModelPrediction._lastCls;
-            if (lastCls !== cls) {
-                showToast(cls === 'X' ? 'red' : 'orange',
-                    'JWALASHMI: ' + cls + '-CLASS PREDICTED',
-                    'Confidence ' + prob + '% | Lead time ~' + lead + ' min');
+            if (lastCls!==cls) {
+                showToast(cls==='X'?'red':'orange',
+                    'JWALASHMI: '+cls+'-CLASS PREDICTED',
+                    'Confidence '+prob+'% | Lead time ~'+lead+' min | Alert: '+alert);
+                playAlert(cls);
             }
         }
         fetchModelPrediction._lastCls = cls;
+
+        /* Update SoLEXS sparkline from API flux data */
+        if (d.flux_solexs && d.flux_solexs.length > 0) {
+            const raw = d.flux_solexs;
+            xrayData = raw.slice(-200).map(v => Math.abs(v) < 1e-10 ? 1e-10 : Math.abs(v));
+            const lastV = xrayData[xrayData.length-1];
+            const logV = Math.log10(Math.max(lastV,1e-9));
+            const xrayCls = logV>=-4?'X':logV>=-5?'M':logV>=-6?'C':logV>=-7?'B':'A';
+            const xrayColor = {X:'#ef4444',M:'#f97316',C:'#eab308',B:'#10b981',A:'#6b7280'}[xrayCls];
+            const xEl = document.getElementById('xrayVal');
+            if (xEl) { xEl.textContent = 'SoLEXS '+xrayCls+' '+lastV.toExponential(1); xEl.style.color=xrayColor; }
+            const tEl = document.querySelector('.xray-title span');
+            if (tEl) tEl.textContent = 'ADITYA-L1 SoLEXS FLUX';
+            drawXraySparkline();
+        }
 
     } catch(e) {
         document.getElementById('modelClass').textContent = '--';
@@ -840,6 +1418,7 @@ fetchModelPrediction(); setInterval(fetchModelPrediction, 30000);
 
 /* ===== Kp HISTORY BAR CHART ===== */
 let kpHistory = [];
+let kpTimes = [];
 
 function drawKpHistory() {
     const canvas = document.getElementById('kpHistCanvas');
@@ -849,38 +1428,110 @@ function drawKpHistory() {
     const w = canvas.width, h = canvas.height;
     ctx.clearRect(0, 0, w, h);
     if (kpHistory.length === 0) return;
-    const barW = Math.max(2, (w - 4) / kpHistory.length - 1);
-    const gap = 1;
+
+    const barW = Math.max(2, (w - 4) / kpHistory.length - 0.5);
+    const gap = 0.5;
+
+    /* G1 storm threshold line at Kp=5 */
+    const threshY = h - 2 - ((5 / 9) * (h - 14));
+    ctx.strokeStyle = 'rgba(249,115,22,0.3)';
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(2, threshY); ctx.lineTo(w - 2, threshY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(249,115,22,0.5)';
+    ctx.font = '7px monospace';
+    ctx.fillText('G1', w - 14, threshY - 2);
+
     kpHistory.forEach((kp, i) => {
-        const bh = Math.max(2, (kp / 9) * (h - 12));
+        const bh = Math.max(2, (kp / 9) * (h - 14));
         const x = 2 + i * (barW + gap);
         const y = h - bh - 2;
-        ctx.fillStyle = kp >= 7 ? '#ef4444' : kp >= 5 ? '#f97316' : kp >= 4 ? '#eab308' : '#10b981';
+        const col = kp >= 7 ? '#ef4444' : kp >= 5 ? '#f97316' : kp >= 4 ? '#eab308' : '#10b981';
+        ctx.fillStyle = col;
         ctx.fillRect(x, y, barW, bh);
-        /* Glow on top */
-        ctx.fillStyle = kp >= 7 ? 'rgba(239,68,68,0.4)' : kp >= 5 ? 'rgba(249,115,22,0.3)' : 'rgba(16,185,129,0.2)';
+        /* highlight top */
+        ctx.fillStyle = kp >= 5 ? 'rgba(239,68,68,0.5)' : 'rgba(16,185,129,0.3)';
         ctx.fillRect(x, y, barW, 2);
     });
+
     /* Time labels */
     ctx.fillStyle = 'rgba(134,146,173,0.6)';
     ctx.font = '7px monospace';
     if (kpHistory.length > 4) {
-        ctx.fillText('24h ago', 2, 8);
-        ctx.fillText('now', w - 16, 8);
+        const firstLabel = kpTimes.length > 0 ? kpTimes[0] : '24h ago';
+        const lastLabel  = kpTimes.length > 0 ? kpTimes[kpTimes.length-1] : 'now';
+        ctx.fillText(firstLabel, 2, 8);
+        ctx.fillText(lastLabel, w - 28, 8);
     }
 }
 
 async function fetchKpHistory() {
     try {
-        const r = await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json');
+        /* Real 1-minute observed Kp from NOAA */
+        const r = await fetch('https://services.swpc.noaa.gov/json/planetary_k_index_1m.json');
         const d = await r.json();
-        if (d && d.length > 1) {
-            kpHistory = d.slice(1).map(row => parseFloat(row[1]) || 0).slice(-24);
+        if (d && d.length > 0) {
+            /* Take last 144 points (~2.4 hours, 1-min cadence) for a smooth bar chart */
+            const slice = d.slice(-144);
+            kpHistory = slice.map(e => parseFloat(e.estimated_kp) || 0);
+            kpTimes = [
+                new Date(slice[0].time_tag).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+                new Date(slice[slice.length-1].time_tag).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+            ];
             drawKpHistory();
         }
-    } catch(e) { /* optional */ }
+    } catch(e) {
+        /* Fallback to forecast */
+        try {
+            const r2 = await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json');
+            const d2 = await r2.json();
+            if (d2 && d2.length > 1) {
+                const rows = Array.isArray(d2[1]) ? d2.slice(1) : d2;
+                kpHistory = rows.map(row => parseFloat(Array.isArray(row) ? row[1] : row.kp) || 0).slice(-24);
+                kpTimes = ['24h', 'now'];
+                drawKpHistory();
+            }
+        } catch(e2) {}
+    }
 }
-fetchKpHistory(); setInterval(fetchKpHistory, 300000);
+fetchKpHistory(); setInterval(fetchKpHistory, 120000);
+
+/* ===== NOAA ALERTS FEED ===== */
+async function fetchNOAAAlerts() {
+    try {
+        const r = await fetch('/api/noaa_alerts');
+        const d = await r.json();
+        const body = document.getElementById('noaaAlertBody');
+        const badge = document.getElementById('alertBadge');
+        if (!body || !d || d.length === 0) {
+            if(body) body.innerHTML = '<div style="padding:4px 0;color:var(--t3)">No active alerts</div>';
+            if(badge){badge.textContent='NONE';badge.className='sb-badge s0';}
+            return;
+        }
+        const recent = d.slice(-8).reverse();
+        const hasWarn = recent.some(a => (a.message||'').includes('WARNING'));
+        const hasWatch = recent.some(a => (a.message||'').includes('WATCH'));
+        if(badge){
+            if(hasWarn){badge.textContent='WARNING';badge.className='sb-badge s2';}
+            else if(hasWatch){badge.textContent='WATCH';badge.className='sb-badge s1';}
+            else{badge.textContent=recent.length;badge.className='sb-badge s0';}
+        }
+        body.innerHTML = recent.map(a => {
+            const msg = (a.message||'').split('\n').filter(l=>l.trim()).slice(0,2).join(' ').substring(0,120);
+            const time = a.issue_datetime ? new Date(a.issue_datetime).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+            const isWarn = msg.includes('WARNING');
+            const isWatch = msg.includes('WATCH');
+            const col = isWarn?'var(--orange)':isWatch?'var(--yellow)':'var(--t2)';
+            return '<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.02)">' +
+                '<div style="font-size:8px;color:var(--t3)">'+time+'</div>' +
+                '<div style="color:'+col+';line-height:1.4;margin-top:1px">'+msg+(msg.length>=120?'\u2026':'')+'</div></div>';
+        }).join('');
+    } catch(e) {
+        const body = document.getElementById('noaaAlertBody');
+        if(body) body.innerHTML = '<div style="padding:4px 0;color:var(--t3)">Unable to fetch alerts</div>';
+    }
+}
+fetchNOAAAlerts(); setInterval(fetchNOAAAlerts, 300000);
 
 /* Hook alerts into NOAA updates */
 const origUpdateWx = updateWx;
@@ -889,215 +1540,21 @@ updateWx = function(d) {
     origUpdateWx(d);
 };
 
-/* ===== FEATURE 5: DAY/NIGHT TERMINATOR ===== */
-let nightMesh = null;
-setTimeout(() => {
-    try {
-        const scene = myGlobe.scene();
-        const R = 100.5;
-        const geo = new THREE.SphereGeometry(R, 64, 64);
-        const mat = new THREE.ShaderMaterial({
-            transparent: true, depthWrite: false, side: THREE.FrontSide,
-            uniforms: { sunDir: { value: new THREE.Vector3(1, 0, 0) } },
-            vertexShader: `
-                varying vec3 vNormal;
-                varying vec3 vPosition;
-                void main(){
-                    vNormal = normalize(normalMatrix * normal);
-                    vPosition = (modelMatrix * vec4(position,1.0)).xyz;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
-                }`,
-            fragmentShader: `
-                uniform vec3 sunDir;
-                varying vec3 vNormal;
-                void main(){
-                    float d = dot(normalize(vNormal), sunDir);
-                    float night = smoothstep(-0.1, 0.15, -d);
-                    gl_FragColor = vec4(0.0, 0.0, 0.05, night * 0.55);
-                }`
-        });
-        nightMesh = new THREE.Mesh(geo, mat);
-        scene.add(nightMesh);
-    } catch(e) { console.log('Terminator skip:', e.message); }
-}, 2500);
 
-function updateTerminator() {
-    if (!nightMesh) return;
-    const now = new Date();
-    const doy = Math.floor((now - new Date(now.getFullYear(),0,0)) / 86400000);
-    const decl = -23.44 * Math.cos((360/365) * (doy+10) * Math.PI/180) * Math.PI/180;
-    const ha = ((now.getUTCHours() + now.getUTCMinutes()/60) - 12) * 15 * Math.PI/180;
-    const sx = Math.cos(decl) * Math.cos(-ha);
-    const sy = Math.sin(decl);
-    const sz = Math.cos(decl) * Math.sin(-ha);
-    nightMesh.material.uniforms.sunDir.value.set(sx, sy, sz);
-}
-setInterval(updateTerminator, 10000);
-setTimeout(updateTerminator, 3000);
-
-/* ===== FEATURE 6: MAGNETIC FIELD LINES ===== */
-let fieldLinesGroup = null;
-let showFieldLines = false;
-
-function createFieldLines() {
-    try {
-        const scene = myGlobe.scene();
-        fieldLinesGroup = new THREE.Group();
-        fieldLinesGroup.visible = false;
-        const R = 100;
-        /* Geomagnetic poles in 3D */
-        const npLat = 80.5 * Math.PI/180, npLng = -72.6 * Math.PI/180;
-        const spLat = -80.5 * Math.PI/180, spLng = 107.4 * Math.PI/180;
-        const np = new THREE.Vector3(
-            R*Math.cos(npLat)*Math.cos(npLng),
-            R*Math.sin(npLat),
-            R*Math.cos(npLat)*Math.sin(npLng) * -1
-        );
-        const sp = new THREE.Vector3(
-            R*Math.cos(spLat)*Math.cos(spLng),
-            R*Math.sin(spLat),
-            R*Math.cos(spLat)*Math.sin(spLng) * -1
-        );
-        for (let i = 0; i < 6; i++) {
-            const angle = (i / 6) * Math.PI * 2;
-            const apex = 1.8 + Math.sin(angle * 2) * 0.3;
-            const mid = new THREE.Vector3().addVectors(np, sp).multiplyScalar(0.5);
-            const offset = new THREE.Vector3(
-                Math.cos(angle) * R * 0.6,
-                apex * R * 0.4,
-                Math.sin(angle) * R * 0.6
-            );
-            const cp1 = new THREE.Vector3().lerpVectors(np, mid, 0.33).add(offset.clone().multiplyScalar(0.7));
-            const cp2 = new THREE.Vector3().lerpVectors(sp, mid, 0.33).add(offset.clone().multiplyScalar(0.7));
-            const curve = new THREE.CatmullRomCurve3([np, cp1, mid.clone().add(offset), cp2, sp]);
-            const points = curve.getPoints(60);
-            const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
-            const lineMat = new THREE.LineBasicMaterial({
-                color: 0x22d3ee, transparent: true, opacity: 0.12 + (i%3)*0.03
-            });
-            fieldLinesGroup.add(new THREE.Line(lineGeo, lineMat));
-        }
-        scene.add(fieldLinesGroup);
-    } catch(e) { console.log('Field lines skip:', e.message); }
-}
-setTimeout(createFieldLines, 3000);
-
-function toggleFieldLines() {
-    showFieldLines = !showFieldLines;
-    document.getElementById('btnField').classList.toggle('active', showFieldLines);
-    if (fieldLinesGroup) fieldLinesGroup.visible = showFieldLines;
-}
-
-/* ===== FEATURE 7: IMPACT HEATMAP HEXAGONS ===== */
-let showHeatmap = false;
-let hexPoints = [];
-
-function generateHexPoints(kp) {
-    const pts = [];
-    for (let i = 0; i < 250; i++) {
-        /* Bias toward high latitudes where impact is strongest */
-        const u = Math.random();
-        const lat = (u < 0.4) ? (60 + Math.random()*30) * (Math.random()>0.5?1:-1) :
-                    (u < 0.7) ? (30 + Math.random()*30) * (Math.random()>0.5?1:-1) :
-                    (Math.random()*30) * (Math.random()>0.5?1:-1);
-        const lng = Math.random() * 360 - 180;
-        /* Weight by latitude and Kp */
-        const latFactor = Math.abs(lat) / 90;
-        const intensity = latFactor * (kp / 9) * (0.6 + Math.random()*0.4);
-        pts.push({ lat, lng, weight: intensity });
-    }
-    return pts;
-}
-
-function updateHeatmap() {
-    if (!showHeatmap) return;
-    hexPoints = generateHexPoints(currentKp);
-    myGlobe
-        .hexBinPointsData(hexPoints)
-        .hexBinPointLat('lat')
-        .hexBinPointLng('lng')
-        .hexBinPointWeight('weight')
-        .hexBinResolution(3)
-        .hexAltitude(d => d.sumWeight * 0.02)
-        .hexTopColor(d => {
-            const w = d.sumWeight / d.points.length;
-            return w > 0.6 ? 'rgba(239,68,68,0.7)' : w > 0.3 ? 'rgba(249,115,22,0.5)' : 'rgba(234,179,8,0.3)';
-        })
-        .hexSideColor(d => {
-            const w = d.sumWeight / d.points.length;
-            return w > 0.6 ? 'rgba(239,68,68,0.3)' : w > 0.3 ? 'rgba(249,115,22,0.2)' : 'rgba(234,179,8,0.1)';
-        })
-        .hexBinMerge(true)
-        .hexTransitionDuration(600);
-}
-
-function toggleHeatmap() {
-    showHeatmap = !showHeatmap;
-    document.getElementById('btnHex').classList.toggle('active', showHeatmap);
-    if (showHeatmap) {
-        updateHeatmap();
-    } else {
-        myGlobe.hexBinPointsData([]);
-    }
-}
-
-/* Update heatmap when Kp changes */
-const origUpdateWx2 = updateWx;
-updateWx = function(d) {
-    origUpdateWx2(d);
-    if (showHeatmap) updateHeatmap();
-};
-
-
-/* ===== LIVE UTC CLOCK + MET ===== */
-const startTime = Date.now();
+/* ===== LIVE CLOCK (IST + UTC) ===== */
 function updateClock() {
     const now = new Date();
-    const utc = now.toISOString().slice(11,19) + ' UTC';
-    document.getElementById('hdrClock').textContent = utc;
-    /* Mission Elapsed Time */
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    const eh = String(Math.floor(elapsed/3600)).padStart(2,'0');
-    const em = String(Math.floor((elapsed%3600)/60)).padStart(2,'0');
-    const es = String(elapsed%60).padStart(2,'0');
-    const met = document.getElementById('hdrMET');
-    if(met) met.textContent = 'T+ ' + eh + ':' + em + ':' + es;
+    const utc = now.toISOString().slice(11,19);
+    document.getElementById('clkUTC').textContent = utc + ' UTC';
+    const ist = now.toLocaleTimeString('en-IN',{hour12:false,timeZone:'Asia/Kolkata'});
+    document.getElementById('clkIST').textContent = ist;
+    const dateStr = now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+    document.getElementById('clkDate').textContent = dateStr;
 }
 setInterval(updateClock, 1000);
 updateClock();
 
-/* ===== FULLSCREEN TOGGLE ===== */
-let isFS = false;
-function toggleFullscreen() {
-    isFS = !isFS;
-    document.body.classList.toggle('fullscreen', isFS);
-    document.getElementById('btnFS').classList.toggle('active', isFS);
-    setTimeout(() => {
-        myGlobe.width(container.clientWidth);
-        myGlobe.height(container.clientHeight);
-    }, 100);
-}
 
-/* ===== STATION TOOLTIP ===== */
-const stTip = document.getElementById('stationTip');
-myGlobe.onPointHover(p => {
-    container.style.cursor = p ? 'pointer' : 'grab';
-    if (p) {
-        document.getElementById('stName').textContent = p.name;
-        document.getElementById('stCoord').textContent =
-            Math.abs(p.lat).toFixed(2) + (p.lat>=0?'N':'S') + ', ' +
-            Math.abs(p.lng).toFixed(2) + (p.lng>=0?'E':'W');
-        const status = currentKp <= 4 ? 'LINK: ACTIVE' : currentKp <= 6 ? 'LINK: DEGRADED' : 'LINK: DISRUPTED';
-        const stEl = document.getElementById('stStatus');
-        stEl.textContent = status;
-        stEl.style.color = currentKp <= 4 ? 'var(--green)' : currentKp <= 6 ? 'var(--yellow)' : 'var(--red)';
-        stTip.classList.add('show');
-        stTip.style.bottom = '90px';
-        stTip.style.left = '14px';
-    } else {
-        stTip.classList.remove('show');
-    }
-});
 
 /* ===== ANIMATED TIMELINE ===== */
 function updateTimeline(kp) {
@@ -1121,13 +1578,149 @@ function updateTimeline(kp) {
         }
     });
 }
-/* Hook timeline into wx updates */
+/* ===== SIMULATION MODE ===== */
+let isSimulationActive = false;
+let lastLiveWxData = null;
+
+function simulateStormStage(stageIdx) {
+    isSimulationActive = true;
+    const stages = ['t0','t1','t2','t3','t4'];
+    const names = ['Flare Eruption', 'Radio Blackout', 'Radiation Storm', 'CME Arrival', 'Geomagnetic Storm Peak'];
+    const kps = [2.0, 4.0, 5.0, 7.0, 9.0];
+    const winds = [390, 480, 550, 720, 980];
+    const bzs = [-1.0, -3.5, -6.2, -12.8, -26.5];
+    const protons = [0.7, 2.5, 18.2, 145.0, 890.0];
+    const scales = [
+        {r:0, s:0, g:0},
+        {r:1, s:0, g:0},
+        {r:2, s:1, g:1},
+        {r:3, s:3, g:3},
+        {r:5, s:5, g:5}
+    ];
+
+    const simulatedKp = kps[stageIdx];
+    const simWx = {
+        kp: simulatedKp,
+        wind: winds[stageIdx],
+        bz: bzs[stageIdx],
+        proton: protons[stageIdx],
+        r: scales[stageIdx].r,
+        s: scales[stageIdx].s,
+        g: scales[stageIdx].g
+    };
+
+    // Update UI elements with simulated state
+    origUpdateWx3(simWx);
+    updateTimeline(simWx.kp);
+    updateAuroraVisibility(simWx.kp);
+    updateMapForKp(simWx.kp);
+
+    // Show simulated badge in status bar
+    const strip = document.getElementById('statusStrip');
+    if (strip) {
+        strip.style.background = 'rgba(249,115,22,0.08)';
+        strip.style.borderColor = 'rgba(249,115,22,0.25)';
+        const sDot = document.getElementById('ssDot');
+        if (sDot) {
+            sDot.style.background = 'var(--orange)';
+            sDot.style.boxShadow = '0 0 8px var(--orange)';
+        }
+        const sText = document.getElementById('ssText');
+        if (sText) {
+            sText.innerHTML = `⚠️ <strong>SIMULATION MODE: ${names[stageIdx]}</strong> (Kp ${simWx.kp.toFixed(1)}) &bull; ` +
+                `<a href="#" onclick="resumeLiveFeed(); return false;" style="color:var(--cyan);text-decoration:underline;font-weight:700;margin-left:5px">Resume Live Feed</a>`;
+        }
+    }
+}
+
+function resumeLiveFeed() {
+    isSimulationActive = false;
+    if (lastLiveWxData) {
+        updateWx(lastLiveWxData);
+    } else {
+        fetchNOAA(); // Pull fresh data if we don't have cached data
+    }
+}
+
+/* Hook timeline + aurora into wx updates */
 const origUpdateWx3 = updateWx;
 updateWx = function(d) {
+    if (d && !isSimulationActive) {
+        lastLiveWxData = d;
+    }
+    if (isSimulationActive) return; // Block live updates while simulating
     origUpdateWx3(d);
     updateTimeline(d.kp);
+    updateAuroraVisibility(d.kp);
+    updateMapForKp(d.kp);
 };
 
+
+
+/* ===== STAR FIELD ===== */
+(function(){
+    const sf = document.getElementById('starField');
+    if(!sf) return;
+    for(let i=0;i<80;i++){
+        const s = document.createElement('div');
+        s.className='star';
+        s.style.left=Math.random()*100+'%';
+        s.style.top=Math.random()*100+'%';
+        s.style.width=s.style.height=(0.5+Math.random()*1.5)+'px';
+        s.style.opacity=0.2+Math.random()*0.6;
+        s.style.animation='twinkle '+(2+Math.random()*4)+'s ease-in-out infinite';
+        s.style.animationDelay=Math.random()*5+'s';
+        sf.appendChild(s);
+    }
+    const style=document.createElement('style');
+    style.textContent='@keyframes twinkle{0%,100%{opacity:0.2}50%{opacity:0.8}}';
+    document.head.appendChild(style);
+})();
+
+/* Add Leaflet scale control */
+L.control.scale({imperial:false,position:'bottomleft',maxWidth:120}).addTo(map);
+
+/* ===== ENSEMBLE METRICS FETCH ===== */
+async function fetchMetrics() {
+    try {
+        const r = await fetch('/api/metrics');
+        if (r.ok) {
+            const m = await r.json();
+            
+            // 1. Update version badge in header
+            const headerVer = document.querySelector('.header span[style*="background:rgba(34,211,238,0.06)"]');
+            if (headerVer && m.tactical && m.tactical.version) {
+                headerVer.textContent = m.tactical.version.toLowerCase();
+            }
+            
+            // 2. Update models count in footer
+            const sbm = document.getElementById('sbModels');
+            if (sbm && m.training) {
+                sbm.textContent = `${m.training.total_models}/${m.training.total_models}`;
+            }
+            
+            // 3. Update system description in footer
+            const sysDesc = document.getElementById('sbSystemDesc');
+            if (sysDesc && m.training && m.tactical) {
+                sysDesc.innerHTML = `ISRO Aditya-L1 &bull; SoLEXS + HEL1OS &bull; ${m.training.total_models}-Model Ensemble`;
+            }
+        }
+    } catch(e) {
+        console.error('Failed to load metrics:', e);
+    }
+}
+fetchMetrics();
+
 </script>
+
+<div class="footer">
+    <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 4px var(--green)"></span> Online</span>
+    <span style="margin:0 8px;color:var(--border)">|</span>
+    Models <span style="color:var(--cyan);font-weight:700" id="sbModels">16/16</span>
+    <span style="margin:0 8px;color:var(--border)">|</span>
+    Source <span style="color:var(--orange);font-weight:700" id="sbSource">Aditya-L1</span>
+    <span style="margin:0 8px;color:var(--border)">|</span>
+    <span id="sbSystemDesc">ISRO Aditya-L1 &bull; SoLEXS + HEL1OS &bull; 16-Model Ensemble</span>
+</div>
 </body>
 </html>
