@@ -80,7 +80,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     font-size:9px;font-weight:400;color:var(--t1);white-space:nowrap;z-index:100;pointer-events:none;
     box-shadow:0 4px 12px rgba(0,0,0,0.4)}
 .tb-scale:hover .tb-tip{display:block}
-.tb-right{margin-left:auto;display:flex;align-items:center;gap:6px;z-index:2}
+.tb-right{position:relative;margin-left:auto;display:flex;align-items:center;gap:6px;z-index:101}
 .tb-clk{font-size:15px;font-weight:600;color:var(--t0);letter-spacing:0.5px}
 .tb-clk-label{font-size:8px;font-weight:700;color:var(--yellow);margin-left:3px}
 .tb-utc{display:none !important}
@@ -384,22 +384,22 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
 
 /* === DATA SOURCE DROPDOWN (click-based) === */
 .ds-dropdown { position:relative; display:inline-block; margin-right:12px; z-index:9999 }
-.ds-dropbtn { background:#0d1222; color:var(--cyan); border:1px solid rgba(34,211,238,0.4);
+.ds-dropbtn { background:#0a0e1a !important; color:var(--cyan) !important; border:1px solid rgba(34, 211, 238, 0.6) !important;
     padding:6px 14px; border-radius:6px; font-size:10px; font-weight:700; cursor:pointer;
     display:flex; align-items:center; gap:6px; transition:all 0.2s; letter-spacing:0.5px;
-    text-transform:uppercase; box-shadow:0 0 10px rgba(34,211,238,0.1),inset 0 1px 0 rgba(255,255,255,0.05) }
-.ds-dropbtn:hover { background:rgba(34,211,238,0.12); border-color:var(--cyan);
-    box-shadow:0 0 14px rgba(34,211,238,0.3) }
+    text-transform:uppercase; box-shadow:0 0 10px rgba(34, 211, 238, 0.2),inset 0 1px 0 rgba(255,255,255,0.05); opacity:1 !important }
+.ds-dropbtn:hover { background:rgba(34, 211, 238, 0.15) !important; border-color:var(--cyan) !important;
+    box-shadow:0 0 14px rgba(34, 211, 238, 0.4) !important }
 .ds-arrow { font-size:8px; color:var(--cyan); transition:transform 0.2s }
 .ds-dropdown.open .ds-arrow { transform:rotate(180deg) }
 .ds-dropdown-content { display:none; position:absolute; right:0; top:calc(100% + 6px);
-    background:#080c16; border:1px solid rgba(34,211,238,0.35); min-width:190px;
-    border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,0.9); z-index:9999; overflow:hidden }
-.ds-dropdown-content.open { display:block }
-.ds-dropdown-content a { color:var(--t1); padding:10px 14px; text-decoration:none;
+    background:#060912 !important; border:1px solid rgba(34, 211, 238, 0.5) !important; min-width:190px;
+    border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,0.9); z-index:9999; overflow:hidden; opacity:1 !important }
+.ds-dropdown-content.open { display:block !important }
+.ds-dropdown-content a { color:var(--t1) !important; padding:10px 14px; text-decoration:none;
     display:flex; align-items:center; gap:8px; font-size:11px; font-weight:600;
-    transition:all 0.15s; cursor:pointer }
-.ds-dropdown-content a:hover { background:rgba(34,211,238,0.1); color:var(--cyan) }
+    transition:all 0.15s; cursor:pointer; background:transparent }
+.ds-dropdown-content a:hover { background:rgba(34, 211, 238, 0.15) !important; color:var(--cyan) !important }
 
 @media(max-width:1200px) {
     .tb-meta { display: none !important; }
@@ -953,7 +953,7 @@ function switchSource(src){
     // Close dropdown
     const dd = document.getElementById('dsDropdown');
     if (dd) { dd.classList.remove('open'); dd.querySelector('.ds-dropdown-content').classList.remove('open'); }
-    fetch('/api/datasource/'+src,{method:'POST'}).then(r=>r.json()).then(d=>{
+    fetch('/api/datasource/'+src).then(r=>r.json()).then(d=>{
         clog('Data source: '+d.active_source,'ok');
     }).catch(()=>clog('Source switch (offline mode)','warn'));
     
