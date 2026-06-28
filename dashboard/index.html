@@ -105,20 +105,8 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .f-btn.on{background:rgba(34,211,238,0.06);color:var(--cyan);border-color:rgba(34,211,238,0.2)}
 .f-btn:hover:not(.on){background:rgba(255,255,255,0.03);color:var(--t1)}
 
-/* DATA SOURCE TOGGLE */
-.ds-toggles{display:flex;gap:0;margin-left:2px}
-.ds-btn{padding:3px 8px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;
-    background:rgba(255,255,255,0.02);color:var(--t3);border:1px solid var(--border);
-    cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all 0.3s;position:relative}
-.ds-btn:first-child{border-radius:3px 0 0 3px}
-.ds-btn:last-child{border-radius:0 3px 3px 0}
-.ds-btn.on-al1{background:rgba(249,115,22,0.1);color:#f97316;border-color:rgba(249,115,22,0.3)}
-.ds-btn.on-goes{background:rgba(16,185,129,0.1);color:#10b981;border-color:rgba(16,185,129,0.3)}
-.ds-btn.on-sim{background:rgba(168,85,247,0.1);color:#a855f7;border-color:rgba(168,85,247,0.3)}
-.ds-btn:hover:not([class*='on-']){background:rgba(255,255,255,0.04);color:var(--t1)}
-.ds-btn .ds-live{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:3px;
-    background:var(--green);box-shadow:0 0 4px var(--green);animation:livePulse 2s ease-in-out infinite}
-@keyframes livePulse{0%,100%{opacity:1}50%{opacity:0.3}}
+/* DATA SOURCE — uses .ds-dropdown (see below) */
+
 .flux-stats{position:absolute;top:8px;right:16px;z-index:10;display:flex;gap:14px;font-size:9px}
 .flux-stat{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
 .flux-stat-k{color:var(--t3);font-size:8px;text-transform:uppercase}
@@ -393,6 +381,74 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
 .ptab.active{color:var(--bg);background:linear-gradient(135deg,var(--cyan),var(--blue));
     border-color:var(--cyan);box-shadow:0 0 14px rgba(34,211,238,0.25);text-shadow:0 1px 1px rgba(0,0,0,0.2)}
 
+/* === DATA SOURCE DROPDOWN === */
+.ds-dropdown {
+    position: relative;
+    display: inline-block;
+    margin-right: 12px;
+}
+.ds-dropbtn {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--t1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 5px 12px;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+}
+.ds-dropbtn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+.ds-arrow {
+    font-size: 8px;
+    color: var(--t3);
+    transition: transform 0.2s;
+}
+.ds-dropdown:hover .ds-arrow {
+    transform: rotate(180deg);
+}
+.ds-dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 4px;
+    background: #0c1120;
+    border: 1px solid var(--border);
+    min-width: 170px;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    z-index: 1000;
+    overflow: hidden;
+}
+.ds-dropdown-content a {
+    color: var(--t2);
+    padding: 8px 12px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.ds-dropdown-content a:hover {
+    background: rgba(34, 211, 238, 0.06);
+    color: var(--cyan);
+}
+.ds-dropdown:hover .ds-dropdown-content {
+    display: block;
+}
+
 @media(max-width:1200px) {
     .tb-meta { display: none !important; }
 }
@@ -437,6 +493,25 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
         <a href="/analytics.html" class="ptab">Analytics</a>
     </div>
     <div class="tb-right">
+        <!-- Data Source Dropdown -->
+        <div class="ds-dropdown" title="Change active space telemetry data source">
+            <button class="ds-dropbtn" title="Click to open data sources dropdown menu">
+                <span id="dsActiveIcon" style="color:var(--orange)">&#9679;</span>
+                <span id="dsActiveLabel">Aditya-L1</span>
+                <span class="ds-arrow">&#9662;</span>
+            </button>
+            <div class="ds-dropdown-content">
+                <a href="#" onclick="switchSource('aditya-l1'); return false;" title="Replay telemetry from ISRO Aditya-L1 spacecraft (12 features, 95.2% accuracy)">
+                    <span style="color:var(--orange)">&#9679;</span> ISRO Aditya-L1
+                </a>
+                <a href="#" onclick="switchSource('goes-live'); return false;" title="Stream live space weather telemetry from NOAA GOES-18 satellite (92.4% accuracy)">
+                    <span style="color:var(--green)">&#9679;</span> NOAA GOES Live
+                </a>
+                <a href="#" onclick="switchSource('simulation'); return false;" title="Replay simulated solar flare timeline event sequence for system testing">
+                    <span style="color:var(--yellow)">&#9679;</span> Simulation Mode
+                </a>
+            </div>
+        </div>
         <div class="conn-bars" id="connBars" title="Connection strength" style="margin-right:12px;margin-left:0">
             <div class="conn-bar on" style="height:3px"></div>
             <div class="conn-bar on" style="height:5px"></div>
@@ -497,13 +572,7 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
             <span class="pnl-badge tb-s0" id="alertBadge">Nominal</span></div>
         <div class="pnl-body" style="padding:0">
             <!-- DATA SOURCE SELECTOR -->
-            <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:center;background:rgba(255,255,255,0.01)">
-                <div class="ds-toggles">
-                    <button class="ds-btn on-al1" id="dsAL1" onclick="switchSource('aditya-l1')"><span style="color:#f97316">&#9679;</span> Aditya-L1</button>
-                    <button class="ds-btn" id="dsGOES" onclick="switchSource('goes-live')"><span class="ds-live" style="display:none;width:5px;height:5px;border-radius:50%;background:#10b981;box-shadow:0 0 4px #10b981;margin-right:4px" id="goesLiveDot"></span>GOES Live</button>
-                    <button class="ds-btn" id="dsSIM" onclick="switchSource('simulation')">Sim</button>
-                </div>
-            </div>
+
             <div class="alert-status" id="alertArea">
                 <div class="alert-ring" id="alertRing"><span class="alert-icon" id="alertIcon">&#x2714;</span></div>
                 <div class="alert-level" id="alertLevel" style="color:var(--green)">ALL CLEAR</div>
@@ -905,23 +974,32 @@ clog('Shortcuts: [1]Both [2]SoLEXS [3]HEL1OS [D]Derivative [A]Attention','info')
 
 /* DATA SOURCE SWITCHING */
 let activeSource='aditya-l1';
+function updateSourceUI(src) {
+    const label = document.getElementById('dsActiveLabel');
+    const icon = document.getElementById('dsActiveIcon');
+    if (!label || !icon) return;
+    const names={'aditya-l1':'Aditya-L1','goes-live':'GOES Live','simulation':'Simulation'};
+    const colors={'aditya-l1':'var(--orange)','goes-live':'var(--green)','simulation':'var(--yellow)'};
+    label.textContent = names[src] || src;
+    icon.style.color = colors[src] || 'var(--cyan)';
+}
+
 function switchSource(src){
     activeSource=src;
-    fetch('/api/datasource/'+src).then(r=>r.json()).then(d=>{
+    fetch('/api/datasource/'+src,{method:'POST'}).then(r=>r.json()).then(d=>{
         clog('Data source: '+d.active_source,'ok');
     }).catch(()=>clog('Source switch (offline mode)','warn'));
-    // Update button styles
-    document.getElementById('dsAL1').className='ds-btn'+(src==='aditya-l1'?' on-al1':'');
-    document.getElementById('dsGOES').className='ds-btn'+(src==='goes-live'?' on-goes':'');
-    document.getElementById('dsSIM').className='ds-btn'+(src==='simulation'?' on-sim':'');
-    // Live dot
-    document.getElementById('goesLiveDot').style.display=src==='goes-live'?'inline-block':'none';
+    
+    updateSourceUI(src);
+    
     // Status bar
     const srcEl=document.getElementById('sbSource');
     const names={'aditya-l1':'Aditya-L1','goes-live':'GOES Live','simulation':'Simulation'};
     const colors={'aditya-l1':'#f97316','goes-live':'#10b981','simulation':'#a855f7'};
-    srcEl.textContent=names[src]||src;
-    srcEl.style.color=colors[src]||'var(--cyan)';
+    if (srcEl) {
+        srcEl.textContent=names[src]||src;
+        srcEl.style.color=colors[src]||'var(--cyan)';
+    }
     clog('Switched to: '+(names[src]||src),'ok');
 }
 
@@ -1203,6 +1281,7 @@ function ui(d){
     const t0=performance.now();
     const t=d.tactical,s=d.strategic,a=AM[t.alert_level]||AM.GREEN;
     cycle++;totalPreds++;lastDataTime=Date.now();
+    if(d.data_source) updateSourceUI(d.data_source);
 
     // Alert
     document.getElementById('alertIcon').innerHTML=a.icon;
