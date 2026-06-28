@@ -129,6 +129,13 @@ body::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:4p
 .tl-meta{font-size:8px;color:var(--t3);margin-top:2px}
 .tl-acc{font-size:10px;font-weight:600;margin-top:3px}
 
+.conn-bars{display:flex;align-items:flex-end;gap:1.5px;height:14px;margin-right:12px;cursor:default;padding:0 4px}
+.conn-bar{width:3px;border-radius:1px;transition:all 0.4s;background:rgba(255,255,255,0.08)}
+.conn-bar.on{background:var(--green);box-shadow:0 0 3px rgba(16,185,129,0.3)}
+.conn-bar.warn{background:var(--yellow);box-shadow:0 0 3px rgba(234,179,8,0.3)}
+.conn-bar.off{background:var(--red);box-shadow:0 0 3px rgba(239,68,68,0.3)}
+.conn-label{font-size:7px;color:var(--t3);margin-left:4px;letter-spacing:0.3px}
+
 /* === FOOTER === */
 .footer{text-align:center;padding:14px 18px;color:var(--t3);font-size:8px;
     border-top:1px solid var(--border);margin-top:12px;position:relative;letter-spacing:0.3px}
@@ -178,6 +185,15 @@ body::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:4p
         <a href="/analytics.html" class="ptab active">Analytics</a>
     </div>
     <div class="tb-right">
+        <div class="conn-bars" id="connBars" title="Connection strength">
+            <div class="conn-bar on" style="height:3px"></div>
+            <div class="conn-bar on" style="height:5px"></div>
+            <div class="conn-bar on" style="height:7px"></div>
+            <div class="conn-bar on" style="height:9px"></div>
+            <div class="conn-bar on" style="height:11px"></div>
+            <div class="conn-bar on" style="height:13px"></div>
+            <span class="conn-label" id="connLabel">LIVE</span>
+        </div>
         <span class="tb-date" id="clkDate">--</span>
         <span style="font-size:13px;font-weight:700;color:var(--cyan);font-family:'Space Grotesk',sans-serif" id="clkIST">--:--:--</span><span style="font-size:7px;color:var(--t3);margin-left:2px">IST</span>
     </div>
@@ -493,10 +509,30 @@ function updateClock(){const n=new Date();document.getElementById('clkIST').text
 setInterval(updateClock,1000);updateClock();
 
 /* ===== METRICS API INTEGRATION ===== */
+function setConnection(status) {
+    const bars=document.querySelectorAll('#connBars .conn-bar');
+    const lbl=document.getElementById('connLabel');
+    if (!bars || !lbl) return;
+    if (status === 'good') {
+        bars.forEach(b => { b.className = 'conn-bar on'; });
+        lbl.textContent = 'LIVE';
+        lbl.style.color = 'var(--green)';
+    } else if (status === 'warn') {
+        bars.forEach(b => { b.className = 'conn-bar warn'; });
+        lbl.textContent = 'LAG';
+        lbl.style.color = 'var(--yellow)';
+    } else {
+        bars.forEach(b => { b.className = 'conn-bar off'; });
+        lbl.textContent = 'OFF';
+        lbl.style.color = 'var(--red)';
+    }
+}
+
 async function fetchMetrics() {
     try {
         const r = await fetch('/api/metrics');
         if (r.ok) {
+            setConnection('good');
             const m = await r.json();
             
             // 1. Update version badges
@@ -534,6 +570,7 @@ async function fetchMetrics() {
             }
         }
     } catch(e) {
+        setConnection('off');
         console.error('Failed to load metrics:', e);
     }
 }

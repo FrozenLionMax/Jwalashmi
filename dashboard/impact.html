@@ -59,6 +59,12 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .tb-date{font-size:9px;color:var(--t3);margin-right:4px}
 .tb-clk{font-size:13px;font-weight:700;color:var(--cyan);font-family:'Space Grotesk',sans-serif}
 .tb-clk-label{font-size:7px;color:var(--t3);margin-left:2px}
+.conn-bars{display:flex;align-items:flex-end;gap:1.5px;height:14px;margin-right:12px;cursor:default;padding:0 4px}
+.conn-bar{width:3px;border-radius:1px;transition:all 0.4s;background:rgba(255,255,255,0.08)}
+.conn-bar.on{background:var(--green);box-shadow:0 0 3px rgba(16,185,129,0.3)}
+.conn-bar.warn{background:var(--yellow);box-shadow:0 0 3px rgba(234,179,8,0.3)}
+.conn-bar.off{background:var(--red);box-shadow:0 0 3px rgba(239,68,68,0.3)}
+.conn-label{font-size:7px;color:var(--t3);margin-left:4px;letter-spacing:0.3px}
 .tb-utc{display:none !important}
 
 /* MAIN GRID */
@@ -344,6 +350,15 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
         <a href="/analytics.html" class="ptab">Analytics</a>
     </div>
     <div class="hdr-right">
+        <div class="conn-bars" id="connBars" title="Connection strength">
+            <div class="conn-bar on" style="height:3px"></div>
+            <div class="conn-bar on" style="height:5px"></div>
+            <div class="conn-bar on" style="height:7px"></div>
+            <div class="conn-bar on" style="height:9px"></div>
+            <div class="conn-bar on" style="height:11px"></div>
+            <div class="conn-bar on" style="height:13px"></div>
+            <span class="conn-label" id="connLabel">LIVE</span>
+        </div>
         <span class="tb-date" id="clkDate">--</span>
         <span class="tb-clk" id="clkIST">--:--:--</span><span class="tb-clk-label">IST</span>
     </div>
@@ -1278,10 +1293,30 @@ function updateAuroraVisibility(kp) {
     }
 }
 
+function setConnection(status) {
+    const bars=document.querySelectorAll('#connBars .conn-bar');
+    const lbl=document.getElementById('connLabel');
+    if (!bars || !lbl) return;
+    if (status === 'good') {
+        bars.forEach(b => { b.className = 'conn-bar on'; });
+        lbl.textContent = 'LIVE';
+        lbl.style.color = 'var(--green)';
+    } else if (status === 'warn') {
+        bars.forEach(b => { b.className = 'conn-bar warn'; });
+        lbl.textContent = 'LAG';
+        lbl.style.color = 'var(--yellow)';
+    } else {
+        bars.forEach(b => { b.className = 'conn-bar off'; });
+        lbl.textContent = 'OFF';
+        lbl.style.color = 'var(--red)';
+    }
+}
+
 async function fetchModelPrediction() {
     try {
         const r = await fetch('/api/predict');
         if (!r.ok) throw new Error('HTTP ' + r.status);
+        setConnection('good');
         const d = await r.json();
 
         const t = d.tactical || d;
@@ -1414,6 +1449,7 @@ async function fetchModelPrediction() {
         }
 
     } catch(e) {
+        setConnection('off');
         document.getElementById('modelClass').textContent = '--';
         document.getElementById('modelClass').style.color = 'var(--t3)';
         document.getElementById('modelProb').textContent = 'Server offline';
