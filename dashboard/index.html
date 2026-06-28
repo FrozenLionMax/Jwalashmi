@@ -429,20 +429,7 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
     </div>
     <span class="tb-brand">JWALASHMI</span>
     <span class="tb-ver">v6.2</span>
-    <div class="tb-sep tb-meta"></div>
-    <div class="tb-pipe tb-meta">
-        <div class="tb-dot on" id="dotSol"></div>SoLEXS
-        <div class="tb-dot on" id="dotHel" style="margin-left:8px"></div>HEL1OS
-        <div class="tb-dot on" id="dotEns" style="margin-left:8px"></div>Ensemble
-        <div class="tb-dot on" style="margin-left:8px"></div>Cal
-    </div>
-    <div class="tb-sep tb-meta"></div>
-    <div class="tb-scales tb-meta">
-        <span class="tb-scale tb-s0" id="scR">R0<span class="tb-tip">Radio Blackout Scale (R0=None, R5=Extreme HF blackout)</span></span>
-        <span class="tb-scale tb-s0" id="scS">S0<span class="tb-tip">Solar Radiation Storm (S0=None, S5=Extreme radiation)</span></span>
-        <span class="tb-scale tb-s0" id="scG">G0<span class="tb-tip">Geomagnetic Storm (G0=None, G5=Extreme geomagnetic)</span></span>
-    </div>
-    <div class="tb-sep tb-meta"></div>
+    <div class="tb-sep"></div>
     <div style="font-size:9px;color:var(--t3)">Flare <span id="tbFlareProb" style="color:var(--green);font-weight:700">0%</span></div>
     <div class="conn-bars" id="connBars" title="Connection strength">
         <div class="conn-bar on" style="height:3px"></div>
@@ -665,7 +652,21 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
     <div class="sb-item">Events <span class="sb-val" id="sbPreds">0</span></div>
     <div class="sb-sep"></div>
     <div class="sb-item">Samples <span class="sb-val" id="sbSamples">0</span></div>
-    <div class="sb-item" style="margin-left:auto;display:flex;align-items:center;gap:12px">
+    <div class="sb-item" style="margin-left:auto;display:flex;align-items:center;gap:16px">
+        <!-- Instrument Pipe -->
+        <div class="tb-pipe" style="font-size:9px;margin-right:4px;display:flex;align-items:center">
+            <div class="tb-dot on" id="dotSol"></div>SoLEXS
+            <div class="tb-dot on" id="dotHel" style="margin-left:8px"></div>HEL1OS
+            <div class="tb-dot on" id="dotEns" style="margin-left:8px"></div>Ensemble
+        </div>
+        <div class="sb-sep" style="height:12px"></div>
+        <!-- NOAA Scales -->
+        <div class="tb-scales" style="font-size:10px;margin-right:4px;display:flex;align-items:center">
+            <span class="tb-scale tb-s0" id="scR" style="padding:1px 5px;cursor:help;position:relative">R0<span class="tb-tip" style="bottom:100%;top:auto;margin-bottom:6px;margin-top:0">Radio Blackout Scale (R0=None, R5=Extreme HF blackout)</span></span>
+            <span class="tb-scale tb-s0" id="scS" style="padding:1px 5px;cursor:help;position:relative;margin-left:4px">S0<span class="tb-tip" style="bottom:100%;top:auto;margin-bottom:6px;margin-top:0">Solar Radiation Storm (S0=None, S5=Extreme radiation)</span></span>
+            <span class="tb-scale tb-s0" id="scG" style="padding:1px 5px;cursor:help;position:relative;margin-left:4px">G0<span class="tb-tip" style="bottom:100%;top:auto;margin-bottom:6px;margin-top:0">Geomagnetic Storm (G0=None, G5=Extreme geomagnetic)</span></span>
+        </div>
+        <div class="sb-sep" style="height:12px"></div>
         <span style="color:var(--t3)">ISRO Aditya-L1 &bull; SoLEXS + HEL1OS</span>
     </div>
 </div>
