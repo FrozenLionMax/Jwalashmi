@@ -467,6 +467,11 @@ Solar flares are sudden brightenings on the Sun caused by magnetic reconnection 
 - [x] Animated starfield background
 - [x] ISRO mission badge and connection status
 - [x] 3-page dashboard (Mission Control, Impact Map, Analytics)
+- [x] Live backend metrics API & dynamic frontend data binding
+- [x] Scientific D-RAP absorption & Geomagnetic Cutoff latitudinal models
+- [x] ISRO Ground Network Propagation diagnostics table
+- [x] Interactive Simulation overrides & stage override timeline
+- [x] Mobile-responsive layout breakpoints (768px/480px) for analytics page
 - [ ] Real-time ISSDC Aditya-L1 data stream
 - [ ] WebSocket streaming
 - [ ] PDF space weather bulletin export
