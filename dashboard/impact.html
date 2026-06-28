@@ -26,11 +26,11 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
 /* HEADER */
-.header{display:flex;align-items:center;height:42px;padding:0 18px;
+.header{display:flex;align-items:center;height:48px;padding:0 18px;
     background:linear-gradient(180deg,#0c1120,#080c18);border-bottom:1px solid var(--border);
-    box-shadow:0 1px 0 rgba(34,211,238,0.04);flex-shrink:0;gap:10px;z-index:1001}
+    box-shadow:0 1px 0 rgba(34,211,238,0.04);flex-shrink:0;gap:10px;z-index:1001;position:relative}
 /* nav-btn deprecated — using .ptab */
-.page-tabs{display:flex;gap:4px;align-items:center}
+.page-tabs{position:absolute;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;z-index:2}
 .ptab{font-size:10px;padding:6px 16px;color:var(--t1);text-decoration:none;
     border-radius:6px;font-weight:700;transition:all 0.2s cubic-bezier(0.4,0,0.2,1);font-family:inherit;
     letter-spacing:0.8px;text-transform:uppercase;border:1px solid rgba(255,255,255,0.08);
@@ -59,7 +59,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .tb-date{font-size:9px;color:var(--t3);margin-right:4px}
 .tb-clk{font-size:13px;font-weight:700;color:var(--cyan);font-family:'Space Grotesk',sans-serif}
 .tb-clk-label{font-size:7px;color:var(--t3);margin-left:2px}
-.tb-utc{font-size:9px;color:var(--t3);margin-left:6px}
+.tb-utc{display:none !important}
 
 /* MAIN GRID */
 .content{flex:1;display:grid;grid-template-columns:1fr 340px;grid-template-rows:1fr auto;overflow:hidden;gap:0}
@@ -334,7 +334,7 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     <div><div class="hdr-kp" id="kpVal" style="color:var(--green)">--</div><div class="hdr-label">Kp INDEX</div></div>
     <div><div class="hdr-kp" id="stormLvl" style="font-size:10px;color:var(--green)">Quiet</div><div class="hdr-label">STORM LEVEL</div></div>
     <div style="width:1px;height:22px;background:var(--border)"></div>
-    <div class="page-tabs" style="margin-left:auto">
+    <div class="page-tabs">
         <a href="/" class="ptab">Mission Control</a>
         <a href="/impact.html" class="ptab active">Impact Map</a>
         <a href="/analytics.html" class="ptab">Analytics</a>
@@ -342,7 +342,6 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     <div class="hdr-right">
         <span class="tb-date" id="clkDate">--</span>
         <span class="tb-clk" id="clkIST">--:--:--</span><span class="tb-clk-label">IST</span>
-        <span class="tb-utc" id="clkUTC">--:--:-- UTC</span>
     </div>
 </div>
 
@@ -1547,8 +1546,6 @@ updateWx = function(d) {
 /* ===== LIVE CLOCK (IST + UTC) ===== */
 function updateClock() {
     const now = new Date();
-    const utc = now.toISOString().slice(11,19);
-    document.getElementById('clkUTC').textContent = utc + ' UTC';
     const ist = now.toLocaleTimeString('en-IN',{hour12:false,timeZone:'Asia/Kolkata'});
     document.getElementById('clkIST').textContent = ist;
     const dateStr = now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});

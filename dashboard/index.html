@@ -56,8 +56,8 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .conn-label{font-size:7px;color:var(--t3);margin-left:4px;letter-spacing:0.3px}
 
 /* === TOP BAR === */
-.topbar{display:flex;align-items:center;height:42px;padding:0 18px;
-    background:linear-gradient(180deg,#0c1120,#080c18);border-bottom:1px solid var(--border);flex-shrink:0;gap:0}
+.topbar{display:flex;align-items:center;height:48px;padding:0 18px;
+    background:linear-gradient(180deg,#0c1120,#080c18);border-bottom:1px solid var(--border);flex-shrink:0;gap:0;position:relative}
 .tb-brand{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;
     color:var(--cyan);letter-spacing:1.2px;margin-right:4px;white-space:nowrap}
 .tb-ver{font-size:9px;color:var(--t3);margin-right:12px;background:rgba(34,211,238,0.06);
@@ -79,11 +79,12 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
     font-size:9px;font-weight:400;color:var(--t1);white-space:nowrap;z-index:100;pointer-events:none;
     box-shadow:0 4px 12px rgba(0,0,0,0.4)}
 .tb-scale:hover .tb-tip{display:block}
-.tb-right{margin-left:auto;display:flex;align-items:center;gap:6px}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:6px;z-index:2}
 .tb-clk{font-size:15px;font-weight:600;color:var(--t0);letter-spacing:0.5px}
 .tb-clk-label{font-size:8px;font-weight:700;color:var(--yellow);margin-left:3px}
-.tb-utc{font-size:10px;color:var(--t2);margin-left:6px}
+.tb-utc{display:none !important}
 .tb-date{font-size:10px;color:var(--t3);margin-right:10px}
+.page-tabs{position:absolute;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;z-index:2}
 
 /* === MAIN GRID === */
 .main{flex:1;display:grid;grid-template-columns:1fr 320px;grid-template-rows:280px 1fr auto;overflow:hidden}
@@ -454,7 +455,6 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
         <div class="conn-bar on" style="height:13px"></div>
         <span class="conn-label" id="connLabel">LIVE</span>
     </div>
-    <div class="tb-sep"></div>
     <div class="page-tabs">
         <a href="/" class="ptab active">Mission Control</a>
         <a href="/impact.html" class="ptab">Impact Map</a>
@@ -463,7 +463,6 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
     <div class="tb-right">
         <span class="tb-date" id="clkDate">--</span>
         <span class="tb-clk" id="clkIST">--:--:--</span><span class="tb-clk-label">IST</span>
-        <span class="tb-utc" id="clkUTC">--:--:-- UTC</span>
     </div>
 </div>
 
@@ -803,7 +802,6 @@ const CLASS_METRICS={
 function tick(){
     const now=new Date(),ist=new Date(now.getTime()+5.5*3600000),p=n=>String(n).padStart(2,'0');
     document.getElementById('clkIST').textContent=p(ist.getUTCHours())+':'+p(ist.getUTCMinutes())+':'+p(ist.getUTCSeconds());
-    document.getElementById('clkUTC').textContent=p(now.getUTCHours())+':'+p(now.getUTCMinutes())+':'+p(now.getUTCSeconds())+' UTC';
     const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     document.getElementById('clkDate').textContent=p(ist.getUTCDate())+' '+mo[ist.getUTCMonth()]+' '+ist.getUTCFullYear();
     const age=((Date.now()-lastDataTime)/1000);

@@ -26,10 +26,10 @@ body::-webkit-scrollbar{width:5px}
 body::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:4px}
 
 /* === TOPBAR === */
-.topbar{display:flex;align-items:center;height:42px;padding:0 18px;
+.topbar{display:flex;align-items:center;height:48px;padding:0 18px;
     background:linear-gradient(180deg,#0c1120,#080c18);border-bottom:1px solid var(--border);
     box-shadow:0 1px 0 rgba(34,211,238,0.04);
-    position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);gap:10px;flex-shrink:0}
+    position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);gap:10px;flex-shrink:0;position:relative}
 .hdr-badge{display:flex;align-items:center;gap:6px;padding:5px 12px;
     background:linear-gradient(135deg,rgba(249,115,22,0.06),rgba(34,211,238,0.03));
     border:1px solid rgba(249,115,22,0.12);border-radius:6px}
@@ -48,8 +48,8 @@ body::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:4p
 .tb-badge{font-size:8px;font-weight:700;padding:2px 7px;border-radius:3px;
     background:rgba(168,85,247,0.08);color:var(--purple);border:1px solid rgba(168,85,247,0.15);
     text-transform:uppercase;letter-spacing:0.5px}
-.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.page-tabs{display:flex;gap:4px;align-items:center}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px;z-index:2}
+.page-tabs{position:absolute;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;z-index:2}
 .ptab{font-size:10px;padding:6px 16px;color:var(--t1);text-decoration:none;
     border-radius:6px;font-weight:700;transition:all 0.2s cubic-bezier(0.4,0,0.2,1);font-family:inherit;
     letter-spacing:0.8px;text-transform:uppercase;border:1px solid rgba(255,255,255,0.08);
@@ -169,7 +169,7 @@ body::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:4p
     <div class="tb-sep"></div>
     <span class="tb-title">MODEL ANALYTICS</span>
     <span class="tb-badge">Research</span>
-    <div class="page-tabs" style="margin-left:auto">
+    <div class="page-tabs">
         <a href="/" class="ptab">Mission Control</a>
         <a href="/impact.html" class="ptab">Impact Map</a>
         <a href="/analytics.html" class="ptab active">Analytics</a>
@@ -177,7 +177,6 @@ body::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:4p
     <div class="tb-right">
         <span class="tb-date" id="clkDate">--</span>
         <span style="font-size:13px;font-weight:700;color:var(--cyan);font-family:'Space Grotesk',sans-serif" id="clkIST">--:--:--</span><span style="font-size:7px;color:var(--t3);margin-left:2px">IST</span>
-        <span style="font-size:9px;color:var(--t3);margin-left:6px" id="clkUTC">--:--:-- UTC</span>
     </div>
 </div>
 
@@ -487,7 +486,7 @@ const C={none:'#7e8ba4',B:'#3b82f6',C:'#eab308',M:'#f97316',X:'#ef4444'};
     window.addEventListener('resize',()=>c.resize());
 })();
 /* CLOCK */
-function updateClock(){const n=new Date();document.getElementById('clkUTC').textContent=n.toISOString().slice(11,19)+' UTC';document.getElementById('clkIST').textContent=n.toLocaleTimeString('en-IN',{hour12:false,timeZone:'Asia/Kolkata'});document.getElementById('clkDate').textContent=n.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
+function updateClock(){const n=new Date();document.getElementById('clkIST').textContent=n.toLocaleTimeString('en-IN',{hour12:false,timeZone:'Asia/Kolkata'});document.getElementById('clkDate').textContent=n.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
 setInterval(updateClock,1000);updateClock();
 
 /* ===== METRICS API INTEGRATION ===== */
