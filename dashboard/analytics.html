@@ -50,13 +50,16 @@ body::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:4p
     text-transform:uppercase;letter-spacing:0.5px}
 .tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 .page-tabs{display:flex;gap:4px;align-items:center}
-.ptab{font-size:9px;padding:6px 16px;color:var(--t3);text-decoration:none;
-    border-radius:5px;font-weight:600;transition:all 0.25s;font-family:inherit;
-    letter-spacing:0.4px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02)}
-.ptab:hover{color:var(--t1);background:rgba(34,211,238,0.06);border-color:rgba(34,211,238,0.15);
-    box-shadow:0 0 8px rgba(34,211,238,0.06);transform:translateY(-1px)}
-.ptab.active{color:var(--cyan);background:rgba(34,211,238,0.08);
-    border-color:rgba(34,211,238,0.2);box-shadow:0 0 10px rgba(34,211,238,0.08)}
+.ptab{font-size:10px;padding:6px 16px;color:var(--t1);text-decoration:none;
+    border-radius:6px;font-weight:700;transition:all 0.2s cubic-bezier(0.4,0,0.2,1);font-family:inherit;
+    letter-spacing:0.8px;text-transform:uppercase;border:1px solid rgba(255,255,255,0.08);
+    background:rgba(255,255,255,0.03);display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.05)}
+.ptab:hover{color:var(--cyan);background:rgba(34,211,238,0.06);border-color:rgba(34,211,238,0.3);
+    box-shadow:0 0 12px rgba(34,211,238,0.12),inset 0 1px 0 rgba(255,255,255,0.1);transform:translateY(-1px)}
+.ptab:active{transform:translateY(0)}
+.ptab.active{color:var(--bg);background:linear-gradient(135deg,var(--cyan),var(--blue));
+    border-color:var(--cyan);box-shadow:0 0 14px rgba(34,211,238,0.25);text-shadow:0 1px 1px rgba(0,0,0,0.2)}
 
 /* === GRID === */
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px 18px;max-width:1440px;margin:0 auto}
