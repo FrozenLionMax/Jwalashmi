@@ -488,7 +488,7 @@ def get_latest_prediction():
         "inference_mode": INFERENCE_MODE,
         "system": {
             "ensemble_models": len(v6_models) if v6_models else (len(ensemble.models) if ensemble else (1 if tactical_single else 0)),
-            "version": "V6.1" if v6_models else "legacy",
+            "version": "V6.2" if v6_models else "legacy",
             "data_windows": len(X_tactical),
         }
     }
@@ -776,7 +776,7 @@ def get_goes_prediction():
         "goes_points": len(goes_buffer),
         "system": {
             "ensemble_models": len(v6_models),
-            "version": "V6.1",
+            "version": "V6.2",
             "data_windows": len(goes_buffer),
         }
     }
@@ -865,7 +865,7 @@ def get_aditya_replay():
         "total_windows": len(X_tactical),
         "system": {
             "ensemble_models": len(v6_models),
-            "version": "V6.1",
+            "version": "V6.2",
             "data_windows": len(X_tactical),
         }
     }
