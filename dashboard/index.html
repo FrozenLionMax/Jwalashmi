@@ -381,75 +381,24 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
 .ptab.active{color:var(--bg);background:linear-gradient(135deg,var(--cyan),var(--blue));
     border-color:var(--cyan);box-shadow:0 0 14px rgba(34,211,238,0.25);text-shadow:0 1px 1px rgba(0,0,0,0.2)}
 
-/* === DATA SOURCE DROPDOWN === */
-.ds-dropdown {
-    position: relative;
-    display: inline-block;
-    margin-right: 12px;
-    z-index: 100;
-}
-.ds-dropbtn {
-    background: #0d1222;
-    color: var(--cyan);
-    border: 1px solid rgba(34, 211, 238, 0.4);
-    padding: 6px 14px;
-    border-radius: 6px;
-    font-size: 10px;
-    font-weight: 700;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    box-shadow: 0 0 10px rgba(34, 211, 238, 0.1), inset 0 1px 0 rgba(255,255,255,0.05);
-}
-.ds-dropbtn:hover {
-    background: rgba(34, 211, 238, 0.1);
-    border-color: var(--cyan);
-    box-shadow: 0 0 12px rgba(34, 211, 238, 0.25);
-}
-.ds-arrow {
-    font-size: 8px;
-    color: var(--cyan);
-    transition: transform 0.2s;
-}
-.ds-dropdown:hover .ds-arrow {
-    transform: rotate(180deg);
-}
-.ds-dropdown-content {
-    display: none;
-    position: absolute;
-    right: 0;
-    top: 100%;
-    margin-top: 6px;
-    background: #080c16;
-    border: 1px solid rgba(34, 211, 238, 0.3);
-    min-width: 170px;
-    border-radius: 6px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.8);
-    z-index: 1000;
-    overflow: hidden;
-}
-.ds-dropdown-content a {
-    color: var(--t2);
-    padding: 8px 12px;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 10px;
-    font-weight: 600;
-    transition: all 0.2s;
-}
-.ds-dropdown-content a:hover {
-    background: rgba(34, 211, 238, 0.06);
-    color: var(--cyan);
-}
-.ds-dropdown:hover .ds-dropdown-content {
-    display: block;
-}
+/* === DATA SOURCE DROPDOWN (click-based) === */
+.ds-dropdown { position:relative; display:inline-block; margin-right:12px; z-index:9999 }
+.ds-dropbtn { background:#0d1222; color:var(--cyan); border:1px solid rgba(34,211,238,0.4);
+    padding:6px 14px; border-radius:6px; font-size:10px; font-weight:700; cursor:pointer;
+    display:flex; align-items:center; gap:6px; transition:all 0.2s; letter-spacing:0.5px;
+    text-transform:uppercase; box-shadow:0 0 10px rgba(34,211,238,0.1),inset 0 1px 0 rgba(255,255,255,0.05) }
+.ds-dropbtn:hover { background:rgba(34,211,238,0.12); border-color:var(--cyan);
+    box-shadow:0 0 14px rgba(34,211,238,0.3) }
+.ds-arrow { font-size:8px; color:var(--cyan); transition:transform 0.2s }
+.ds-dropdown.open .ds-arrow { transform:rotate(180deg) }
+.ds-dropdown-content { display:none; position:absolute; right:0; top:calc(100% + 6px);
+    background:#080c16; border:1px solid rgba(34,211,238,0.35); min-width:190px;
+    border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,0.9); z-index:9999; overflow:hidden }
+.ds-dropdown-content.open { display:block }
+.ds-dropdown-content a { color:var(--t1); padding:10px 14px; text-decoration:none;
+    display:flex; align-items:center; gap:8px; font-size:11px; font-weight:600;
+    transition:all 0.15s; cursor:pointer }
+.ds-dropdown-content a:hover { background:rgba(34,211,238,0.1); color:var(--cyan) }
 
 @media(max-width:1200px) {
     .tb-meta { display: none !important; }
@@ -496,8 +445,8 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
     </div>
     <div class="tb-right">
         <!-- Data Source Dropdown -->
-        <div class="ds-dropdown" title="Change active space telemetry data source">
-            <button class="ds-dropbtn" title="Click to open data sources dropdown menu">
+        <div class="ds-dropdown" id="dsDropdown" title="Change active space telemetry data source">
+            <button class="ds-dropbtn" onclick="toggleDropdown(event)" title="Click to switch data source">
                 <span id="dsActiveIcon" style="color:var(--orange)">&#9679;</span>
                 <span id="dsActiveLabel">Aditya-L1</span>
                 <span class="ds-arrow">&#9662;</span>
@@ -986,8 +935,23 @@ function updateSourceUI(src) {
     icon.style.color = colors[src] || 'var(--cyan)';
 }
 
+function toggleDropdown(e) {
+    e.stopPropagation();
+    const dd = document.getElementById('dsDropdown');
+    const content = dd.querySelector('.ds-dropdown-content');
+    dd.classList.toggle('open');
+    content.classList.toggle('open');
+}
+document.addEventListener('click', function() {
+    const dd = document.getElementById('dsDropdown');
+    if (dd) { dd.classList.remove('open'); dd.querySelector('.ds-dropdown-content').classList.remove('open'); }
+});
+
 function switchSource(src){
     activeSource=src;
+    // Close dropdown
+    const dd = document.getElementById('dsDropdown');
+    if (dd) { dd.classList.remove('open'); dd.querySelector('.ds-dropdown-content').classList.remove('open'); }
     fetch('/api/datasource/'+src,{method:'POST'}).then(r=>r.json()).then(d=>{
         clog('Data source: '+d.active_source,'ok');
     }).catch(()=>clog('Source switch (offline mode)','warn'));
