@@ -98,28 +98,36 @@ The primary operational dashboard with:
 | `R` | Reset chart zoom |
 | `?` | Show shortcut list |
 
-### 🌍 Page 2: Geomagnetic Impact Map (`/impact.html`)
+### 🌍 Page 2: Geomagnetic & Radio Impact Map (`/impact.html`)
 
-Full-page geomagnetic impact assessment:
+A research-grade geographical forecasting engine that integrates live satellite telemetry with real-time physical propagation models:
 
-- **World Map** — Leaflet.js dark CartoDB tiles with:
-  - Real-time aurora ovals (expand/contract with live NOAA Kp)
-  - Day/night terminator with subsolar point tracking
-  - ISRO ground station markers with hover tooltips
-  - Aurora boundary labels and high-impact zone overlays
-- **Status Summary Strip** — Plain-English conditions: *"All quiet — Kp 2.3 | Solar wind 380 km/s | No action needed"*
-- **Trend Arrows** — ↑↓→ on Kp, solar wind, Bz to track rising/falling values
-- **NOAA Alerts Feed** — Live warnings/watches from NOAA SWPC (proxied server-side)
-- **Interactive Timeline** — Nodes pulse when Kp triggers: Flare → Blackout → Protons → CME → Storm
-- **Kp History Chart** — 24h bar chart from NOAA 1-minute Kp data
-- **ISRO Space Assets** — Aditya-L1, Chandrayaan-3, INSAT-3DR, GSAT-30, NavIC, Oceansat-3, EOS-06, RISAT-2B
-- **Communications** — HF Radio, GPS/NavIC, SATCOM, Indian Grid, ISTRAC Network
-- **Regions & Aurora** — Canada/Scandinavia, N.America/Europe, India + aurora boundary
-- **Impact Prediction** — Affected area %, blackout zone, duration, recovery, sats at risk
-- **JWALASHMI Model Overlay** — Live prediction with probability bars and strategic outlook
-- **X-Ray Sparkline** — GOES/SoLEXS flux with C/M/X threshold lines
-- **Toast Alert System** — Reactive popups on Kp changes, solar wind spikes, Bz southward
-- **CME Countdown** — Activates on M/X prediction with lead time
+- **2D World Map (Leaflet.js & Canvas Overlay):**
+  - **Empirical D-Region Absorption (D-RAP) Model:** Integrates GOES-18/SoLEXS X-ray flux to calculate the Highest Affected Frequency (HAF):
+    $$\text{HAF (MHz)} = 10 \times \log_{10}(F_{\text{xray}}) + 32.2$$
+    Renders geodesic $1\text{ dB}$ (Yellow), $5\text{ dB}$ (Orange), and $15\text{ dB}$ (Red) HF signal absorption contours on the sunlit hemisphere based on the Solar Zenith Angle ($\chi$):
+    $$A_{10}(\chi) = A_{\text{subsolar}} \times \cos^{0.75}(\chi)$$
+  - **Geomagnetic Cutoff Latitude Boundary:** Computes the latitude above which solar protons can penetrate the Earth's magnetic shielding:
+    $$\Lambda_c(\text{Kp}) = 65^\circ - 2.5^\circ \times (\text{Kp} - 1)$$
+    Renders precise, Kp-driven dashed boundary lines in both hemispheres.
+  - **Aurora Ovals:** Dynamic auroral boundaries expanding and contracting based on the live planetary Kp index.
+  - **Day/Night Terminator:** Dynamic subsolar point tracking and twilight shading.
+- **📡 Ground Network Propagation Diagnostics:**
+  - Replaces static region tracking with localized spherical trigonometry calculations for the 8 ISRO ground stations (Ahmedabad, Sriharikota, Lucknow, Mauritius, Brunei, etc.).
+  - Calculates the Solar Zenith Angle ($\chi$) relative to the subsolar coordinates $(\phi_s, \lambda_s)$:
+    $$\cos(\chi) = \sin(\phi)\sin(\phi_s) + \cos(\phi)\cos(\phi_s)\cos(\lambda - \lambda_s)$$
+  - Displays computed local HF attenuation in decibels (dB) and statuses (`SAFE` to `BLACKOUT`).
+- **🧪 Interactive Timeline & Simulation Override:**
+  - Let users click any timeline milestone (Flare $\rightarrow$ Blackout $\rightarrow$ Protons $\rightarrow$ CME $\rightarrow$ Storm) to enter **Simulation Mode**.
+  - Overrides the live NOAA feed to preview the mathematical models and visual map overlays at simulated storm levels (from quiet up to Kp 9.0 and X-class flares).
+  - One-click "Resume Live Feed" option instantly reconnects the dashboard to live satellite data.
+- **NOAA Alerts Feed:** Live warnings/watches from NOAA SWPC.
+- **ISRO Space Assets:** Diagnostic status tracking for Aditya-L1, Chandrayaan-3, INSAT, and GSAT satellites.
+- **Kp History Chart:** 24h bar chart from NOAA 1-minute Kp data.
+- **JWALASHMI Model Overlay:** Live prediction with probability bars and strategic outlook.
+- **X-Ray Sparkline:** GOES/SoLEXS flux with C/M/X threshold lines.
+- **Toast Alert System:** Reactive popups on Kp changes, solar wind spikes, and southward Bz.
+- **CME Countdown:** Activates on M/X prediction with lead time.
 
 > All statuses update dynamically based on real-time Kp index from NOAA SWPC
 
