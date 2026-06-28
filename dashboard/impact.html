@@ -326,23 +326,6 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
 .stt-name{font-weight:700;color:#22d3ee;font-size:11px;margin-bottom:2px}
 .stt-coord{color:#7e8ba4;font-size:9px}
 
-/* === DATA SOURCE DROPDOWN === */
-.ds-dropdown{position:relative;display:inline-block;margin-right:12px}
-.ds-dropbtn{background:rgba(255,255,255,0.03);color:var(--t1);border:1px solid rgba(255,255,255,0.08);
-    padding:5px 12px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;display:flex;
-    align-items:center;gap:6px;transition:all 0.2s;letter-spacing:0.5px;text-transform:uppercase;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,0.03)}
-.ds-dropbtn:hover{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.15)}
-.ds-arrow{font-size:8px;color:var(--t3);transition:transform 0.2s}
-.ds-dropdown:hover .ds-arrow{transform:rotate(180deg)}
-.ds-dropdown-content{display:none;position:absolute;right:0;top:100%;margin-top:4px;background:#0c1120;
-    border:1px solid var(--border);min-width:170px;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.5);
-    z-index:1000;overflow:hidden}
-.ds-dropdown-content a{color:var(--t2);padding:8px 12px;text-decoration:none;display:flex;
-    align-items:center;gap:8px;font-size:10px;font-weight:600;transition:all 0.2s}
-.ds-dropdown-content a:hover{background:rgba(34,211,238,0.06);color:var(--cyan)}
-.ds-dropdown:hover .ds-dropdown-content{display:block}
-
 @media(max-width:1200px) {
     .hdr-meta { display: none !important; }
 }
@@ -367,25 +350,6 @@ body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--t0)
         <a href="/analytics.html" class="ptab">Analytics</a>
     </div>
     <div class="hdr-right">
-        <!-- Data Source Dropdown -->
-        <div class="ds-dropdown" title="Change active space telemetry data source">
-            <button class="ds-dropbtn" title="Select data source">
-                <span id="dsActiveIcon" style="color:var(--orange)">&#9679;</span>
-                <span id="dsActiveLabel">Aditya-L1</span>
-                <span class="ds-arrow">&#9662;</span>
-            </button>
-            <div class="ds-dropdown-content">
-                <a href="#" onclick="switchSource('aditya-l1'); return false;" title="Replay telemetry from ISRO Aditya-L1 spacecraft (12 features, 95.2% accuracy)">
-                    <span style="color:var(--orange)">&#9679;</span> ISRO Aditya-L1
-                </a>
-                <a href="#" onclick="switchSource('goes-live'); return false;" title="Stream live space weather telemetry from NOAA GOES-18 satellite (92.4% accuracy)">
-                    <span style="color:var(--green)">&#9679;</span> NOAA GOES Live
-                </a>
-                <a href="#" onclick="switchSource('simulation'); return false;" title="Replay simulated solar flare timeline event sequence for system testing">
-                    <span style="color:var(--yellow)">&#9679;</span> Simulation Mode
-                </a>
-            </div>
-        </div>
         <div class="conn-bars" id="connBars" title="Connection strength">
             <div class="conn-bar on" style="height:3px"></div>
             <div class="conn-bar on" style="height:5px"></div>
@@ -1329,25 +1293,6 @@ function updateAuroraVisibility(kp) {
     }
 }
 
-/* === DATA SOURCE SWITCHING === */
-let activeSource='aditya-l1';
-function updateSourceUI(src) {
-    const label = document.getElementById('dsActiveLabel');
-    const icon = document.getElementById('dsActiveIcon');
-    if (!label || !icon) return;
-    const names={'aditya-l1':'Aditya-L1','goes-live':'GOES Live','simulation':'Simulation'};
-    const colors={'aditya-l1':'var(--orange)','goes-live':'var(--green)','simulation':'var(--yellow)'};
-    label.textContent = names[src] || src;
-    icon.style.color = colors[src] || 'var(--cyan)';
-}
-function switchSource(src) {
-    activeSource = src;
-    fetch('/api/datasource/'+src,{method:'POST'}).then(r=>r.json()).then(d=>{
-        console.log('[DS] Source: '+d.active_source);
-    }).catch(()=>console.warn('[DS] Offline mode'));
-    updateSourceUI(src);
-}
-
 function setConnection(status) {
     const bars=document.querySelectorAll('#connBars .conn-bar');
     const lbl=document.getElementById('connLabel');
@@ -1388,7 +1333,6 @@ async function fetchModelPrediction() {
         const replayW = d.replay_window != null ? d.replay_window : null;
         const totalW  = d.total_windows || null;
         const src     = d.data_source || d.inference_mode || 'ensemble';
-        updateSourceUI(src);
         const color   = classColors[cls] || 'var(--cyan)';
         const alertColor = alert==='RED'?'var(--red)':alert==='YELLOW'?'var(--yellow)':'var(--green)';
 
