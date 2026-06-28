@@ -141,12 +141,15 @@ body::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:4p
 .d1{animation-delay:0.05s}.d2{animation-delay:0.1s}.d3{animation-delay:0.15s}
 .d4{animation-delay:0.2s}.d5{animation-delay:0.25s}.d6{animation-delay:0.3s}
 
+@media(max-width:1200px) {
+    .tb-meta { display: none !important; }
+}
 @media(max-width:900px){
     .grid{grid-template-columns:1fr}
     .metrics-row{grid-template-columns:repeat(3,1fr)}
 }
 @media(max-width:768px){
-    .tb-sep, .tb-title, .tb-badge, .tb-right {display:none !important}
+    .tb-right {display:none !important}
     .metrics-row{grid-template-columns:repeat(3,1fr)}
 }
 @media(max-width:480px){
@@ -166,9 +169,9 @@ body::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:4p
     <div class="hdr-badge"><div class="hdr-sun"></div><span class="hdr-isro">ISRO</span></div>
     <span class="tb-brand">JWALASHMI</span>
     <span class="tb-ver">v6.2</span>
-    <div class="tb-sep"></div>
-    <span class="tb-title">MODEL ANALYTICS</span>
-    <span class="tb-badge">Research</span>
+    <div class="tb-sep tb-meta"></div>
+    <span class="tb-title tb-meta">MODEL ANALYTICS</span>
+    <span class="tb-badge tb-meta">Research</span>
     <div class="page-tabs">
         <a href="/" class="ptab">Mission Control</a>
         <a href="/impact.html" class="ptab">Impact Map</a>

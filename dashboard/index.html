@@ -392,6 +392,10 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
 .ptab:active{transform:translateY(0)}
 .ptab.active{color:var(--bg);background:linear-gradient(135deg,var(--cyan),var(--blue));
     border-color:var(--cyan);box-shadow:0 0 14px rgba(34,211,238,0.25);text-shadow:0 1px 1px rgba(0,0,0,0.2)}
+
+@media(max-width:1200px) {
+    .tb-meta { display: none !important; }
+}
 </style>
 </head>
 <body>
@@ -425,26 +429,20 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
     </div>
     <span class="tb-brand">JWALASHMI</span>
     <span class="tb-ver">v6.2</span>
-    <div class="tb-sep"></div>
-    <div class="tb-pipe">
+    <div class="tb-sep tb-meta"></div>
+    <div class="tb-pipe tb-meta">
         <div class="tb-dot on" id="dotSol"></div>SoLEXS
         <div class="tb-dot on" id="dotHel" style="margin-left:8px"></div>HEL1OS
         <div class="tb-dot on" id="dotEns" style="margin-left:8px"></div>Ensemble
         <div class="tb-dot on" style="margin-left:8px"></div>Cal
     </div>
-    <div class="tb-sep"></div>
-    <div class="tb-scales">
+    <div class="tb-sep tb-meta"></div>
+    <div class="tb-scales tb-meta">
         <span class="tb-scale tb-s0" id="scR">R0<span class="tb-tip">Radio Blackout Scale (R0=None, R5=Extreme HF blackout)</span></span>
         <span class="tb-scale tb-s0" id="scS">S0<span class="tb-tip">Solar Radiation Storm (S0=None, S5=Extreme radiation)</span></span>
         <span class="tb-scale tb-s0" id="scG">G0<span class="tb-tip">Geomagnetic Storm (G0=None, G5=Extreme geomagnetic)</span></span>
     </div>
-    <div class="tb-sep"></div>
-    <div class="ds-toggles">
-        <button class="ds-btn on-al1" id="dsAL1" onclick="switchSource('aditya-l1')"><span style="color:#f97316">&#9702;</span> ISRO Aditya-L1</button>
-        <button class="ds-btn" id="dsGOES" onclick="switchSource('goes-live')"><span class="ds-live" style="display:none" id="goesLiveDot"></span>GOES Live</button>
-        <button class="ds-btn" id="dsSIM" onclick="switchSource('simulation')">Sim</button>
-    </div>
-    <div class="tb-sep"></div>
+    <div class="tb-sep tb-meta"></div>
     <div style="font-size:9px;color:var(--t3)">Flare <span id="tbFlareProb" style="color:var(--green);font-weight:700">0%</span></div>
     <div class="conn-bars" id="connBars" title="Connection strength">
         <div class="conn-bar on" style="height:3px"></div>
@@ -511,6 +509,14 @@ button,select,.flux-btn,.console-hdr span{touch-action:manipulation}
         <div class="pnl-hdr"><span class="pnl-title">Status</span>
             <span class="pnl-badge tb-s0" id="alertBadge">Nominal</span></div>
         <div class="pnl-body" style="padding:0">
+            <!-- DATA SOURCE SELECTOR -->
+            <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:center;background:rgba(255,255,255,0.01)">
+                <div class="ds-toggles">
+                    <button class="ds-btn on-al1" id="dsAL1" onclick="switchSource('aditya-l1')"><span style="color:#f97316">&#9679;</span> Aditya-L1</button>
+                    <button class="ds-btn" id="dsGOES" onclick="switchSource('goes-live')"><span class="ds-live" style="display:none;width:5px;height:5px;border-radius:50%;background:#10b981;box-shadow:0 0 4px #10b981;margin-right:4px" id="goesLiveDot"></span>GOES Live</button>
+                    <button class="ds-btn" id="dsSIM" onclick="switchSource('simulation')">Sim</button>
+                </div>
+            </div>
             <div class="alert-status" id="alertArea">
                 <div class="alert-ring" id="alertRing"><span class="alert-icon" id="alertIcon">&#x2714;</span></div>
                 <div class="alert-level" id="alertLevel" style="color:var(--green)">ALL CLEAR</div>
