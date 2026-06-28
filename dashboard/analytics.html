@@ -142,6 +142,18 @@ body::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:4p
     .grid{grid-template-columns:1fr}
     .metrics-row{grid-template-columns:repeat(3,1fr)}
 }
+@media(max-width:768px){
+    .tb-sep, .tb-title, .tb-badge, .tb-right {display:none !important}
+    .metrics-row{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:480px){
+    .hdr-badge {display:none !important}
+    .metrics-row{grid-template-columns:repeat(2,1fr)}
+    .ptab {font-size:8px;padding:4px 8px}
+    .metric-val {font-size:18px}
+    .metric-label {font-size:7px;letter-spacing:0.3px}
+    .metric-sub {font-size:8px}
+}
 </style>
 </head>
 <body>
