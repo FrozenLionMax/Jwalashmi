@@ -37,4 +37,5 @@ paper/
 analysis/
 
 # DO NOT ignore the 'models/' directory as it contains operational weights.
-models/
+!models/
+!models/**
