@@ -1,0 +1,40 @@
+# gcloud ignore file to clean up deployments
+.gcloudignore
+.git
+.gitignore
+
+# Ignore temporary PowerPoint files
+~$*
+~$Jwalashmi_ISRO_Submission.pptx
+
+# Ignore documentation, media, and presentations
+*.pptx
+*.ppt
+*.pdf
+*.docx
+*.zip
+*.gz
+*.lc.gz
+*.fits
+*.fits.gz
+
+# Ignore local virtual environments and Python cache
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore ALL heavy raw and processed datasets
+Helios/
+Solexs/
+data/
+JWALASHMI_colab_v62/
+extracted/
+noaa/
+plots/
+paper/
+analysis/
+
+# DO NOT ignore the 'models/' directory as it contains operational weights.
+models/

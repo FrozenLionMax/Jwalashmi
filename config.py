@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 # ── Project Root ──────────────────────────────────────────────
-PROJECT_ROOT = Path(r"c:\Users\Acer\Desktop\ISRO")
+PROJECT_ROOT = Path(__file__).resolve().parent
 
 # ── Data Paths ────────────────────────────────────────────────
 SOLEXS_RAW = PROJECT_ROOT / "Solexs" / "extracted"
